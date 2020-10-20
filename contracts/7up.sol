@@ -87,8 +87,8 @@ contract SevenUpPool
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
 
-        baseInterests = 2 * (10 ** 17);
-        marketFrenzy  = 10 ** 18;
+        baseInterests = 2 * 1e17;
+        marketFrenzy  = 1e18;
 
         pledgeRate = 6000;
         pledgePrice = 200;
@@ -111,14 +111,14 @@ contract SevenUpPool
     {
         uint totalSupply = totalBorrow + remainSupply;
         uint apy = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply));
-        // apy = apy.div(365 * 28800);
+        apy = apy.div(365 * 28800);
         interestPerBlock = apy;
     }
 
     function updateLiquidation(uint _liquidation) internal
     {
         uint totalSupply = totalBorrow + remainSupply;
-        liquidationPerSupply = liquidationPerSupply.add(totalSupply == 0 ? 0 : _liquidation.div(totalSupply));
+        liquidationPerSupply = liquidationPerSupply.add(totalSupply == 0 ? 0 : _liquidation.mul(1e18).div(totalSupply));
     }
 
     function deposit(uint amountDeposit, address from) public
@@ -128,11 +128,11 @@ contract SevenUpPool
 
         updateInterests();
 
-        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).sub(supplys[from].liquidationSettled);
+        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled);
 
         // supplys[msg.sender].interests   += interestPerSupply * supplys[msg.sender].amountSupply / decimal - supplys[msg.sender].interestSettled;
         supplys[from].interests = supplys[from].interests.add(
-            interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18).sub(supplys[from].interestSettled));
+            interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(amountDeposit);
@@ -140,8 +140,8 @@ contract SevenUpPool
 
         // updateLiquidation(addLiquidation);
 
-        supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18);
-        supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply);
+        supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
+        supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
         emit Deposit(from, amountDeposit, addLiquidation);
     }
 
@@ -152,10 +152,10 @@ contract SevenUpPool
 
         updateInterests();
 
-        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).sub(supplys[from].liquidationSettled);
+        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled);
 
         supplys[from].interests = supplys[from].interests.add(
-            interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18).sub(supplys[from].interestSettled));
+            interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
         uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
@@ -177,8 +177,8 @@ contract SevenUpPool
 
         // updateLiquidation(withdrawLiquidation);
 
-        supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18);
-        supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply);
+        supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
+        supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
         TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount);
         TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
@@ -207,10 +207,10 @@ contract SevenUpPool
         remainSupply = remainSupply.sub(expectBorrow);
 
         borrows[from].interests = borrows[from].interests.add(
-            interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18).sub(borrows[from].interestSettled));
+            interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
         borrows[from].amountCollateral = borrows[from].amountCollateral.add(amountCollateral);
         borrows[from].amountBorrow = borrows[from].amountBorrow.add(expectBorrow);
-        borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18);
+        borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
 
         if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
 
@@ -225,7 +225,7 @@ contract SevenUpPool
         updateInterests();
 
         borrows[from].interests = borrows[from].interests.add(
-            interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18).sub(borrows[from].interestSettled));
+            interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
 
         repayAmount = borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral);
         repayInterest = borrows[from].interests.mul(amountCollateral).div(borrows[from].amountCollateral);
@@ -236,7 +236,7 @@ contract SevenUpPool
         borrows[from].amountCollateral = borrows[from].amountCollateral.sub(amountCollateral);
         borrows[from].amountBorrow = borrows[from].amountBorrow.sub(repayAmount);
         borrows[from].interests = borrows[from].interests.sub(repayInterest);
-        borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18);
+        borrows[from].interestSettled = borrows[from].amountBorrow == 0 ? 0 : interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
 
         remainSupply = remainSupply.add(repayAmount.add(repayInterest));
 
@@ -253,7 +253,7 @@ contract SevenUpPool
         updateInterests();
 
         borrows[_user].interests = borrows[_user].interests.add(
-            interestPerBorrow.mul(borrows[_user].amountBorrow).div(10 ** 18).sub(borrows[_user].interestSettled));
+            interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
 
         uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(10000);
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
