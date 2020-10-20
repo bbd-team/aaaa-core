@@ -35,7 +35,7 @@ describe('7up', () => {
 		await sevenContract.connect(walletMe).init(tokenFIL.address, tokenUSDT.address);
 		await sevenContract.connect(walletMe).updatePledgeRate(5000); // 60% pledge rate
 		await sevenContract.connect(walletMe).updatePledgePrice(200); // 0.02 FIL = 1 USDT
-		await sevenContract.connect(walletMe).updateLiquidationRate(9000); // 0.02 FIL = 1 USDT
+		await sevenContract.connect(walletMe).updateLiquidationRate(9000); // 90% liquidation rate
 		
 		console.log('walletMe = ', walletMe.address);
 		console.log('walletOther = ', walletOther.address);
@@ -74,8 +74,11 @@ describe('7up', () => {
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
 		let maxBorrow = await sevenContract.getMaximumBorrowAmount(10000);
+		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1));
 		await sevenContract.connect(walletOther).borrow(10000, maxBorrow);
 		console.log('after borrow: ', 
+			convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1),
+			convertBigNumber(await tokenFIL.balanceOf(walletOther.address), 1),
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
@@ -102,7 +105,7 @@ describe('7up', () => {
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
-		await sevenContract.connect(walletMe).updatePledgePrice(100); // 0.02 FIL = 1 USDT
+		await sevenContract.connect(walletMe).updatePledgePrice(100); // 0.01 FIL = 1 USDT
 		await sevenContract.connect(walletMe).liquidation(walletOther.address);
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
