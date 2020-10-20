@@ -10,6 +10,7 @@ contract SevenUpConfig is Configable {
     address public mint;
     address public token;
     address public wallet;
+    address public base;
     
     uint public developPercent = 5000;
     
@@ -17,13 +18,14 @@ contract SevenUpConfig is Configable {
         developer = msg.sender;
     }
     
-    function initialize (address _platform, address _factory, address _wallet, address _mint, address _token) external onlyDeveloper {
+    function initialize (address _platform, address _factory, address _wallet, address _mint, address _token, address _base) external onlyDeveloper {
         require(msg.sender == developer, "Config FORBIDDEN");
-        _wallet = wallet;
-        _mint = mint;
+        wallet = _wallet;
+        mint = _mint;
         platform = _platform;
         factory = _factory;
-        _token = token;
+        token = _token;
+        base = _base;
     }
     
     function setDevelopPercent(uint _value) external onlyDeveloper {

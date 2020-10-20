@@ -9,6 +9,7 @@ interface IConfig {
     function token() external view returns (address);
     function developPercent() external view returns (uint);
     function wallet() external view returns (address);
+    function base() external view returns (address);
 }
 
 contract Configable {

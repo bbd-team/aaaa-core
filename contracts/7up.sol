@@ -121,45 +121,45 @@ contract SevenUpPool
         liquidationPerSupply = liquidationPerSupply.add(totalSupply == 0 ? 0 : _liquidation.div(totalSupply));
     }
 
-    function deposit(uint amountDeposit) public
+    function deposit(uint amountDeposit, address from) public
     {
         require(amountDeposit > 0, "7UP: INVALID AMOUNT");
-        TransferHelper.safeTransferFrom(supplyToken, msg.sender, address(this), amountDeposit);
+        TransferHelper.safeTransferFrom(supplyToken, from, address(this), amountDeposit);
 
         updateInterests();
 
-        uint addLiquidation = liquidationPerSupply.mul(supplys[msg.sender].amountSupply).sub(supplys[msg.sender].liquidationSettled);
+        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).sub(supplys[from].liquidationSettled);
 
         // supplys[msg.sender].interests   += interestPerSupply * supplys[msg.sender].amountSupply / decimal - supplys[msg.sender].interestSettled;
-        supplys[msg.sender].interests = supplys[msg.sender].interests.add(
-            interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18).sub(supplys[msg.sender].interestSettled));
-        supplys[msg.sender].liquidation = supplys[msg.sender].liquidation.add(addLiquidation);
+        supplys[from].interests = supplys[from].interests.add(
+            interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18).sub(supplys[from].interestSettled));
+        supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
-        supplys[msg.sender].amountSupply = supplys[msg.sender].amountSupply.add(amountDeposit);
+        supplys[from].amountSupply = supplys[from].amountSupply.add(amountDeposit);
         remainSupply = remainSupply.add(amountDeposit);
 
         // updateLiquidation(addLiquidation);
 
-        supplys[msg.sender].interestSettled = interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18);
-        supplys[msg.sender].liquidationSettled = liquidationPerSupply.mul(supplys[msg.sender].amountSupply);
-        emit Deposit(msg.sender, amountDeposit, addLiquidation);
+        supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18);
+        supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply);
+        emit Deposit(from, amountDeposit, addLiquidation);
     }
 
-    function withdraw(uint amountWithdraw) public
+    function withdraw(uint amountWithdraw, address from) public
     {
         require(amountWithdraw > 0, "7UP: INVALID AMOUNT");
-        require(amountWithdraw <= supplys[msg.sender].amountSupply, "7UP: NOT ENOUGH BALANCE");
+        require(amountWithdraw <= supplys[from].amountSupply, "7UP: NOT ENOUGH BALANCE");
 
         updateInterests();
 
-        uint addLiquidation = liquidationPerSupply.mul(supplys[msg.sender].amountSupply).sub(supplys[msg.sender].liquidationSettled);
+        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).sub(supplys[from].liquidationSettled);
 
-        supplys[msg.sender].interests = supplys[msg.sender].interests.add(
-            interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18).sub(supplys[msg.sender].interestSettled));
-        supplys[msg.sender].liquidation = supplys[msg.sender].liquidation.add(addLiquidation);
+        supplys[from].interests = supplys[from].interests.add(
+            interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18).sub(supplys[from].interestSettled));
+        supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
-        uint withdrawLiquidation = supplys[msg.sender].liquidation.mul(amountWithdraw).div(supplys[msg.sender].amountSupply);
-        uint withdrawInterest = supplys[msg.sender].interests.mul(amountWithdraw).div(supplys[msg.sender].amountSupply);
+        uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
+        uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
         uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(withdrawInterest);
@@ -171,19 +171,19 @@ contract SevenUpPool
         totalLiquidation = totalLiquidation.sub(withdrawLiquidation);
         totalLiquidationSupplyAmount = totalLiquidationSupplyAmount.sub(withdrawLiquidationSupplyAmount);
 
-        supplys[msg.sender].interests = supplys[msg.sender].interests.sub(withdrawInterest);
-        supplys[msg.sender].liquidation = supplys[msg.sender].liquidation.sub(withdrawLiquidation);
-        supplys[msg.sender].amountSupply = supplys[msg.sender].amountSupply.sub(amountWithdraw);
+        supplys[from].interests = supplys[from].interests.sub(withdrawInterest);
+        supplys[from].liquidation = supplys[from].liquidation.sub(withdrawLiquidation);
+        supplys[from].amountSupply = supplys[from].amountSupply.sub(amountWithdraw);
 
         // updateLiquidation(withdrawLiquidation);
 
-        supplys[msg.sender].interestSettled = interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18);
-        supplys[msg.sender].liquidationSettled = liquidationPerSupply.mul(supplys[msg.sender].amountSupply);
+        supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(10 ** 18);
+        supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply);
 
-        TransferHelper.safeTransfer(supplyToken, msg.sender, withdrawSupplyAmount);
-        TransferHelper.safeTransfer(collateralToken, msg.sender, withdrawLiquidation);
+        TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount);
+        TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
 
-        emit Withdraw(msg.sender, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
+        emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
 
     function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
@@ -191,11 +191,11 @@ contract SevenUpPool
         amountBorrow = pledgePrice * amountCollateral * pledgeRate / 100000000;        
     }
 
-    function borrow(uint amountCollateral, uint expectBorrow) public
+    function borrow(uint amountCollateral, uint expectBorrow, address from) public
     {
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
         require(amountCollateral <= uint(-1) && expectBorrow <= uint(-1), '7UP: OVERFLOW');
-        TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amountCollateral);
+        TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
 
         updateInterests();
 
@@ -206,49 +206,49 @@ contract SevenUpPool
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
 
-        borrows[msg.sender].interests = borrows[msg.sender].interests.add(
-            interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18).sub(borrows[msg.sender].interestSettled));
-        borrows[msg.sender].amountCollateral = borrows[msg.sender].amountCollateral.add(amountCollateral);
-        borrows[msg.sender].amountBorrow = borrows[msg.sender].amountBorrow.add(expectBorrow);
-        borrows[msg.sender].interestSettled = interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18);
+        borrows[from].interests = borrows[from].interests.add(
+            interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18).sub(borrows[from].interestSettled));
+        borrows[from].amountCollateral = borrows[from].amountCollateral.add(amountCollateral);
+        borrows[from].amountBorrow = borrows[from].amountBorrow.add(expectBorrow);
+        borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18);
 
-        if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, msg.sender, expectBorrow);
+        if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
 
-        emit Borrow(msg.sender, expectBorrow, amountCollateral);
+        emit Borrow(from, expectBorrow, amountCollateral);
     }
 
-    function repay(uint amountCollateral) public returns(uint repayAmount, uint repayInterest)
+    function repay(uint amountCollateral, address from) public returns(uint repayAmount, uint repayInterest)
     {
-        require(amountCollateral <= borrows[msg.sender].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
+        require(amountCollateral <= borrows[from].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
 
         updateInterests();
 
-        borrows[msg.sender].interests = borrows[msg.sender].interests.add(
-            interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18).sub(borrows[msg.sender].interestSettled));
+        borrows[from].interests = borrows[from].interests.add(
+            interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18).sub(borrows[from].interestSettled));
 
-        repayAmount = borrows[msg.sender].amountBorrow.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
-        repayInterest = borrows[msg.sender].interests.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
+        repayAmount = borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral);
+        repayInterest = borrows[from].interests.mul(amountCollateral).div(borrows[from].amountCollateral);
 
         totalPledge = totalPledge.sub(amountCollateral);
         totalBorrow = totalBorrow.sub(repayAmount);
         
-        borrows[msg.sender].amountCollateral = borrows[msg.sender].amountCollateral.sub(amountCollateral);
-        borrows[msg.sender].amountBorrow = borrows[msg.sender].amountBorrow.sub(repayAmount);
-        borrows[msg.sender].interests = borrows[msg.sender].interests.sub(repayInterest);
-        borrows[msg.sender].interestSettled = interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18);
+        borrows[from].amountCollateral = borrows[from].amountCollateral.sub(amountCollateral);
+        borrows[from].amountBorrow = borrows[from].amountBorrow.sub(repayAmount);
+        borrows[from].interests = borrows[from].interests.sub(repayInterest);
+        borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(10 ** 18);
 
         remainSupply = remainSupply.add(repayAmount.add(repayInterest));
 
-        TransferHelper.safeTransfer(collateralToken, msg.sender, amountCollateral);
-        TransferHelper.safeTransferFrom(supplyToken, msg.sender, address(this), repayAmount + repayInterest);
+        TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
+        TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
 
-        emit Repay(msg.sender, repayAmount, amountCollateral, repayInterest);
+        emit Repay(from, repayAmount, amountCollateral, repayInterest);
     }
 
-    function liquidation(address _user) public
+    function liquidation(address _user, address from) public returns(uint borrowAmount)
     {
-        require(supplys[msg.sender].amountSupply > 0, "7UP: ONLY SUPPLIER");
+        require(supplys[from].amountSupply > 0, "7UP: ONLY SUPPLIER");
 
         updateInterests();
 
@@ -265,8 +265,10 @@ contract SevenUpPool
         totalLiquidation = totalLiquidation.add(borrows[_user].amountCollateral);
         totalLiquidationSupplyAmount = totalLiquidationSupplyAmount.add(expectedRepay);
         totalBorrow = totalBorrow.sub(borrows[_user].amountBorrow);
+
+        borrowAmount = borrows[_user].amountBorrow;
         
-        emit Liquidation(msg.sender, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
+        emit Liquidation(from, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
 
         borrows[_user].amountCollateral = 0;
         borrows[_user].amountBorrow = 0;
