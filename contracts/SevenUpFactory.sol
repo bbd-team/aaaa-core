@@ -4,6 +4,11 @@ pragma solidity >=0.5.16;
 import "./7up.sol";
 import "./modules/Configable.sol";
 
+interface ISevenUpPool {
+    function init(address _supplyToken,  address _collateralToken) external;
+}
+
+
 contract SevenUpFactory is Configable{
     event PoolCreated(address indexed lendToken, address indexed collateralToken, address pool);
     
@@ -23,6 +28,8 @@ contract SevenUpFactory is Configable{
             
         allPools.push(pool);
         isPool[pool] = true;
+        ISevenUpPool(pool).init(_lendToken, _collateralToken);
+        
         emit PoolCreated(_lendToken, _collateralToken, pool);
     }
 }

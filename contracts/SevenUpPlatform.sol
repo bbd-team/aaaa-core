@@ -13,11 +13,11 @@ interface ISevenUpMint {
 }
 
 interface ISevenUpPool {
-    function deposit(uint _amountDeposit, address _user) external;
-    function withdraw(uint _amountWithdraw, address _user) external;
-    function borrow(uint _amountCollateral, uint _expectBorrow, address _user) external;
-    function repay(uint _amountCollateral, address _user) external returns(uint, uint);
-    function liquidation(address _user) external returns (uint);
+    function deposit(uint _amountDeposit, address _from) external;
+    function withdraw(uint _amountWithdraw, address _from) external;
+    function borrow(uint _amountCollateral, uint _expectBorrow, address _from) external;
+    function repay(uint _amountCollateral, address _from) external returns(uint, uint);
+    function liquidation(address _user, address _from) external returns (uint);
 }
 
 interface ISevenUpFactory {
@@ -64,7 +64,7 @@ contract SevenUpPlatform is Configable {
     function liquidation(address _lendToken, address _collateralToken, address _user) external {
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        uint borrowAmount = ISevenUpPool(pool).liquidation(_user);
+        uint borrowAmount = ISevenUpPool(pool).liquidation(msg.sender, _user);
         if(_lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, borrowAmount);
         }
