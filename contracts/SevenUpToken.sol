@@ -12,8 +12,6 @@ contract SevenUpToken is Configable {
     uint8 public decimals = 18;
     uint public totalSupply = 100000 * (1e18);
     
-    uint public state = 1;
-    
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
     
@@ -26,10 +24,6 @@ contract SevenUpToken is Configable {
     
     function initialize() external onlyDeveloper {
         _transfer(address(this), IConfig(config).mint(), 100000 * 1e18);
-    }
-    
-    function changeState(uint _state) external onlyDeveloper {
-        state = _state;
     }
     
     function _transfer(address from, address to, uint value) internal {

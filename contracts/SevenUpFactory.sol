@@ -14,7 +14,7 @@ contract SevenUpFactory is Configable{
     
     address[] public allPools;
     mapping(address => bool) public isPool;
-    mapping (address => mapping (address => address)) getPool;
+    mapping (address => mapping (address => address)) public getPool;
     
     function createPool(address _lendToken, address _collateralToken) onlyDeveloper external returns (address pool) {
         require(getPool[_lendToken][_collateralToken] == address(0), "ALREADY CREATED");

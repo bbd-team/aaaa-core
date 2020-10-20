@@ -80,14 +80,20 @@ contract SevenUpMint is Configable {
         uint developAmount = reward.mul(IConfig(config).developPercent()).div(10000);
         TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallet(), developAmount);
         reward = reward.sub(developAmount);
-        
+
         uint borrowReward = reward.mul(borrowPower).div(10000);
         uint lendReward = reward.sub(borrowReward);
-        totalBorrowSupply = totalBorrowSupply.add(borrowReward);
-        totalLendSupply = totalLendSupply.add(lendReward);
 
-        accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
-        accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
+        if(totalLendProductivity != 0 && lendReward > 0) {
+            totalLendSupply = totalLendSupply.add(lendReward);
+            accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
+        }
+
+        if(totalBorrowProducitivity != 0 && borrowReward > 0) {
+            totalBorrowSupply = totalBorrowSupply.add(borrowReward);
+            accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
+        }
+        
         lastRewardBlock = block.number;
     }
     

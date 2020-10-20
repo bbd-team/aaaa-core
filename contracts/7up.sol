@@ -90,7 +90,7 @@ contract SevenUpPool
         baseInterests = 2 * 1e17;
         marketFrenzy  = 1e18;
 
-        pledgeRate = 6000;
+        pledgeRate = 5000;
         pledgePrice = 200;
         liquidationRate = 9000;
 

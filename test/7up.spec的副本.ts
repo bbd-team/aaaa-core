@@ -2,11 +2,6 @@ import {expect, use} from 'chai';
 import {Contract, BigNumber} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
 import SevenUp from '../build/SevenUpPool.json';
-import SevenUpConfig from '../build/SevenUpConfig.json';
-import SevenUpMint from '../build/SevenUpMint.json';
-import SevenUpFactory from '../build/SevenUpFactory.json';
-import SevenUpPlatform from '../build/SevenUpPlatform.json';
-import SevenUpToken from '../build/SevenUpToken.json';
 import ERC20 from '../build/ERC20Token.json';
 import { BigNumber as BN } from 'bignumber.js'
 
@@ -15,92 +10,6 @@ use(solidity);
 function convertBigNumber(bnAmount: BigNumber, divider: number) {
 	return new BN(bnAmount.toString()).dividedBy(new BN(divider)).toFixed();
 }
-
-describe('deploy', () => {
-	let provider = new MockProvider();
-	const [walletMe, walletOther, walletDeveloper, walletTeam] = provider.getWallets();
-	let configContract: Contract;
-	let factoryContract: Contract;
-	let mintContract:  Contract;
-	let platformContract: Contract;
-	let tokenContract: Contract;
-	let masterChef 	: Contract;
-	let tokenFIL 	: Contract;
-	let tokenUSDT 	: Contract;
-	let poolContract: Contract;
-	let tx: any;
-	let receipt: any; 
-
-	async function getBlockNumber() {
-		const blockNumber = await provider.getBlockNumber()
-		console.log("Current block number: " + blockNumber);
-		return blockNumber;
-	  }
-
-	before(async () => {
-		configContract  = await deployContract(walletDeveloper, SevenUpConfig);
-		factoryContract  = await deployContract(walletDeveloper, SevenUpFactory);
-		mintContract  = await deployContract(walletDeveloper, SevenUpMint);
-		platformContract  = await deployContract(walletDeveloper, SevenUpPlatform);
-		tokenContract  = await deployContract(walletDeveloper, SevenUpToken);
-		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, 1000000]);
-		tokenFIL 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, 1000000]);
-
-		console.log('configContract = ', configContract.address);
-		console.log('factoryContract = ', factoryContract.address);
-		console.log('mintContract address = ', mintContract.address);
-		console.log('platformContract address = ', platformContract.address);
-		console.log('tokenContract address = ', tokenContract.address);
-		console.log('tokenFIL address = ', tokenFIL.address);
-		
-		await (await configContract.connect(walletDeveloper).initialize(platformContract.address, factoryContract.address, walletTeam.address, mintContract.address, tokenContract.address, tokenFIL.address)).wait();
-		await (await factoryContract.connect(walletDeveloper).setupConfig(configContract.address)).wait();
-		await (await mintContract.connect(walletDeveloper).setupConfig(configContract.address)).wait();
-		await (await platformContract.connect(walletDeveloper).setupConfig(configContract.address)).wait();
-		await (await tokenContract.connect(walletDeveloper).setupConfig(configContract.address)).wait();
-		await (await tokenContract.connect(walletDeveloper).initialize()).wait();
-		await (await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address)).wait();
-
-		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
-		const poolContract  = new Contract(pool, SevenUp.abi, provider).connect(walletMe);
-
-		await tokenFIL.connect(walletMe).approve(poolContract.address, 99999999999999);
-		await tokenFIL.connect(walletOther).approve(poolContract.address, 99999999999999);
-		await tokenUSDT.connect(walletOther).approve(poolContract.address, 99999999999999);
-
-		await tokenFIL.connect(walletMe).transfer(walletOther.address, 100000);
-	})
-
-	it("simple test", async () => {
-		await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(2000)).wait();
-		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
-
-		await (await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, 1000)).wait();
-		const poolContract  = new Contract(pool, SevenUp.abi, provider).connect(walletMe);
-
-		console.log(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1));
-		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('1000');
-		expect(convertBigNumber(await poolContract.remainSupply(), 1)).to.equals('1000');
-		
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await (await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, 500)).wait();
-		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1)).to.equals('899500');
-		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('500');
-		expect(convertBigNumber(await poolContract.remainSupply(), 1)).to.equals('500');
-
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await (await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, 500)).wait();
-		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1)).to.equals('900000');
-		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('0');
-		expect(convertBigNumber(await poolContract.remainSupply(), 1)).to.equals('0');
-
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await (await mintContract.connect(walletMe).mintLender()).wait();
-		console.log(convertBigNumber(await tokenContract.balanceOf(walletMe.address), 1));
-		console.log(convertBigNumber(await tokenContract.balanceOf(walletTeam.address), 1));
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-	})
-})
 
 describe('7up', () => {
 	let provider = new MockProvider();
