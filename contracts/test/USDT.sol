@@ -6,7 +6,7 @@ import './ERC20Token.sol';
 contract USDT is ERC20Token {
     address owner;
 
-    constructor() ERC20Token("USDT", "USDT Token", 6, 1000000000000000) public {
+    constructor() ERC20Token("USDT", "USDT", 6, 1000000000000000) public {
         balanceOf[msg.sender] = totalSupply;
         owner = msg.sender;
     }
