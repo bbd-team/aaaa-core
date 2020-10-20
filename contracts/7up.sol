@@ -194,6 +194,7 @@ contract SevenUpPool
     function borrow(uint amountCollateral, uint expectBorrow) public
     {
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
+        require(amountCollateral <= uint(-1) && expectBorrow <= uint(-1), '7UP: OVERFLOW');
         TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amountCollateral);
 
         updateInterests();
