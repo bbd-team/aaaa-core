@@ -246,7 +246,7 @@ contract SevenUpPool
         emit Repay(msg.sender, repayAmount + repayInterest, amountCollateral, repayInterest);
     }
 
-    function liquidation(address _user) public
+    function liquidation(address _user) public returns(uint borrowAmount)
     {
         require(supplys[msg.sender].amountSupply > 0, "7UP: ONLY SUPPLIER");
 
@@ -265,6 +265,8 @@ contract SevenUpPool
         totalLiquidation = totalLiquidation.add(borrows[_user].amountCollateral);
         totalLiquidationSupplyAmount = totalLiquidationSupplyAmount.add(expectedRepay);
         totalBorrow = totalBorrow.sub(borrows[_user].amountBorrow);
+
+        borrowAmount = borrows[_user].amountBorrow;
         
         emit Liquidation(msg.sender, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
 
