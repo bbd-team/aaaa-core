@@ -19,6 +19,8 @@ describe('7up', () => {
 
 	let sevenContract : Contract;
 	let masterChef 	: Contract;
+	let tx: any;
+	let receipt: any;
 	
 
 	async function getBlockNumber() {
@@ -48,6 +50,30 @@ describe('7up', () => {
 
 		await tokenFIL.connect(walletMe).transfer(walletOther.address, 100000);
 	});
+
+	async function sevenInfo() {
+		let result = {
+			interestPerSupply: await sevenContract.interestPerSupply(),
+			liquidationPerSupply: await sevenContract.interestPerSupply(),
+			interestPerBorrow : await sevenContract.interestPerBorrow(),
+			totalLiquidation: await sevenContract.totalLiquidation(),
+			totalLiquidationSupplyAmount: await sevenContract.totalLiquidationSupplyAmount(),
+			totalBorrow: await sevenContract.totalBorrow(),
+			totalPledge: await sevenContract.totalPledge(),
+			remainSupply: await sevenContract.remainSupply(),
+			pledgeRate: await sevenContract.pledgeRate(),
+			pledgePrice: await sevenContract.pledgePrice(),
+			liquidationRate: await sevenContract.liquidationRate(),
+			baseInterests: await sevenContract.baseInterests(),
+			marketFrenzy: await sevenContract.marketFrenzy(),
+			lastInterestUpdate: await sevenContract.lastInterestUpdate()
+		};
+
+		for (let k in result) {
+			console.log(k+':', convertBigNumber(result[k], 1))
+		}
+		return result;
+	}
 
 	it('simple deposit & withdraw', async() => {
 		
@@ -82,7 +108,18 @@ describe('7up', () => {
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
-		await sevenContract.connect(walletOther).repay(10000);
+		await sevenInfo();
+		console.log('getInterests:', convertBigNumber(await sevenContract.getInterests(),1));
+
+		tx = await sevenContract.connect(walletOther).repay(10000);
+		let receipt = await tx.wait()
+		console.log('repay gas:', receipt.gasUsed.toString())
+		// console.log('events:', receipt.events)
+		// console.log(receipt.events[2].event, 'args:', receipt.events[2].args)
+		console.log('_supplyAmount:', convertBigNumber(receipt.events[2].args._supplyAmount, 1))
+		console.log('_collateralAmount:', convertBigNumber(receipt.events[2].args._collateralAmount, 1))
+		console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
+	
 		console.log('after repay: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));

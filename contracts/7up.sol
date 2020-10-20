@@ -100,19 +100,19 @@ contract SevenUpPool
     function updateInterests() internal
     {
         uint totalSupply = totalBorrow + remainSupply;
-        uint apy = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply));
-        uint interestPerBlock = apy;//.div(365 * 28800);
+        uint interestPerBlock = getInterests();
 
         interestPerSupply = interestPerSupply.add(totalSupply == 0 ? 0 : interestPerBlock.mul(block.number - lastInterestUpdate).mul(totalBorrow).div(totalSupply));
         interestPerBorrow = interestPerBorrow.add(interestPerBlock.mul(block.number - lastInterestUpdate));
         lastInterestUpdate = block.number;
     }
 
-    function getInterests() external view returns(uint interestPerBlock)
+    function getInterests() public view returns(uint interestPerBlock)
     {
         uint totalSupply = totalBorrow + remainSupply;
         uint apy = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply));
-        interestPerBlock = apy;//.div(365 * 28800);
+        // apy = apy.div(365 * 28800);
+        interestPerBlock = apy;
     }
 
     function updateLiquidation(uint _liquidation) internal
