@@ -128,7 +128,7 @@ contract SevenUpPool
 
         updateInterests();
 
-        uint addLiquidation = liquidationPerSupply.mul(supplys[msg.sender].amountSupply.sub(supplys[msg.sender].liquidationSettled));
+        uint addLiquidation = liquidationPerSupply.mul(supplys[msg.sender].amountSupply).sub(supplys[msg.sender].liquidationSettled);
 
         // supplys[msg.sender].interests   += interestPerSupply * supplys[msg.sender].amountSupply / decimal - supplys[msg.sender].interestSettled;
         supplys[msg.sender].interests = supplys[msg.sender].interests.add(
@@ -138,7 +138,7 @@ contract SevenUpPool
         supplys[msg.sender].amountSupply = supplys[msg.sender].amountSupply.add(amountDeposit);
         remainSupply = remainSupply.add(amountDeposit);
 
-        updateLiquidation(addLiquidation);
+        // updateLiquidation(addLiquidation);
 
         supplys[msg.sender].interestSettled = interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18);
         supplys[msg.sender].liquidationSettled = liquidationPerSupply.mul(supplys[msg.sender].amountSupply);
@@ -175,7 +175,7 @@ contract SevenUpPool
         supplys[msg.sender].liquidation = supplys[msg.sender].liquidation.sub(withdrawLiquidation);
         supplys[msg.sender].amountSupply = supplys[msg.sender].amountSupply.sub(amountWithdraw);
 
-        updateLiquidation(withdrawLiquidation);
+        // updateLiquidation(withdrawLiquidation);
 
         supplys[msg.sender].interestSettled = interestPerSupply.mul(supplys[msg.sender].amountSupply).div(10 ** 18);
         supplys[msg.sender].liquidationSettled = liquidationPerSupply.mul(supplys[msg.sender].amountSupply);
@@ -199,13 +199,11 @@ contract SevenUpPool
         updateInterests();
 
         uint amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(100000000);
-        require(expectBorrow <= amountBorrow, "7UP: INVALID BORROW");
+        require(expectBorrow <= amountBorrow && expectBorrow <= remainSupply, "7UP: INVALID BORROW");
 
         totalBorrow = totalBorrow.add(expectBorrow);
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
-
-        require(totalBorrow <= remainSupply, "7UP: NOT ENOUGH SUPPLY");
 
         borrows[msg.sender].interests = borrows[msg.sender].interests.add(
             interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18).sub(borrows[msg.sender].interestSettled));

@@ -41,5 +41,8 @@
     "deploy": "waffle .waffle.json && node ./deploy/deploy.js",
     "test1": "mocha --timeout 60000 --no-config --require ts-node/register",
     "prepublishOnly": "yarn test"
+  },
+  "dependencies": {
+    "bignumber.js": "^9.0.1"
   }
 }
