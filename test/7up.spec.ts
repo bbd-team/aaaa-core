@@ -73,35 +73,35 @@ describe('7up', () => {
 			console.log(k+':', convertBigNumber(result[k], 1))
 		}
 		return result;
-	}
+	};
 
 	it('simple deposit & withdraw', async() => {
 		
-		await sevenContract.connect(walletMe).deposit(1000);
+		await sevenContract.connect(walletMe).deposit(1000, walletMe.address);
 		console.log(convertBigNumber((await sevenContract.supplys(walletMe.address)).amountSupply, 1));
 		expect(convertBigNumber((await sevenContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('1000');
 		expect(convertBigNumber(await sevenContract.remainSupply(), 1)).to.equals('1000');
 
-		await sevenContract.connect(walletMe).withdraw(500);
+		await sevenContract.connect(walletMe).withdraw(500, walletMe.address);
 		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1)).to.equals('899500');
 		expect(convertBigNumber((await sevenContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('500');
 		expect(convertBigNumber(await sevenContract.remainSupply(), 1)).to.equals('500');
 
-		await sevenContract.connect(walletMe).withdraw(500);
+		await sevenContract.connect(walletMe).withdraw(500, walletMe.address);
 		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1)).to.equals('900000');
 		expect(convertBigNumber((await sevenContract.supplys(walletMe.address)).amountSupply, 1)).to.equals('0');
 		expect(convertBigNumber(await sevenContract.remainSupply(), 1)).to.equals('0');
 	});
 
 	it('deposit(1000) -> borrow(100) -> repay(100) -> withdraw(1000)', async() => {
-		await sevenContract.connect(walletMe).deposit(1000);
+		await sevenContract.connect(walletMe).deposit(1000, walletMe.address);
 		console.log('after deposit: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
 		let maxBorrow = await sevenContract.getMaximumBorrowAmount(10000);
 		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1));
-		await sevenContract.connect(walletOther).borrow(10000, maxBorrow);
+		await sevenContract.connect(walletOther).borrow(10000, maxBorrow, walletOther.address);
 		console.log('after borrow: ', 
 			convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1),
 			convertBigNumber(await tokenFIL.balanceOf(walletOther.address), 1),
@@ -111,7 +111,7 @@ describe('7up', () => {
 		await sevenInfo();
 		console.log('getInterests:', convertBigNumber(await sevenContract.getInterests(),1));
 
-		tx = await sevenContract.connect(walletOther).repay(10000);
+		tx = await sevenContract.connect(walletOther).repay(10000, walletOther.address);
 		let receipt = await tx.wait()
 		console.log('repay gas:', receipt.gasUsed.toString())
 		// console.log('events:', receipt.events)
@@ -119,36 +119,36 @@ describe('7up', () => {
 		console.log('_supplyAmount:', convertBigNumber(receipt.events[2].args._supplyAmount, 1))
 		console.log('_collateralAmount:', convertBigNumber(receipt.events[2].args._collateralAmount, 1))
 		console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
-	
+
 		console.log('after repay: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
-		await sevenContract.connect(walletMe).withdraw(1000);
+		await sevenContract.connect(walletMe).withdraw(1000, walletMe.address);
 		console.log('after withdraw: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 	});
 
 	it('deposit(1000) -> borrow(100) -> liquidation(100) -> withdraw(1000)', async() => {
-		await sevenContract.connect(walletMe).deposit(1000);
+		await sevenContract.connect(walletMe).deposit(1000, walletMe.address);
 		console.log('after deposit: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
 		let maxBorrow = await sevenContract.getMaximumBorrowAmount(10000);
-		await sevenContract.connect(walletOther).borrow(10000, maxBorrow);
+		await sevenContract.connect(walletOther).borrow(10000, maxBorrow, walletOther.address);
 		console.log('after borrow: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
 		await sevenContract.connect(walletMe).updatePledgePrice(100); // 0.01 FIL = 1 USDT
-		await sevenContract.connect(walletMe).liquidation(walletOther.address);
+		await sevenContract.connect(walletMe).liquidation(walletOther.address, walletMe.address);
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
 
-		await sevenContract.connect(walletMe).withdraw(1000);
+		await sevenContract.connect(walletMe).withdraw(1000,  walletMe.address);
 		console.log('after withdraw: ', 
 			convertBigNumber(await tokenFIL.balanceOf(sevenContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(sevenContract.address), 1));
