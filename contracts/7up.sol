@@ -217,7 +217,7 @@ contract SevenUpPool
         emit Borrow(msg.sender, expectBorrow, amountCollateral);
     }
 
-    function repay(uint amountCollateral) public
+    function repay(uint amountCollateral) public returns(uint repayAmount, uint repayInterest)
     {
         require(amountCollateral <= borrows[msg.sender].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
@@ -227,8 +227,8 @@ contract SevenUpPool
         borrows[msg.sender].interests = borrows[msg.sender].interests.add(
             interestPerBorrow.mul(borrows[msg.sender].amountBorrow).div(10 ** 18).sub(borrows[msg.sender].interestSettled));
 
-        uint repayAmount = borrows[msg.sender].amountBorrow.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
-        uint repayInterest = borrows[msg.sender].interests.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
+        repayAmount = borrows[msg.sender].amountBorrow.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
+        repayInterest = borrows[msg.sender].interests.mul(amountCollateral).div(borrows[msg.sender].amountCollateral);
 
         totalPledge = totalPledge.sub(amountCollateral);
         totalBorrow = totalBorrow.sub(repayAmount);
