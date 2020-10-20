@@ -186,12 +186,12 @@ contract SevenUpPool
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
 
-    function getMaximumBorrowAmount(uint amountCollateral, address from) external view returns(uint amountBorrow)
+    function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
     {
         amountBorrow = pledgePrice * amountCollateral * pledgeRate / 100000000;        
     }
 
-    function borrow(uint amountCollateral, uint expectBorrow) public
+    function borrow(uint amountCollateral, uint expectBorrow, address from) public
     {
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
         require(amountCollateral <= uint(-1) && expectBorrow <= uint(-1), '7UP: OVERFLOW');
