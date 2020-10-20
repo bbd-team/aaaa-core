@@ -7,8 +7,7 @@ contract SevenUpConfig is Configable {
     address public factory;
     address public platform;
     address public developer;
-    address public mint1;
-    address public mint2;
+    address public mint;
     address public token;
     address public wallet;
     
@@ -18,11 +17,10 @@ contract SevenUpConfig is Configable {
         developer = msg.sender;
     }
     
-    function initialize (address _platform, address _factory, address _wallet, address _mint1, address _mint2, address _token) external onlyDeveloper {
+    function initialize (address _platform, address _factory, address _wallet, address _mint, address _token) external onlyDeveloper {
         require(msg.sender == developer, "Config FORBIDDEN");
         _wallet = wallet;
-        _mint1 = mint1;
-        _mint2 = mint2;
+        _mint = mint;
         platform = _platform;
         factory = _factory;
         _token = token;
