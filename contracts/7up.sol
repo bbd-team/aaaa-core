@@ -243,7 +243,7 @@ contract SevenUpPool
         TransferHelper.safeTransfer(collateralToken, msg.sender, amountCollateral);
         TransferHelper.safeTransferFrom(supplyToken, msg.sender, address(this), repayAmount + repayInterest);
 
-        emit Repay(msg.sender, repayAmount + repayInterest, amountCollateral, repayInterest);
+        emit Repay(msg.sender, repayAmount, amountCollateral, repayInterest);
     }
 
     function liquidation(address _user) public
