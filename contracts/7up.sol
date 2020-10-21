@@ -88,9 +88,7 @@ contract SevenUpPool is Configable
         uint baseInterests = IConfig(config).poolParams(address(this), bytes32("baseInterests"));
         uint marketFrenzy = IConfig(config).poolParams(address(this), bytes32("marketFrenzy"));
 
-        uint apy = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply));
-        apy = apy.div(365 * 28800);
-        interestPerBlock = apy;
+        interestPerBlock = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply)).div(365 * 28800);
     }
 
     function updateLiquidation(uint _liquidation) internal
@@ -108,19 +106,42 @@ contract SevenUpPool is Configable
 
         uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled);
 
-        // supplys[msg.sender].interests   += interestPerSupply * supplys[msg.sender].amountSupply / decimal - supplys[msg.sender].interestSettled;
-        supplys[from].interests = supplys[from].interests.add(
-            interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
+        supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(amountDeposit);
         remainSupply = remainSupply.add(amountDeposit);
 
-        // updateLiquidation(addLiquidation);
-
         supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
         emit Deposit(from, amountDeposit, addLiquidation);
+    }
+
+    function reinvest(address from) public onlyPlatform returns(uint reinvestAmount, uint liquidationReceived)
+    {
+        updateInterests();
+
+        uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled);
+
+        supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
+        supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
+
+        liquidationReceived = supplys[from].liquidation;
+        reinvestAmount = supplys[from].interests;
+
+        uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
+        reinvestAmount = reinvestAmount.sub(platformShare);
+
+        supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
+
+        supplys[from].interests = 0;
+        supplys[from].liquidation = 0;
+
+        supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
+        supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
+
+        TransferHelper.safeTransfer(collateralToken, from, liquidationReceived);
+        TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
     }
 
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
@@ -132,12 +153,15 @@ contract SevenUpPool is Configable
 
         uint addLiquidation = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled);
 
-        supplys[from].interests = supplys[from].interests.add(
-            interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
+        supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
         uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
         uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
+
+        uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
+        withdrawInterest = withdrawInterest.sub(platformShare);
+        TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
         uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(withdrawInterest);
@@ -152,8 +176,6 @@ contract SevenUpPool is Configable
         supplys[from].interests = supplys[from].interests.sub(withdrawInterest);
         supplys[from].liquidation = supplys[from].liquidation.sub(withdrawLiquidation);
         supplys[from].amountSupply = supplys[from].amountSupply.sub(amountWithdraw);
-
-        // updateLiquidation(withdrawLiquidation);
 
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
@@ -190,8 +212,7 @@ contract SevenUpPool is Configable
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
 
-        borrows[from].interests = borrows[from].interests.add(
-            interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
+        borrows[from].interests = borrows[from].interests.add(interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
         borrows[from].amountCollateral = borrows[from].amountCollateral.add(amountCollateral);
         borrows[from].amountBorrow = borrows[from].amountBorrow.add(expectBorrow);
         borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
@@ -201,6 +222,15 @@ contract SevenUpPool is Configable
         emit Borrow(from, expectBorrow, amountCollateral);
     }
 
+    function getRepayAmount(uint amountCollateral, address from) external view returns(uint repayAmount)
+    {
+        uint _interestPerBorrow = interestPerBorrow.add(getInterests().mul(block.number - lastInterestUpdate));
+        uint _totalInterest = borrows[from].interests.add(_interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
+
+        uint repayInterest = _totalInterest.mul(amountCollateral).div(borrows[from].amountCollateral);
+        repayAmount = borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral).add(repayInterest);
+    }
+
     function repay(uint amountCollateral, address from) public onlyPlatform returns(uint repayAmount, uint repayInterest)
     {
         require(amountCollateral <= borrows[from].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
@@ -208,8 +238,7 @@ contract SevenUpPool is Configable
 
         updateInterests();
 
-        borrows[from].interests = borrows[from].interests.add(
-            interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
+        borrows[from].interests = borrows[from].interests.add(interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
 
         repayAmount = borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral);
         repayInterest = borrows[from].interests.mul(amountCollateral).div(borrows[from].amountCollateral);
@@ -236,8 +265,7 @@ contract SevenUpPool is Configable
 
         updateInterests();
 
-        borrows[_user].interests = borrows[_user].interests.add(
-            interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
+        borrows[_user].interests = borrows[_user].interests.add(interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
 
         uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
