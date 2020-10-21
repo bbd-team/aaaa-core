@@ -24,9 +24,6 @@ interface ISevenUpPool {
     function totalBorrow() external view returns(uint);
     function totalPledge() external view returns(uint);
     function remainSupply() external view returns(uint);
-    function pledgeRate() external view returns(uint);
-    function pledgePrice() external view returns(uint);
-    function liquidationRate() external view returns(uint);
     function getInterests() external view returns(uint);
 }
 
@@ -39,9 +36,6 @@ contract SevenUpQuery {
         uint totalBorrow;
         uint totalPledge;
         uint remainSupply;
-        uint pledgeRate;
-        uint pledgePrice;
-        uint liquidationRate;
         uint interests;
         address supplyToken;
         address collateralToken;
@@ -91,9 +85,6 @@ contract SevenUpQuery {
         info.totalBorrow = ISevenUpPool(pair).totalBorrow();
         info.totalPledge = ISevenUpPool(pair).totalPledge();
         info.remainSupply = ISevenUpPool(pair).remainSupply();
-        info.pledgeRate = ISevenUpPool(pair).pledgeRate();
-        info.pledgePrice = ISevenUpPool(pair).pledgePrice();
-        info.liquidationRate = ISevenUpPool(pair).liquidationRate();
         info.interests = ISevenUpPool(pair).getInterests();
         info.supplyToken = ISevenUpPool(pair).supplyToken();
         info.collateralToken = ISevenUpPool(pair).collateralToken();
