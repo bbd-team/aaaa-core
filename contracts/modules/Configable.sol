@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
+pragma experimental ABIEncoderV2;
 
 interface IConfig {
+    struct Params {
+        uint pledgeRate;
+        uint pledgePrice;
+        uint liquidationRate;
+        uint256 baseInterests;
+        uint256 marketFrenzy;
+    }
     function developer() external view returns (address);
     function platform() external view returns (address);
     function factory() external view returns (address);
@@ -10,6 +18,8 @@ interface IConfig {
     function developPercent() external view returns (uint);
     function wallet() external view returns (address);
     function base() external view returns (address);
+    function share() external view returns (address);
+    function poolParams(address pool) external view returns (Params memory);
 }
 
 contract Configable {
