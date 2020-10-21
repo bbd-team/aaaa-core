@@ -7,6 +7,7 @@ import SevenUpMint from '../build/SevenUpMint.json';
 import SevenUpFactory from '../build/SevenUpFactory.json';
 import SevenUpPlatform from '../build/SevenUpPlatform.json';
 import SevenUpToken from '../build/SevenUpToken.json';
+import SevenUpShare from '../build/SevenUpShare.json';
 import ERC20 from '../build/ERC20Token.json';
 import { BigNumber as BN } from 'bignumber.js'
 
@@ -24,12 +25,13 @@ describe('deploy', () => {
 	let mintContract:  Contract;
 	let platformContract: Contract;
 	let tokenContract: Contract;
+	let shareContract: Contract;
 	let masterChef 	: Contract;
 	let tokenFIL 	: Contract;
 	let tokenUSDT 	: Contract;
 	let poolContract: Contract;
 	let tx: any;
-	let receipt: any; 
+	let receipt: any;
 
 	async function getBlockNumber() {
 		const blockNumber = await provider.getBlockNumber()
@@ -38,6 +40,7 @@ describe('deploy', () => {
 	  }
 
 	before(async () => {
+		shareContract = await deployContract(walletDeveloper, SevenUpShare);
 		configContract  = await deployContract(walletDeveloper, SevenUpConfig);
 		factoryContract  = await deployContract(walletDeveloper, SevenUpFactory);
 		mintContract  = await deployContract(walletDeveloper, SevenUpMint);
@@ -59,12 +62,16 @@ describe('deploy', () => {
 			walletTeam.address, 
 			mintContract.address, 
 			tokenContract.address, 
-			tokenFIL.address
+			tokenFIL.address,
+			shareContract.address
 		);
+		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await platformContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
+
+		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
 		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);
 

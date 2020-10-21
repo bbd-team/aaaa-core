@@ -11,6 +11,7 @@ interface IConfig {
     function developPercent() external view returns (uint);
     function wallet() external view returns (address);
     function base() external view returns (address);
+    function share() external view returns (address);
     function poolParams(address pool, bytes32 key) external view returns (uint);
 }
 
@@ -41,6 +42,11 @@ contract Configable {
     
     modifier onlyPlatform() {
         require(msg.sender == IConfig(config).platform(), 'PLATFORM FORBIDDEN');
+        _;
+    }
+    
+    modifier onlyFactory() {
+        require(msg.sender == IConfig(config).factory(), '7UP: FACTORY FORBIDDEN');
         _;
     }
 }
