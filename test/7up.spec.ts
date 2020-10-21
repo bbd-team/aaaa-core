@@ -145,7 +145,7 @@ describe('7up', () => {
 	async function sevenInfo() {
 		let result = {
 			interestPerSupply: await sevenContract.interestPerSupply(),
-			liquidationPerSupply: await sevenContract.interestPerSupply(),
+			liquidationPerSupply: await sevenContract.liquidationPerSupply(),
 			interestPerBorrow : await sevenContract.interestPerBorrow(),
 			totalLiquidation: await sevenContract.totalLiquidation(),
 			totalLiquidationSupplyAmount: await sevenContract.totalLiquidationSupplyAmount(),
