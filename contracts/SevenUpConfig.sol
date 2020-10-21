@@ -15,7 +15,7 @@ contract SevenUpConfig {
     uint public developPercent = 5000;
     
     mapping (address => mapping (bytes32 => uint)) public poolParams;
-    mapping (uint => uint) public params;
+    mapping (bytes32 => uint) public params;
 
     event ParameterChange(uint key, uint value);
     
@@ -33,6 +33,8 @@ contract SevenUpConfig {
         base        = _base;
         share       = _share;
         governor    = _governor;
+
+        params[bytes32("platformShare")] = 100;
     }
     
     function setDevelopPercent(uint _value) external {
@@ -41,7 +43,7 @@ contract SevenUpConfig {
         developPercent = _value;
     }
 
-    function setParameter(uint[] calldata _keys, uint[] calldata _values) external
+    function setParameter(bytes32[] calldata _keys, uint[] calldata _values) external
     {
         require(msg.sender == governor, "7UP: ONLY DEVELOPER");
         require(_keys.length == _values.length ,"7UP: LENGTH MISMATCH");
