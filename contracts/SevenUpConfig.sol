@@ -11,8 +11,6 @@ contract SevenUpConfig {
     address public share;
     address public governor;
     
-    uint public developPercent = 5000;
-    
     mapping (address => mapping (bytes32 => uint)) public poolParams;
     mapping (bytes32 => uint) public params;
     mapping (bytes32 => uint) public wallets;
@@ -54,6 +52,13 @@ contract SevenUpConfig {
         params[bytes32("7upMaxSupply")] = 100000 * 1e18;
         params[bytes32("7upTokenUserMint")] = 5000;
         params[bytes32("7upTokenTeamMint")] = 3000;
+
+        params[bytes32("depositEnable")] = 1;
+        params[bytes32("withdrawEnable")] = 1;
+        params[bytes32("borrowEnable")] = 1;
+        params[bytes32("repayEnable")] = 1;
+        params[bytes32("liquidationEnable")] = 1;
+        params[bytes32("reinvestEnable")] = 1;
     }
 
     function setParameter(bytes32[] calldata _keys, uint[] calldata _values) external
