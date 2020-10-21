@@ -28,17 +28,22 @@ contract Configable {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, 'OWNER FORBIDDEN');
+        require(msg.sender == owner, '7UP: OWNER FORBIDDEN');
         _;
     }
     
     modifier onlyDeveloper() {
-        require(msg.sender == IConfig(config).developer(), 'DEVELOPER FORBIDDEN');
+        require(msg.sender == IConfig(config).developer(), '7UP: DEVELOPER FORBIDDEN');
         _;
     }
     
     modifier onlyPlatform() {
-        require(msg.sender == IConfig(config).platform(), 'PLATFORM FORBIDDEN');
+        require(msg.sender == IConfig(config).platform(), '7UP: PLATFORM FORBIDDEN');
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == IConfig(config).factory(), '7UP: FACTORY FORBIDDEN');
         _;
     }
 }

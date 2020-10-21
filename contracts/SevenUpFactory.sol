@@ -6,6 +6,7 @@ import "./modules/Configable.sol";
 
 interface ISevenUpPool {
     function init(address _supplyToken,  address _collateralToken) external;
+    function setupConfig(address config) external;
 }
 
 
@@ -28,6 +29,7 @@ contract SevenUpFactory is Configable{
             
         allPools.push(pool);
         isPool[pool] = true;
+        ISevenUpPool(pool).setupConfig(config);
         ISevenUpPool(pool).init(_lendToken, _collateralToken);
         
         emit PoolCreated(_lendToken, _collateralToken, pool);

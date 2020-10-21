@@ -3,8 +3,9 @@ pragma solidity >=0.5.16;
 import "./interface/IERC20.sol";
 import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
+import "./modules/Configable.sol";
 
-contract SevenUpPool
+contract SevenUpPool is Configable
 {
     using SafeMath for uint;
 
@@ -57,33 +58,42 @@ contract SevenUpPool
     event Borrow(address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Repay(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
     event Liquidation(address indexed _liquidator, address indexed _user, uint _supplyAmount, uint _collateralAmount);
+    event PledgeRateChanged(uint from, uint to);
+    event PledgePriceChanged(uint from, uint to);
+    event LiquidationRateChanged(uint from, uint to);
 
     constructor() public 
     {
         factory = msg.sender;
     }
 
-    function updatePledgeRate(uint _pledgeRate) public 
+    function updatePledgeRate(uint _pledgeRate) external onlyPlatform
     {
-        require(msg.sender == factory, "7UP: INVALID AUTHORITY");
+        uint oldValue = pledgeRate;
         pledgeRate = _pledgeRate;
+
+        emit PledgeRateChanged(oldValue, pledgeRate);
     }
 
-    function updatePledgePrice(uint _pledgePrice) public
+    function updatePledgePrice(uint _pledgePrice) external onlyPlatform
     {
-        require(msg.sender == factory, "7UP: INVALID AUTHORITY");
+        uint oldValue = pledgePrice;
         pledgePrice = _pledgePrice;
+
+        emit PledgePriceChanged(oldValue, pledgePrice);
     }
 
-    function updateLiquidationRate(uint _liquidationRate) public
+    function updateLiquidationRate(uint _liquidationRate) external onlyPlatform 
     {
-        require(msg.sender == factory, "7UP: INVALID AUTHORITY");
+        uint oldValue = liquidationRate;
         liquidationRate = _liquidationRate;
+
+        emit LiquidationRateChanged(oldValue, liquidationRate);
     }
 
-    function init(address _supplyToken,  address _collateralToken) public
+    function init(address _supplyToken,  address _collateralToken) external onlyFactory
     {
-        require(msg.sender == factory, "7UP: ONLY FACTORY");
+        // require(msg.sender == factory, "7UP: ONLY FACTORY");
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
 
@@ -121,7 +131,7 @@ contract SevenUpPool
         liquidationPerSupply = liquidationPerSupply.add(totalSupply == 0 ? 0 : _liquidation.mul(1e18).div(totalSupply));
     }
 
-    function deposit(uint amountDeposit, address from) public
+    function deposit(uint amountDeposit, address from) public onlyPlatform
     {
         require(amountDeposit > 0, "7UP: INVALID AMOUNT");
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), amountDeposit);
@@ -145,7 +155,7 @@ contract SevenUpPool
         emit Deposit(from, amountDeposit, addLiquidation);
     }
 
-    function withdraw(uint amountWithdraw, address from) public
+    function withdraw(uint amountWithdraw, address from) public onlyPlatform
     {
         require(amountWithdraw > 0, "7UP: INVALID AMOUNT");
         require(amountWithdraw <= supplys[from].amountSupply, "7UP: NOT ENOUGH BALANCE");
@@ -191,7 +201,7 @@ contract SevenUpPool
         amountBorrow = pledgePrice * amountCollateral * pledgeRate / 100000000;        
     }
 
-    function borrow(uint amountCollateral, uint expectBorrow, address from) public
+    function borrow(uint amountCollateral, uint expectBorrow, address from) public onlyPlatform
     {
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
         require(amountCollateral <= uint(-1) && expectBorrow <= uint(-1), '7UP: OVERFLOW');
@@ -217,7 +227,7 @@ contract SevenUpPool
         emit Borrow(from, expectBorrow, amountCollateral);
     }
 
-    function repay(uint amountCollateral, address from) public returns(uint repayAmount, uint repayInterest)
+    function repay(uint amountCollateral, address from) public onlyPlatform returns(uint repayAmount, uint repayInterest)
     {
         require(amountCollateral <= borrows[from].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
         require(amountCollateral > 0, "7UP: INVALID AMOUNT");
@@ -246,7 +256,7 @@ contract SevenUpPool
         emit Repay(from, repayAmount, amountCollateral, repayInterest);
     }
 
-    function liquidation(address _user, address from) public returns(uint borrowAmount)
+    function liquidation(address _user, address from) public onlyPlatform returns(uint borrowAmount)
     {
         require(supplys[from].amountSupply > 0, "7UP: ONLY SUPPLIER");
 
