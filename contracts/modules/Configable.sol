@@ -46,15 +46,9 @@ contract Configable {
         require(msg.sender == IConfig(config).platform(), 'PLATFORM FORBIDDEN');
         _;
     }
-<<<<<<< HEAD
 
     modifier onlyFactory() {
         require(msg.sender == IConfig(config).factory(), 'FACTORY FORBIDDEN');
-=======
-    
-    modifier onlyFactory() {
-        require(msg.sender == IConfig(config).factory(), '7UP: FACTORY FORBIDDEN');
->>>>>>> f9dcab732187a31f9cfda6c32c8cae3256c1b405
         _;
     }
 }
