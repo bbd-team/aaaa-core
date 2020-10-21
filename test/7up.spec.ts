@@ -1,5 +1,5 @@
 import {expect, use} from 'chai';
-import {Contract, BigNumber} from 'ethers';
+import {Contract, ethers, BigNumber} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
 import SevenUp from '../build/SevenUpPool.json';
 import SevenUpConfig from '../build/SevenUpConfig.json';
@@ -126,11 +126,6 @@ describe('deploy', () => {
 			totalBorrow: await poolContract.totalBorrow(),
 			totalPledge: await poolContract.totalPledge(),
 			remainSupply: await poolContract.remainSupply(),
-			pledgeRate: await poolContract.pledgeRate(),
-			pledgePrice: await poolContract.pledgePrice(),
-			liquidationRate: await poolContract.liquidationRate(),
-			baseInterests: await poolContract.baseInterests(),
-			marketFrenzy: await poolContract.marketFrenzy(),
 			lastInterestUpdate: await poolContract.lastInterestUpdate()
 		};
 
@@ -214,7 +209,7 @@ describe('deploy', () => {
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 
-		await platformContract.connect(walletDeveloper).updatePledgePrice(tokenFIL.address, tokenUSDT.address, 100); // 0.01 FIL = 1 USDT
+		await platformContract.connect(walletDeveloper).updatePoolParameter(tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), 100); // 0.01 FIL = 1 USDT
 		await platformContract.connect(walletMe).liquidation(tokenFIL.address, tokenUSDT.address, walletOther.address);
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
