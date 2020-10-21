@@ -126,10 +126,9 @@ contract SevenUpPool is Configable
         supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
-        reinvestAmount = supplys[from].interests;
-
-        uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
-        reinvestAmount = reinvestAmount.sub(platformShare);
+        uint currentInterest = supplys[from].interests;
+        uint platformShare = currentInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
+        reinvestAmount = currentInterest.sub(platformShare);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
 
