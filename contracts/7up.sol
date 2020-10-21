@@ -117,7 +117,7 @@ contract SevenUpPool is Configable
         emit Deposit(from, amountDeposit, addLiquidation);
     }
 
-    function reinvest(address from) public onlyPlatform returns(uint reinvestAmount, uint liquidationReceived)
+    function reinvest(address from) public onlyPlatform returns(uint reinvestAmount)
     {
         updateInterests();
 
@@ -126,7 +126,6 @@ contract SevenUpPool is Configable
         supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
-        liquidationReceived = supplys[from].liquidation;
         reinvestAmount = supplys[from].interests;
 
         uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
@@ -135,13 +134,11 @@ contract SevenUpPool is Configable
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
 
         supplys[from].interests = 0;
-        supplys[from].liquidation = 0;
 
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
-        TransferHelper.safeTransfer(collateralToken, from, liquidationReceived);
-        TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
+        if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
     }
 
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
