@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
+pragma experimental ABIEncoderV2;
 
 interface IConfig {
     function developer() external view returns (address);
@@ -10,6 +11,10 @@ interface IConfig {
     function developPercent() external view returns (uint);
     function wallet() external view returns (address);
     function base() external view returns (address);
+    function share() external view returns (address);
+    function poolParams(address pool, bytes32 key) external view returns (uint);
+    function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
+    function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
 }
 
 contract Configable {
@@ -28,22 +33,22 @@ contract Configable {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, '7UP: OWNER FORBIDDEN');
+        require(msg.sender == owner, 'OWNER FORBIDDEN');
         _;
     }
     
     modifier onlyDeveloper() {
-        require(msg.sender == IConfig(config).developer(), '7UP: DEVELOPER FORBIDDEN');
+        require(msg.sender == IConfig(config).developer(), 'DEVELOPER FORBIDDEN');
         _;
     }
     
     modifier onlyPlatform() {
-        require(msg.sender == IConfig(config).platform(), '7UP: PLATFORM FORBIDDEN');
+        require(msg.sender == IConfig(config).platform(), 'PLATFORM FORBIDDEN');
         _;
     }
 
     modifier onlyFactory() {
-        require(msg.sender == IConfig(config).factory(), '7UP: FACTORY FORBIDDEN');
+        require(msg.sender == IConfig(config).factory(), 'FACTORY FORBIDDEN');
         _;
     }
 }

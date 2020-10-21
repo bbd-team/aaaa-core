@@ -73,24 +73,10 @@ contract SevenUpPlatform is Configable {
         }
     }
 
-    function updatePledgeRate(address _lendToken, address _collateralToken, uint _pledgeRate) external onlyDeveloper
+    function updatePoolParameter(address _lendToken, address _collateralToken, bytes32 _key, uint _value) external onlyDeveloper
     {
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        ISevenUpPool(pool).updatePledgeRate(_pledgeRate);
-    }
-
-    function updatePledgePrice(address _lendToken, address _collateralToken, uint _pledgePrice) external onlyDeveloper
-    {
-        address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
-        require(pool != address(0), "POOL NOT EXIST");
-        ISevenUpPool(pool).updatePledgePrice(_pledgePrice);
-    }
-
-    function updateLiquidationRate(address _lendToken, address _collateralToken, uint _liquidationRate) external onlyDeveloper 
-    {
-        address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
-        require(pool != address(0), "POOL NOT EXIST");
-        ISevenUpPool(pool).updateLiquidationRate(_liquidationRate);
+        IConfig(config).setPoolParameter(pool, _key, _value);
     }
 }

@@ -1,5 +1,5 @@
 import {expect, use} from 'chai';
-import {Contract, BigNumber} from 'ethers';
+import {Contract, ethers, BigNumber} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
 import SevenUp from '../build/SevenUpPool.json';
 import SevenUpConfig from '../build/SevenUpConfig.json';
@@ -7,6 +7,7 @@ import SevenUpMint from '../build/SevenUpMint.json';
 import SevenUpFactory from '../build/SevenUpFactory.json';
 import SevenUpPlatform from '../build/SevenUpPlatform.json';
 import SevenUpToken from '../build/SevenUpToken.json';
+import SevenUpShare from '../build/SevenUpShare.json';
 import ERC20 from '../build/ERC20Token.json';
 import { BigNumber as BN } from 'bignumber.js'
 
@@ -24,12 +25,13 @@ describe('deploy', () => {
 	let mintContract:  Contract;
 	let platformContract: Contract;
 	let tokenContract: Contract;
+	let shareContract: Contract;
 	let masterChef 	: Contract;
 	let tokenFIL 	: Contract;
 	let tokenUSDT 	: Contract;
 	let poolContract: Contract;
 	let tx: any;
-	let receipt: any; 
+	let receipt: any;
 
 	async function getBlockNumber() {
 		const blockNumber = await provider.getBlockNumber()
@@ -38,6 +40,7 @@ describe('deploy', () => {
 	  }
 
 	before(async () => {
+		shareContract = await deployContract(walletDeveloper, SevenUpShare);
 		configContract  = await deployContract(walletDeveloper, SevenUpConfig);
 		factoryContract  = await deployContract(walletDeveloper, SevenUpFactory);
 		mintContract  = await deployContract(walletDeveloper, SevenUpMint);
@@ -59,12 +62,17 @@ describe('deploy', () => {
 			walletTeam.address, 
 			mintContract.address, 
 			tokenContract.address, 
-			tokenFIL.address
+			tokenFIL.address,
+			shareContract.address,
+			walletDeveloper.address
 		);
+		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await platformContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
+
+		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
 		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);
 
@@ -118,11 +126,6 @@ describe('deploy', () => {
 			totalBorrow: await poolContract.totalBorrow(),
 			totalPledge: await poolContract.totalPledge(),
 			remainSupply: await poolContract.remainSupply(),
-			pledgeRate: await poolContract.pledgeRate(),
-			pledgePrice: await poolContract.pledgePrice(),
-			liquidationRate: await poolContract.liquidationRate(),
-			baseInterests: await poolContract.baseInterests(),
-			marketFrenzy: await poolContract.marketFrenzy(),
 			lastInterestUpdate: await poolContract.lastInterestUpdate()
 		};
 
@@ -206,7 +209,7 @@ describe('deploy', () => {
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 
-		await platformContract.connect(walletDeveloper).updatePledgePrice(tokenFIL.address, tokenUSDT.address, 100); // 0.01 FIL = 1 USDT
+		await platformContract.connect(walletDeveloper).updatePoolParameter(tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), 100); // 0.01 FIL = 1 USDT
 		await platformContract.connect(walletMe).liquidation(tokenFIL.address, tokenUSDT.address, walletOther.address);
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 

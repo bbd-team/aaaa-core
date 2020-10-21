@@ -45,12 +45,6 @@ contract SevenUpPool is Configable
 
     uint public remainSupply;
 
-    uint public pledgeRate;
-    uint public pledgePrice;
-    uint public liquidationRate;
-    uint256 public baseInterests;
-    uint256 public marketFrenzy;
-
     uint public lastInterestUpdate;
 
     event Deposit(address indexed _user, uint _amount, uint _collateralAmount);
@@ -58,51 +52,22 @@ contract SevenUpPool is Configable
     event Borrow(address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Repay(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
     event Liquidation(address indexed _liquidator, address indexed _user, uint _supplyAmount, uint _collateralAmount);
-    event PledgeRateChanged(uint from, uint to);
-    event PledgePriceChanged(uint from, uint to);
-    event LiquidationRateChanged(uint from, uint to);
 
     constructor() public 
     {
         factory = msg.sender;
     }
 
-    function updatePledgeRate(uint _pledgeRate) external onlyPlatform
-    {
-        uint oldValue = pledgeRate;
-        pledgeRate = _pledgeRate;
-
-        emit PledgeRateChanged(oldValue, pledgeRate);
-    }
-
-    function updatePledgePrice(uint _pledgePrice) external onlyPlatform
-    {
-        uint oldValue = pledgePrice;
-        pledgePrice = _pledgePrice;
-
-        emit PledgePriceChanged(oldValue, pledgePrice);
-    }
-
-    function updateLiquidationRate(uint _liquidationRate) external onlyPlatform 
-    {
-        uint oldValue = liquidationRate;
-        liquidationRate = _liquidationRate;
-
-        emit LiquidationRateChanged(oldValue, liquidationRate);
-    }
-
     function init(address _supplyToken,  address _collateralToken) external onlyFactory
     {
-        // require(msg.sender == factory, "7UP: ONLY FACTORY");
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
 
-        baseInterests = 2 * 1e17;
-        marketFrenzy  = 1e18;
-
-        pledgeRate = 5000;
-        pledgePrice = 200;
-        liquidationRate = 9000;
+        IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
+        IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1e18);
+        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 5000);
+        IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 200);
+        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 9000);
 
         lastInterestUpdate = block.number;
     }
@@ -120,6 +85,9 @@ contract SevenUpPool is Configable
     function getInterests() public view returns(uint interestPerBlock)
     {
         uint totalSupply = totalBorrow + remainSupply;
+        uint baseInterests = IConfig(config).poolParams(address(this), bytes32("baseInterests"));
+        uint marketFrenzy = IConfig(config).poolParams(address(this), bytes32("marketFrenzy"));
+
         uint apy = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply));
         apy = apy.div(365 * 28800);
         interestPerBlock = apy;
@@ -198,6 +166,9 @@ contract SevenUpPool is Configable
 
     function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
     {
+        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
+        uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
+
         amountBorrow = pledgePrice * amountCollateral * pledgeRate / 100000000;        
     }
 
@@ -208,6 +179,9 @@ contract SevenUpPool is Configable
         TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
 
         updateInterests();
+
+        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
+        uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
 
         uint amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(100000000);
         require(expectBorrow <= amountBorrow && expectBorrow <= remainSupply, "7UP: INVALID BORROW");
@@ -264,6 +238,9 @@ contract SevenUpPool is Configable
 
         borrows[_user].interests = borrows[_user].interests.add(
             interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
+
+        uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
+        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
 
         uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(10000);
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
