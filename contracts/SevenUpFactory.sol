@@ -34,4 +34,8 @@ contract SevenUpFactory is Configable{
         
         emit PoolCreated(_lendToken, _collateralToken, pool);
     }
+
+    function countPools() external view returns(uint) {
+        return allPools.length;
+    }
 }
