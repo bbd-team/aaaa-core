@@ -12,6 +12,8 @@ interface IConfig {
     function wallet() external view returns (address);
     function base() external view returns (address);
     function poolParams(address pool, bytes32 key) external view returns (uint);
+    function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
+    function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
 }
 
 contract Configable {
@@ -41,6 +43,11 @@ contract Configable {
     
     modifier onlyPlatform() {
         require(msg.sender == IConfig(config).platform(), 'PLATFORM FORBIDDEN');
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == IConfig(config).factory(), 'FACTORY FORBIDDEN');
         _;
     }
 }

@@ -59,7 +59,8 @@ describe('deploy', () => {
 			walletTeam.address, 
 			mintContract.address, 
 			tokenContract.address, 
-			tokenFIL.address
+			tokenFIL.address,
+			walletDeveloper.address
 		);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
