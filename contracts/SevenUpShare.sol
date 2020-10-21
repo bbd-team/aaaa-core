@@ -10,7 +10,7 @@ contract SevenUpShare is Configable, BaseShareField {
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint amount);
     
-    function init() external onlyDeveloper {
+    function initialize() external onlyDeveloper {
         shareToken = IConfig(config).base();
     }
     
