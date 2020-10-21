@@ -13,15 +13,7 @@ contract SevenUpConfig {
     
     uint public developPercent = 5000;
     
-    struct Params {
-        uint pledgeRate;
-        uint pledgePrice;
-        uint liquidationRate;
-        uint256 baseInterests;
-        uint256 marketFrenzy;
-    }
-    
-    mapping (address => Params) poolParams;
+    mapping (address => mapping (bytes32 => uint)) poolParams;
     
     constructor() public {
         developer = msg.sender;
@@ -44,8 +36,8 @@ contract SevenUpConfig {
         developPercent = _value;
     }
     
-    function setPoolParams(address _pool, uint _pledgeRate, uint _pledgePrice, uint _liquidationRate, uint _baseInterests, uint _marketFrenzy) external {
+    function setPoolParameter(address _pool, bytes32 key, uint value) external {
         require(msg.sender == developer, "Config FORBIDDEN");
-        poolParams[_pool] = Params(_pledgeRate, _pledgePrice, _liquidationRate, _baseInterests, _marketFrenzy);
+        poolParams[_pool][key] = value;
     }
 }
