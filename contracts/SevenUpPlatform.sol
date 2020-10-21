@@ -18,6 +18,7 @@ interface ISevenUpPool {
     function borrow(uint _amountCollateral, uint _expectBorrow, address _from) external;
     function repay(uint _amountCollateral, address _from) external returns(uint, uint);
     function liquidation(address _user, address _from) external returns (uint);
+    function reinvest(address _from) external returns(uint, uint);
     function updatePledgeRate(uint _pledgeRate) external;
     function updatePledgePrice(uint _pledgePrice) external;
     function updateLiquidationRate(uint _liquidationRate) external;
@@ -72,6 +73,15 @@ contract SevenUpPlatform is Configable {
             ISevenUpMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, borrowAmount);
         }
     }
+
+    function reinvest(address _lendToken, address _collateralToken) external {
+        address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
+        require(pool != address(0), "POOL NOT EXIST");
+        (uint reinvestAmount, ) = ISevenUpPool(pool).reinvest(msg.sender);
+        if(_lendToken == IConfig(config).base()) {
+            ISevenUpMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
+        }
+    } 
 
     function updatePoolParameter(address _lendToken, address _collateralToken, bytes32 _key, uint _value) external onlyDeveloper
     {

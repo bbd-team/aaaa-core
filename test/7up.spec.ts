@@ -19,7 +19,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 
 describe('deploy', () => {
 	let provider = new MockProvider();
-	const [walletMe, walletOther, walletDeveloper, walletTeam] = provider.getWallets();
+	const [walletMe, walletOther, walletDeveloper, walletTeam, walletSpare] = provider.getWallets();
 	let configContract: Contract;
 	let factoryContract: Contract;
 	let mintContract:  Contract;
@@ -59,7 +59,6 @@ describe('deploy', () => {
 		await configContract.connect(walletDeveloper).initialize(
 			platformContract.address, 
 			factoryContract.address, 
-			walletTeam.address, 
 			mintContract.address, 
 			tokenContract.address, 
 			tokenFIL.address,
@@ -72,6 +71,8 @@ describe('deploy', () => {
 		await platformContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
 
+		await configContract.connect(walletDeveloper).initParameter();
+		await configContract.connect(walletDeveloper).setWallets([ethers.utils.formatBytes32String("team"), ethers.utils.formatBytes32String("spare")], [walletTeam.address, walletSpare.address]);
 		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
 		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);
@@ -108,6 +109,7 @@ describe('deploy', () => {
 		await mintContract.connect(walletMe).mintLender();
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletMe.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletTeam.address), 1));
+		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 	})
 
