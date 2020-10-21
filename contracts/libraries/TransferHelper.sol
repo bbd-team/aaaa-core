@@ -2,30 +2,6 @@
 
 pragma solidity >=0.6.0;
 
-library SushiHelper {
-    function deposit(address masterChef, uint256 pid, uint256 amount) internal {
-        (bool success, bytes memory data) = masterChef.call(abi.encodeWithSelector(0xe2bbb158, pid, amount));
-        require(success && data.length == 0, "SushiHelper: DEPOSIT FAILED");
-    }
-
-    function withdraw(address masterChef, uint256 pid, uint256 amount) internal {
-        (bool success, bytes memory data) = masterChef.call(abi.encodeWithSelector(0x441a3e70, pid, amount));
-        require(success && data.length == 0, "SushiHelper: WITHDRAW FAILED");
-    }
-
-    function pendingSushi(address masterChef, uint256 pid, address user) internal returns (uint256 amount) {
-        (bool success, bytes memory data) = masterChef.call(abi.encodeWithSelector(0x195426ec, pid, user));
-        require(success && data.length != 0, "SushiHelper: WITHDRAW FAILED");
-        amount = abi.decode(data, (uint256));
-    }
-
-    uint public constant _nullID = 0xffffffffffffffffffffffffffffffff;
-    function nullID() internal pure returns(uint) {
-        return _nullID;
-    }
-}
-
-
 library TransferHelper {
     function safeApprove(address token, address to, uint value) internal {
         // bytes4(keccak256(bytes('approve(address,uint256)')));

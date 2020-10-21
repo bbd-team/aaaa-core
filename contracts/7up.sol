@@ -157,11 +157,15 @@ contract SevenUpPool is Configable
         uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
 
         uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
-        withdrawInterest = withdrawInterest.sub(platformShare);
-        TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
+        uint userShare = withdrawInterest.sub(platformShare);
+
+        require(platformShare <= remainSupply, "7UP: NOT ENOUGH PLATFORM SHARE");
+        if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
+
+        remainSupply = remainSupply.sub(platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
-        uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(withdrawInterest);
+        uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(userShare);
         
         require(withdrawSupplyAmount <= remainSupply, "7UP: NOT ENOUGH POOL BALANCE");
         require(withdrawLiquidation <= totalLiquidation, "7UP: NOT ENOUGH LIQUIDATION");
@@ -177,8 +181,8 @@ contract SevenUpPool is Configable
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
-        TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount);
-        TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
+        if(withdrawSupplyAmount > 0) TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount); 
+        if(withdrawLiquidation > 0) TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
 
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
