@@ -41,6 +41,9 @@ interface ISevenUpPool {
     function totalPledge() external view returns(uint);
     function remainSupply() external view returns(uint);
     function getInterests() external view returns(uint);
+    function numberBorrowers() external view returns(uint);
+    function borrowerList(uint index) external view returns(address);
+    function borrows(address user) external view returns(uint[] memory);
 }
 
 interface ISevenUpMint {
@@ -82,6 +85,14 @@ contract SevenUpQuery {
         uint maxSupply;
         uint takeBorrow;
         uint takeLend;
+    }
+
+    struct BorrowInfo {
+        address user;
+        uint amountCollateral;
+        uint interestSettled;
+        uint amountBorrow;
+        uint interests;
     }
 
     constructor() public {
@@ -161,5 +172,20 @@ contract SevenUpQuery {
         info.maxSupply = IConfig(config).params(bytes32("7upMaxSupply"));
         info.takeBorrow = ISevenUpMint(token).takeBorrowWithAddress(user);
         info.takeLend = ISevenUpMint(token).takeLendWithAddress(user);
+    }
+
+    function iterateBorrowInfo(address _pair, uint _start, uint _end) public view returns (BorrowInfo[] memory list){
+        require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
+        uint count = ISevenUpPool(_pair).numberBorrowers();
+        if (_end > count) _end = count;
+        count = _end - _start;
+        list = new BorrowInfo[](count);
+        uint index = 0;
+        for(uint i = 0; i < count; i++) {
+            address user = ISevenUpPool(_pair).borrowerList(i);
+            uint[] memory borrow = ISevenUpPool(_pair).borrows(user);
+            list[index] = BorrowInfo(user, borrow[1], borrow[2], borrow[3], borrow[4]);
+            index++;
+        }
     }
 }
