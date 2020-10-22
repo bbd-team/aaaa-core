@@ -93,7 +93,7 @@ contract SevenUpQuery {
         config = _config;
     }
 
-    function getPoolInfoByIndex(uint index) external view returns (PoolInfoStruct memory info) {
+    function getPoolInfoByIndex(uint index) public view returns (PoolInfoStruct memory info) {
         uint count = ISevenUpFactory(IConfig(config).factory()).countPools();
         if (index >= count || count == 0) {
             return info;
@@ -102,7 +102,7 @@ contract SevenUpQuery {
         return getPoolInfo(pair);
     }
 
-    function getPoolInfoByTokens(address lend, address collateral) external view returns (PoolInfoStruct memory info) {
+    function getPoolInfoByTokens(address lend, address collateral) public view returns (PoolInfoStruct memory info) {
         address pair = ISevenUpFactory(IConfig(config).factory()).getPool(lend, collateral);
         return getPoolInfo(pair);
     }
@@ -122,6 +122,16 @@ contract SevenUpQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
+    }
+
+    function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
+        uint count = ISevenUpFactory(IConfig(config).factory()).countPools();
+        if(count > 0) {
+            list = new PoolInfoStruct[](count);
+            for(uint i = 0;i < count;i++) {
+                list[i] = getPoolInfoByIndex(i);
+            }
+        }
     }
 
     function queryToken(address user, address spender, address token) public view returns (TokenStruct memory info) {
