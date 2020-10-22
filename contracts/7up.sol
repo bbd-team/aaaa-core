@@ -63,11 +63,11 @@ contract SevenUpPool is Configable
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
 
-        IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
-        IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1e18);
-        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 5 * 1e17);
+        IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 5 * 1e17);
+        IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 2 * 1e18);
+        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 6 * 1e17);
         IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 2 * 1e16);
-        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 9 * 1e17);
+        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 95 * 1e16);
 
         lastInterestUpdate = block.number;
     }
