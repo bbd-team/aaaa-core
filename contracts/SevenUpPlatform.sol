@@ -30,55 +30,62 @@ interface ISevenUpFactory {
 
 contract SevenUpPlatform is Configable {
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
+        require(IConfig(config).params(bytes32("depositEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         ISevenUpPool(pool).deposit(_amountDeposit, msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+        if(_amountDeposit > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, _amountDeposit);
         }
     }
     
     function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external {
+        require(IConfig(config).params(bytes32("withdrawEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         ISevenUpPool(pool).withdraw(_amountWithdraw, msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+        if(_amountWithdraw > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).decreaseLenderProductivity(msg.sender, _amountWithdraw);
         }
     }
     
     function borrow(address _lendToken, address _collateralToken, uint _amountCollateral, uint _expectBorrow) external {
+        require(IConfig(config).params(bytes32("borrowEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         ISevenUpPool(pool).borrow(_amountCollateral, _expectBorrow, msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+        if(_expectBorrow > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).increaseBorrowerProductivity(msg.sender, _expectBorrow);
         }
     }
     
     function repay(address _lendToken, address _collateralToken, uint _amountCollateral) external {
+        require(IConfig(config).params(bytes32("repayEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         (uint repayAmount, ) = ISevenUpPool(pool).repay(_amountCollateral, msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+        if(repayAmount > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).decreaseBorrowerProductivity(msg.sender, repayAmount);
         }
     }
     
     function liquidation(address _lendToken, address _collateralToken, address _user) external {
+        require(IConfig(config).params(bytes32("liquidationEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint borrowAmount = ISevenUpPool(pool).liquidation(_user, msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+        if(borrowAmount > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, borrowAmount);
         }
     }
 
     function reinvest(address _lendToken, address _collateralToken) external {
+        require(IConfig(config).params(bytes32("reinvestEnable")) == 1, "NOT ENABLE NOW");
         address pool = ISevenUpFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint reinvestAmount = ISevenUpPool(pool).reinvest(msg.sender);
-        if(_lendToken == IConfig(config).base()) {
+
+        if(reinvestAmount > 0 && _lendToken == IConfig(config).base()) {
             ISevenUpMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
         }
     } 
