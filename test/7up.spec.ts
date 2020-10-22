@@ -55,6 +55,10 @@ describe('deploy', () => {
 		console.log('platformContract address = ', platformContract.address);
 		console.log('tokenContract address = ', tokenContract.address);
 		console.log('tokenFIL address = ', tokenFIL.address);
+
+		console.log('team:', ethers.utils.formatBytes32String("team"))
+		console.log('spare:', ethers.utils.formatBytes32String("spare"))
+		console.log('pledgePrice:', ethers.utils.formatBytes32String("pledgePrice"))
 		
 		await configContract.connect(walletDeveloper).initialize(
 			platformContract.address, 
