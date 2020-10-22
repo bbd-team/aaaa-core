@@ -19,7 +19,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 
 describe('deploy', () => {
 	let provider = new MockProvider();
-	const [walletMe, walletOther, walletDeveloper, walletTeam, walletSpare] = provider.getWallets();
+	const [walletMe, walletOther, walletDeveloper, walletTeam, walletSpare, walletPrice] = provider.getWallets();
 	let configContract: Contract;
 	let factoryContract: Contract;
 	let mintContract:  Contract;
@@ -76,7 +76,7 @@ describe('deploy', () => {
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
 
 		await configContract.connect(walletDeveloper).initParameter();
-		await configContract.connect(walletDeveloper).setWallets([ethers.utils.formatBytes32String("team"), ethers.utils.formatBytes32String("spare")], [walletTeam.address, walletSpare.address]);
+		await configContract.connect(walletDeveloper).setWallets([ethers.utils.formatBytes32String("team"), ethers.utils.formatBytes32String("spare"), ethers.utils.formatBytes32String("price")], [walletTeam.address, walletSpare.address, walletPrice.address]);
 		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
 		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);

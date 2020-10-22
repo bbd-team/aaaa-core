@@ -75,12 +75,12 @@ contract SevenUpMint is Configable {
             return;
         }
 
-        if (totalLendProductivity.add(totalBorrowProducitivity) == 0) {
+        uint256 reward = _currentReward();
+        if (totalLendProductivity.add(totalBorrowProducitivity) == 0 || reward == 0)) {
             lastRewardBlock = block.number;
             return;
         }
         
-        uint256 reward = _currentReward();
         uint borrowReward = reward.mul(borrowPower).div(10000);
         uint lendReward = reward.sub(borrowReward);
 

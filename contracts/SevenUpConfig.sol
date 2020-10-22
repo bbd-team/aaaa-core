@@ -13,7 +13,7 @@ contract SevenUpConfig {
     
     mapping (address => mapping (bytes32 => uint)) public poolParams;
     mapping (bytes32 => uint) public params;
-    mapping (bytes32 => uint) public wallets;
+    mapping (bytes32 => address) public wallets;
 
     event ParameterChange(uint key, uint value);
     
@@ -29,7 +29,7 @@ contract SevenUpConfig {
         token       = _token;
         base        = _base;
         share       = _share;
-        governor    = _governor; 
+        governor    = _governor;
     }
 
     function changeDeveloper(address _developer) external {
@@ -37,9 +37,9 @@ contract SevenUpConfig {
         developer = _developer;
     }
 
-    function setWallets(bytes32[] calldata _names, uint[] calldata _wallets) external {
+    function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external {
         require(msg.sender == developer, "7UP: ONLY DEVELOPER");
-        require(_names.length == _wallets.length ,"7UP: WALLET LENGTH MISMATCH");
+        require(_names.length == _wallets.length ,"7UP: WALLETS LENGTH MISMATCH");
         for(uint i = 0; i < _names.length; i ++)
         {
             wallets[_names[i]] = _wallets[i];
@@ -68,6 +68,15 @@ contract SevenUpConfig {
         for(uint i = 0; i < _keys.length; i ++)
         {
             params[_keys[i]] = _values[i];
+        }
+    }
+
+    function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
+        require(msg.sender == wallets[bytes32("price")], "7UP: Config FORBIDDEN");
+        require(_pools.length == _prices.length ,"7UP: PRICES LENGTH MISMATCH");
+        for(uint i = 0; i < _pools.length; i ++)
+        {
+            poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i];
         }
     }
     
