@@ -132,11 +132,13 @@ contract SevenUpPool is Configable
         reinvestAmount = reinvestAmount.sub(platformShare);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
-
         supplys[from].interests = 0;
 
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
+
+        require(platformShare <= remainSupply, "7UP: NOT ENOUGH BALANCE");
+        remainSupply = remainSupply.sub(platformShare);
 
         if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
     }
