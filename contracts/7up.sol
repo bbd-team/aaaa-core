@@ -24,11 +24,15 @@ contract SevenUpPool is Configable
     }
 
     struct BorrowStruct {
+        uint index;
         uint amountCollateral;
         uint interestSettled;
         uint amountBorrow;
         uint interests;
     }
+
+    address[] public borrowerList;
+    uint public numberBorrowers;
 
     mapping(address => SupplyStruct) public supplys;
     mapping(address => BorrowStruct) public borrows;
@@ -214,6 +218,13 @@ contract SevenUpPool is Configable
         totalBorrow = totalBorrow.add(expectBorrow);
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
+
+        if(borrows[from].index == 0)
+        {
+            borrowerList.push(from);
+            borrows[from].index = borrowerList.length;
+            numberBorrowers ++;
+        }
 
         borrows[from].interests = borrows[from].interests.add(interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
         borrows[from].amountCollateral = borrows[from].amountCollateral.add(amountCollateral);
