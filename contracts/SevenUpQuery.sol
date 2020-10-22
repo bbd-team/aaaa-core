@@ -11,6 +11,22 @@ interface IERC20 {
     function allowance(address owner, address spender) external view returns (uint);
 }
 
+interface IConfig {
+    function developer() external view returns (address);
+    function platform() external view returns (address);
+    function factory() external view returns (address);
+    function mint() external view returns (address);
+    function token() external view returns (address);
+    function developPercent() external view returns (uint);
+    function wallet() external view returns (address);
+    function base() external view returns (address);
+    function share() external view returns (address);
+    function poolParams(address pool, bytes32 key) external view returns (uint);
+    function params(bytes32 key) external view returns(uint);
+    function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
+    function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
+}
+
 interface ISevenUpFactory {
     function countPools() external view returns(uint);
     function allPools(uint index) external view returns(address);
@@ -27,9 +43,16 @@ interface ISevenUpPool {
     function getInterests() external view returns(uint);
 }
 
+interface ISevenUpMint {
+    function maxSupply() external view returns(uint);
+    function mintCumulation() external view returns(uint);
+    function takeLendWithAddress(address user) external view returns (uint);
+    function takeBorrowWithAddress(address user) external view returns (uint);
+}
+
 contract SevenUpQuery {
     address public owner;
-    address public factory;
+    address public config;
 
     struct PoolInfoStruct {
         address pair;
@@ -54,31 +77,38 @@ contract SevenUpQuery {
         uint allowance;
     }
 
+    struct MintTokenStruct {
+        uint mintCumulation;
+        uint maxSupply;
+        uint takeBorrow;
+        uint takeLend;
+    }
+
     constructor() public {
         owner = msg.sender;
     }
     
-    function initialize (address _factory) external {
+    function initialize (address _config) external {
         require(msg.sender == owner, "FORBIDDEN");
-        factory = _factory;
+        config = _config;
     }
 
     function getPoolInfoByIndex(uint index) external view returns (PoolInfoStruct memory info) {
-        uint count = ISevenUpFactory(factory).countPools();
+        uint count = ISevenUpFactory(IConfig(config).factory()).countPools();
         if (index >= count || count == 0) {
             return info;
         }
-        address pair = ISevenUpFactory(factory).allPools(index);
+        address pair = ISevenUpFactory(IConfig(config).factory()).allPools(index);
         return getPoolInfo(pair);
     }
 
     function getPoolInfoByTokens(address lend, address collateral) external view returns (PoolInfoStruct memory info) {
-        address pair = ISevenUpFactory(factory).getPool(lend, collateral);
+        address pair = ISevenUpFactory(IConfig(config).factory()).getPool(lend, collateral);
         return getPoolInfo(pair);
     }
     
     function getPoolInfo(address pair) public view returns (PoolInfoStruct memory info) {
-        if(!ISevenUpFactory(factory).isPool(pair)) {
+        if(!ISevenUpFactory(IConfig(config).factory()).isPool(pair)) {
             return info;
         }
         info.pair = pair;
@@ -113,5 +143,13 @@ contract SevenUpQuery {
                 token_list[i] = queryToken(user, spender, tokens[i]);
             }
         }
+    }
+
+    function queryMintToken(address user) public view returns (MintTokenStruct memory info) {
+        address token = IConfig(config).mint();
+        info.mintCumulation = ISevenUpMint(token).mintCumulation();
+        info.maxSupply = ISevenUpMint(token).maxSupply();
+        info.takeBorrow = ISevenUpMint(token).takeBorrowWithAddress(user);
+        info.takeLend = ISevenUpMint(token).takeLendWithAddress(user);
     }
 }
