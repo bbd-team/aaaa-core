@@ -148,7 +148,7 @@ contract SevenUpQuery {
     function queryMintToken(address user) public view returns (MintTokenStruct memory info) {
         address token = IConfig(config).mint();
         info.mintCumulation = ISevenUpMint(token).mintCumulation();
-        info.maxSupply = ISevenUpMint(token).maxSupply();
+        info.maxSupply = IConfig(config).params(bytes32("7upMaxSupply"));
         info.takeBorrow = ISevenUpMint(token).takeBorrowWithAddress(user);
         info.takeLend = ISevenUpMint(token).takeLendWithAddress(user);
     }
