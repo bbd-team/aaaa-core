@@ -65,9 +65,9 @@ contract SevenUpPool is Configable
 
         IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
         IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1e18);
-        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 5000);
-        IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 200);
-        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 9000);
+        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 5 * 1e17);
+        IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 2 * 1e16);
+        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 9 * 1e17);
 
         lastInterestUpdate = block.number;
     }
@@ -128,7 +128,7 @@ contract SevenUpPool is Configable
 
         reinvestAmount = supplys[from].interests;
 
-        uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
+        uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
         reinvestAmount = reinvestAmount.sub(platformShare);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
@@ -158,7 +158,7 @@ contract SevenUpPool is Configable
         uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
         uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
 
-        uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(10000);
+        uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
         uint userShare = withdrawInterest.sub(platformShare);
 
         require(platformShare <= remainSupply, "7UP: NOT ENOUGH PLATFORM SHARE");
@@ -194,7 +194,7 @@ contract SevenUpPool is Configable
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
         uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
 
-        amountBorrow = pledgePrice * amountCollateral * pledgeRate / 100000000;        
+        amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
     }
 
     function borrow(uint amountCollateral, uint expectBorrow, address from) public onlyPlatform
@@ -208,7 +208,7 @@ contract SevenUpPool is Configable
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
         uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
 
-        uint amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(100000000);
+        uint amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
         require(expectBorrow <= amountBorrow && expectBorrow <= remainSupply, "7UP: INVALID BORROW");
 
         totalBorrow = totalBorrow.add(expectBorrow);
@@ -273,10 +273,10 @@ contract SevenUpPool is Configable
         uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
 
-        uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(10000);
+        uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
 
-        require(expectedRepay >= collateralValue.mul(liquidationRate).div(10000), '7UP: NOT LIQUIDABLE');
+        require(expectedRepay >= collateralValue.mul(liquidationRate).div(1e18), '7UP: NOT LIQUIDABLE');
 
         updateLiquidation(borrows[_user].amountCollateral);
 
