@@ -16,11 +16,16 @@ contract SevenUpMint is Configable {
     uint public accAmountPerLend;
     uint public accAmountPerBorrow;
     
-    uint public maxSupply = 100000 * 1e18;
     uint public totalBorrowSupply;
     uint public totalLendSupply;
     
     uint public borrowPower = 0;
+
+    bytes32 public MaxSupplyKey = bytes32("7upMaxSupply");
+    bytes32 public UserMintKey = bytes32("7upTokenUserMint");
+    bytes32 public TeamMintKey = bytes32("7upTokenTeamMint");
+    bytes32 public TeamWalletKey = bytes32("team");
+    bytes32 public SpareWalletKey = bytes32("spare");
     
     struct UserInfo {
         uint amount;     // How many tokens the user has provided.
@@ -76,11 +81,6 @@ contract SevenUpMint is Configable {
         }
         
         uint256 reward = _currentReward();
-        
-        uint developAmount = reward.mul(IConfig(config).developPercent()).div(10000);
-        TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallet(), developAmount);
-        reward = reward.sub(developAmount);
-
         uint borrowReward = reward.mul(borrowPower).div(10000);
         uint lendReward = reward.sub(borrowReward);
 
@@ -100,6 +100,7 @@ contract SevenUpMint is Configable {
     function _currentReward() internal virtual view returns (uint){
         uint256 multiplier = block.number.sub(lastRewardBlock);
         uint reward = multiplier.mul(amountPerBlock);
+        uint maxSupply = IConfig(config).params(MaxSupplyKey);
         if(totalLendSupply.add(totalBorrowSupply).add(reward) > maxSupply) {
             reward = maxSupply.sub(totalLendSupply).sub(totalBorrowSupply);
         }
@@ -199,13 +200,13 @@ contract SevenUpMint is Configable {
         uint _accAmountPerBorrow = accAmountPerBorrow;
         if (block.number > lastRewardBlock && totalBorrowProducitivity != 0) {
             uint reward = _currentReward();
-            uint developAmount = reward.mul(IConfig(config).developPercent()).div(10000);
-            reward = reward.sub(developAmount);
             uint borrowReward = reward.mul(borrowPower).div(10000);
             
             _accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
         }
-        return userInfo.amount.mul(_accAmountPerBorrow).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+
+        uint amount = userInfo.amount.mul(_accAmountPerBorrow).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+        return amount.mul(IConfig(config).params(UserMintKey)).div(10000);
     }
     
     function takeLendWithAddress(address user) public view returns (uint) {
@@ -213,13 +214,11 @@ contract SevenUpMint is Configable {
         uint _accAmountPerLend = accAmountPerLend;
         if (block.number > lastRewardBlock && totalLendProductivity != 0) {
             uint reward = _currentReward();
-            uint developAmount = reward.mul(IConfig(config).developPercent()).div(10000);
-            reward = reward.sub(developAmount);
-            
             uint lendReward = reward.sub(reward.mul(borrowPower).div(10000)); 
             _accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
         }
-        return userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+        uint amount = userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+        return amount.mul(IConfig(config).params(UserMintKey)).div(10000);
     }
 
     // Returns how much a user could earn plus the giving block number.
@@ -242,7 +241,7 @@ contract SevenUpMint is Configable {
         _auditBorrower(msg.sender);
         require(borrowers[msg.sender].rewardEarn > 0, "NOTHING TO MINT");
         uint amount = borrowers[msg.sender].rewardEarn;
-        TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, borrowers[msg.sender].rewardEarn);
+        _mintDistribution(msg.sender, amount);
         borrowers[msg.sender].rewardEarn = 0;
         return amount;
     }
@@ -252,7 +251,7 @@ contract SevenUpMint is Configable {
         _auditLender(msg.sender);
         require(lenders[msg.sender].rewardEarn > 0, "NOTHING TO MINT");
         uint amount = lenders[msg.sender].rewardEarn;
-        TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, lenders[msg.sender].rewardEarn);
+        _mintDistribution(msg.sender, amount);
         lenders[msg.sender].rewardEarn = 0;
         return amount;
     }
@@ -269,5 +268,21 @@ contract SevenUpMint is Configable {
     // Returns the current gorss product rate.
     function interestsPerBlock() external view returns (uint, uint) {
         return (accAmountPerBorrow, accAmountPerLend);
+    }
+
+    function _mintDistribution(address user, uint amount) internal {
+        uint userAmount = amount.mul(IConfig(config).params(UserMintKey)).div(10000);
+        uint remainAmount = amount.sub(userAmount);
+        uint teamAmount = remainAmount.mul(IConfig(config).params(TeamMintKey)).div(10000);
+        if(teamAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(TeamWalletKey), teamAmount);
+        }
+        
+        uint spareAmount = remainAmount.sub(teamAmount);
+        if(spareAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(SpareWalletKey), spareAmount);
+        }
+        
+        TransferHelper.safeTransfer(IConfig(config).token(), user, userAmount);
     }
 }
