@@ -47,6 +47,8 @@ interface ISevenUpPool {
     function borrowerList(uint index) external view returns(address);
     function borrows(address user) external view returns(uint,uint,uint,uint,uint);
     function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
+    function liquidationHistory(address user) external view returns(uint,uint);
+    function liquidationHistoryLength(address user) external view returns(uint);
 }
 
 interface ISevenUpMint {
@@ -106,8 +108,6 @@ contract SevenUpQuery {
         uint amountCollateral;
         uint expectedRepay;
         uint liquidationRate;
-        uint test1;
-        uint test2;
     }
 
     struct PoolConfigInfo {
@@ -116,6 +116,11 @@ contract SevenUpQuery {
         uint pledgeRate;
         uint pledgePrice;
         uint liquidationRate;   
+    }
+
+    struct UserLiquidationStruct {
+        uint amountCollateral;
+        uint liquidationAmount;
     }
 
     constructor() public {
@@ -255,8 +260,6 @@ contract SevenUpQuery {
                     liquidationList[liquidationCount].amountCollateral = amountCollateral;
                     liquidationList[liquidationCount].expectedRepay    = repayAmount;
                     liquidationList[liquidationCount].liquidationRate  = liquidationRate;
-                    liquidationList[liquidationCount].test1  = repayAmount;
-                    liquidationList[liquidationCount].test2  = amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18);
 
                     liquidationCount ++;
                     if(liquidationCount == _countLiquidation)
@@ -274,5 +277,16 @@ contract SevenUpQuery {
         info.pledgeRate = IConfig(config).poolParams(_pair, bytes32("pledgeRate"));
         info.pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
         info.liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
+    }
+
+    function queryUserLiquidationList(address _pair, address _user) public view returns (UserLiquidationStruct[] memory list) {
+        uint count = ISevenUpPool(_pair).liquidationHistoryLength(_user);
+        if(count > 0) {
+            list = new UserLiquidationStruct[](count);
+            for(uint i = 0;i < count; i++) {
+                (uint amountCollateral, uint liquidationAmount) = ISevenUpPool(_pair).liquidationHistory(_user);
+                list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount);
+            }
+        }
     }
 }
