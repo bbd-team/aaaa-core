@@ -42,6 +42,7 @@ contract SevenUpMint is Configable {
     event BorrowerProductivityDecreased (address indexed user, uint value);
     event LenderProductivityIncreased (address indexed user, uint value);
     event LenderProductivityDecreased (address indexed user, uint value);
+    event Mint(address indexed user, uint amount);
     
     function changeBorrowPower(uint _value) external onlyDeveloper {
         uint old = borrowPower;
@@ -284,5 +285,6 @@ contract SevenUpMint is Configable {
         }
         
         TransferHelper.safeTransfer(IConfig(config).token(), user, userAmount);
+        emit Mint(user, amount);
     }
 }
