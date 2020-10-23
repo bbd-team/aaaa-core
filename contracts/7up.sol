@@ -150,6 +150,21 @@ contract SevenUpPool is Configable
         emit Reinvest(from, reinvestAmount);
     }
 
+    function getWithdrawAmount(address from) external view returns (uint withdrawAmount, uint interestAmount, uint liquidationAmount)
+    {
+        uint totalSupply = totalBorrow + remainSupply;
+        uint _interestPerSupply = interestPerSupply.add(totalSupply == 0 ? 0 : getInterests().mul(block.number - lastInterestUpdate).mul(totalBorrow).div(totalSupply));
+        uint _totalInterest = supplys[from].interests.add(_interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
+        liquidationAmount = supplys[from].liquidation.add(liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled));
+
+        uint platformShare = _totalInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
+        interestAmount = _totalInterest.sub(platformShare);
+
+        uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : liquidationAmount.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
+
+        withdrawAmount = supplys[from].amountSupply.sub(withdrawLiquidationSupplyAmount).add(interestAmount);
+    }
+
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
     {
         require(amountWithdraw > 0, "7UP: INVALID AMOUNT");
