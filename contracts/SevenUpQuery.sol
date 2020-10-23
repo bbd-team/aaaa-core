@@ -128,6 +128,7 @@ contract SevenUpQuery {
         info.totalPledge = ISevenUpPool(pair).totalPledge();
         info.remainSupply = ISevenUpPool(pair).remainSupply();
         info.borrowInterests = ISevenUpPool(pair).getInterests();
+        info.supplyInterests = info.borrowInterests;
         info.supplyToken = ISevenUpPool(pair).supplyToken();
         info.collateralToken = ISevenUpPool(pair).collateralToken();
         info.supplyTokenDecimals = IERC20(info.supplyToken).decimals();
@@ -135,7 +136,9 @@ contract SevenUpQuery {
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
 
-        info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow+info.remainSupply);
+        if(info.totalBorrow + info.remainSupply > 0) {
+            info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);
+        }
     }
 
     function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
