@@ -102,6 +102,7 @@ contract SevenUpQuery {
 
     struct LiquidationStruct {
         address pool;
+        address user;
         uint amountCollateral;
         uint expectedRepay;
         uint liquidationRate;
@@ -218,7 +219,7 @@ contract SevenUpQuery {
         }
     }
 
-    function iterateBorrowInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
+    function iterateLiquidationInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
         LiquidationStruct[] memory liquidationList, 
         uint liquidationCount,
         uint poolIndex, 
@@ -232,30 +233,29 @@ contract SevenUpQuery {
         uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
 
-        uint found = 0;
         for(uint i = _startPoolIndex; i < poolCount; i++) {
             address pool = ISevenUpFactory(IConfig(config).factory()).allPools(i);
             uint borrowsCount = ISevenUpPool(pool).numberBorrowers();
             require(_startIndex < borrowsCount, "INVALID START INDEX");
+            poolIndex = i;
 
             for(uint j = _startIndex; j < borrowsCount; j ++)
             {
                 address user = ISevenUpPool(pool).borrowerList(j);
                 (, uint amountCollateral, , , ) = ISevenUpPool(pool).borrows(user);
+                userIndex = j + 1;
 
                 if(ISevenUpPool(pool).getRepayAmount(amountCollateral, user) > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
                 {
-                    liquidationList[found].pool             = pool;
-                    liquidationList[found].amountCollateral = amountCollateral;
-                    liquidationList[found].expectedRepay    = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
-                    liquidationList[found].liquidationRate  = liquidationRate;
+                    liquidationList[liquidationCount].user             = user;
+                    liquidationList[liquidationCount].pool             = pool;
+                    liquidationList[liquidationCount].amountCollateral = amountCollateral;
+                    liquidationList[liquidationCount].expectedRepay    = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
+                    liquidationList[liquidationCount].liquidationRate  = liquidationRate;
 
-                    found ++;
-                    if(found >= _countLiquidation)
+                    liquidationCount ++;
+                    if(liquidationCount == _countLiquidation)
                     {
-                        liquidationCount = found;
-                        poolIndex = i;
-                        userIndex = j;
                         return (liquidationList, liquidationCount, poolIndex, userIndex);
                     }
                 }
