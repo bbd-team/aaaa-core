@@ -62,7 +62,8 @@ contract SevenUpQuery {
         uint totalBorrow;
         uint totalPledge;
         uint remainSupply;
-        uint interests;
+        uint borrowInterests;
+        uint supplyInterests;
         address supplyToken;
         address collateralToken;
         uint8 supplyTokenDecimals;
@@ -126,13 +127,15 @@ contract SevenUpQuery {
         info.totalBorrow = ISevenUpPool(pair).totalBorrow();
         info.totalPledge = ISevenUpPool(pair).totalPledge();
         info.remainSupply = ISevenUpPool(pair).remainSupply();
-        info.interests = ISevenUpPool(pair).getInterests();
+        info.borrowInterests = ISevenUpPool(pair).getInterests();
         info.supplyToken = ISevenUpPool(pair).supplyToken();
         info.collateralToken = ISevenUpPool(pair).collateralToken();
         info.supplyTokenDecimals = IERC20(info.supplyToken).decimals();
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
+
+        info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow+info.remainSupply);
     }
 
     function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
