@@ -106,6 +106,8 @@ contract SevenUpQuery {
         uint amountCollateral;
         uint expectedRepay;
         uint liquidationRate;
+        uint test1;
+        uint test2;
     }
 
     struct PoolConfigInfo {
@@ -230,11 +232,11 @@ contract SevenUpQuery {
         uint poolCount = ISevenUpFactory(IConfig(config).factory()).countPools();
 
         require(_startPoolIndex < poolCount, "INVALID POOL INDEX");
-        uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
-        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
 
         for(uint i = _startPoolIndex; i < poolCount; i++) {
             address pool = ISevenUpFactory(IConfig(config).factory()).allPools(i);
+            uint liquidationRate = IConfig(config).poolParams(pool, bytes32("liquidationRate"));
+            uint pledgePrice = IConfig(config).poolParams(pool, bytes32("pledgePrice"));
             uint borrowsCount = ISevenUpPool(pool).numberBorrowers();
             require(_startIndex < borrowsCount, "INVALID START INDEX");
             poolIndex = i;
@@ -243,15 +245,18 @@ contract SevenUpQuery {
             {
                 address user = ISevenUpPool(pool).borrowerList(j);
                 (, uint amountCollateral, , , ) = ISevenUpPool(pool).borrows(user);
+                uint repayAmount = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
                 userIndex = j + 1;
 
-                if(ISevenUpPool(pool).getRepayAmount(amountCollateral, user) > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+                if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
                 {
                     liquidationList[liquidationCount].user             = user;
                     liquidationList[liquidationCount].pool             = pool;
                     liquidationList[liquidationCount].amountCollateral = amountCollateral;
-                    liquidationList[liquidationCount].expectedRepay    = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
+                    liquidationList[liquidationCount].expectedRepay    = repayAmount;
                     liquidationList[liquidationCount].liquidationRate  = liquidationRate;
+                    liquidationList[liquidationCount].test1  = repayAmount;
+                    liquidationList[liquidationCount].test2  = amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18);
 
                     liquidationCount ++;
                     if(liquidationCount == _countLiquidation)
