@@ -218,7 +218,7 @@ contract SevenUpQuery {
         }
     }
 
-    function iterateBorrowInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
+    function iterateLiquidationInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
         LiquidationStruct[] memory liquidationList, 
         uint liquidationCount,
         uint poolIndex, 
