@@ -43,7 +43,7 @@ interface ISevenUpPool {
     function getInterests() external view returns(uint);
     function numberBorrowers() external view returns(uint);
     function borrowerList(uint index) external view returns(address);
-    function borrows(address user) external view returns(uint[] memory);
+    function borrows(address user) external view returns(uint,uint,uint,uint,uint);
 }
 
 interface ISevenUpMint {
@@ -180,6 +180,11 @@ contract SevenUpQuery {
         info.takeLend = ISevenUpMint(token).takeLendWithAddress(user);
     }
 
+    function getBorrowInfo(address _pair, address _user) public view returns (BorrowInfo memory info){
+        (, uint amountCollateral, uint interestSettled, uint amountBorrow, uint interests) = ISevenUpPool(_pair).borrows(_user);
+        info = BorrowInfo(_user, amountCollateral, interestSettled, amountBorrow, interests);
+    }
+
     function iterateBorrowInfo(address _pair, uint _start, uint _end) public view returns (BorrowInfo[] memory list){
         require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
         uint count = ISevenUpPool(_pair).numberBorrowers();
@@ -189,8 +194,7 @@ contract SevenUpQuery {
         uint index = 0;
         for(uint i = 0; i < count; i++) {
             address user = ISevenUpPool(_pair).borrowerList(i);
-            uint[] memory borrow = ISevenUpPool(_pair).borrows(user);
-            list[index] = BorrowInfo(user, borrow[1], borrow[2], borrow[3], borrow[4]);
+            list[index] = getBorrowInfo(_pair, user);
             index++;
         }
     }
