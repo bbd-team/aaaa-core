@@ -96,6 +96,14 @@ contract SevenUpQuery {
         uint interests;
     }
 
+    struct PoolConfigInfo {
+        uint baseInterests;
+        uint marketFrenzy;
+        uint pledgeRate;
+        uint pledgePrice;
+        uint liquidationRate;
+    }
+
     constructor() public {
         owner = msg.sender;
     }
@@ -197,5 +205,13 @@ contract SevenUpQuery {
             list[index] = getBorrowInfo(_pair, user);
             index++;
         }
+    }
+
+    function getPoolConf(address _pair) public view returns (PoolConfigInfo memory info) {
+        info.baseInterests = IConfig(config).poolParams(_pair, bytes32("baseInterests"));
+        info.marketFrenzy = IConfig(config).poolParams(_pair, bytes32("marketFrenzy"));
+        info.pledgeRate = IConfig(config).poolParams(_pair, bytes32("pledgeRate"));
+        info.pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
+        info.liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
     }
 }
