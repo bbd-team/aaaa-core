@@ -2,6 +2,8 @@
 pragma solidity >=0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "./libraries/SafeMath.sol";
+
 interface IERC20 {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
@@ -44,6 +46,7 @@ interface ISevenUpPool {
     function numberBorrowers() external view returns(uint);
     function borrowerList(uint index) external view returns(address);
     function borrows(address user) external view returns(uint,uint,uint,uint,uint);
+    function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
 }
 
 interface ISevenUpMint {
@@ -56,6 +59,7 @@ interface ISevenUpMint {
 contract SevenUpQuery {
     address public owner;
     address public config;
+    using SafeMath for uint;
 
     struct PoolInfoStruct {
         address pair;
@@ -94,6 +98,13 @@ contract SevenUpQuery {
         uint interestSettled;
         uint amountBorrow;
         uint interests;
+    }
+
+    struct LiquidationStruct {
+        address pool;
+        uint amountCollateral;
+        uint expectedRepay;
+        uint liquidationRate;
     }
 
     constructor() public {
@@ -192,10 +203,55 @@ contract SevenUpQuery {
         count = _end - _start;
         list = new BorrowInfo[](count);
         uint index = 0;
-        for(uint i = 0; i < count; i++) {
+        for(uint i = _start; i < _end; i++) {
             address user = ISevenUpPool(_pair).borrowerList(i);
             list[index] = getBorrowInfo(_pair, user);
             index++;
+        }
+    }
+
+    function iterateBorrowInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
+        LiquidationStruct[] memory liquidationList, 
+        uint liquidationCount,
+        uint poolIndex, 
+        uint userIndex)
+    {
+        require(_countLiquidation < 30, "EXCEEDING MAX ALLOWED");
+        liquidationList = new LiquidationStruct[](_countLiquidation);
+        uint poolCount = ISevenUpFactory(IConfig(config).factory()).countPools();
+
+        require(_startPoolIndex < poolCount, "INVALID POOL INDEX");
+        uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
+        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
+
+        uint found = 0;
+        for(uint i = _startPoolIndex; i < poolCount; i++) {
+            address pool = ISevenUpFactory(IConfig(config).factory()).allPools(i);
+            uint borrowsCount = ISevenUpPool(pool).numberBorrowers();
+            require(_startIndex < borrowsCount, "INVALID START INDEX");
+
+            for(uint j = _startIndex; j < borrowsCount; j ++)
+            {
+                address user = ISevenUpPool(pool).borrowerList(j);
+                (, uint amountCollateral, , , ) = ISevenUpPool(pool).borrows(user);
+
+                if(ISevenUpPool(pool).getRepayAmount(amountCollateral, user) > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+                {
+                    liquidationList[found].pool             = pool;
+                    liquidationList[found].amountCollateral = amountCollateral;
+                    liquidationList[found].expectedRepay    = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
+                    liquidationList[found].liquidationRate  = liquidationRate;
+
+                    found ++;
+                    if(found >= _countLiquidation)
+                    {
+                        liquidationCount = found;
+                        poolIndex = i;
+                        userIndex = j;
+                        return (liquidationList, liquidationCount, poolIndex, userIndex);
+                    }
+                }
+            }
         }
     }
 }

@@ -56,6 +56,7 @@ contract SevenUpPool is Configable
     event Borrow(address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Repay(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
     event Liquidation(address indexed _liquidator, address indexed _user, uint _supplyAmount, uint _collateralAmount);
+    event Reinvest(address indexed _user, uint _reinvestAmount);
 
     constructor() public 
     {
@@ -145,6 +146,8 @@ contract SevenUpPool is Configable
         remainSupply = remainSupply.sub(platformShare);
 
         if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
+
+        emit Reinvest(from, reinvestAmount);
     }
 
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
@@ -203,17 +206,18 @@ contract SevenUpPool is Configable
 
     function borrow(uint amountCollateral, uint expectBorrow, address from) public onlyPlatform
     {
-        require(amountCollateral > 0, "7UP: INVALID AMOUNT");
-        require(amountCollateral <= uint(-1) && expectBorrow <= uint(-1), '7UP: OVERFLOW');
-        TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
+        if(amountCollateral > 0) TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
 
         updateInterests();
 
         uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
         uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
 
-        uint amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
-        require(expectBorrow <= amountBorrow && expectBorrow <= remainSupply, "7UP: INVALID BORROW");
+        uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
+        uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
+
+        require(repayAmount + expectBorrow <= maximumBorrow, "7UP: EXCEED MAX ALLOWED");
+        require(expectBorrow <= remainSupply, "7UP: INVALID BORROW");
 
         totalBorrow = totalBorrow.add(expectBorrow);
         totalPledge = totalPledge.add(amountCollateral);
@@ -236,13 +240,13 @@ contract SevenUpPool is Configable
         emit Borrow(from, expectBorrow, amountCollateral);
     }
 
-    function getRepayAmount(uint amountCollateral, address from) external view returns(uint repayAmount)
+    function getRepayAmount(uint amountCollateral, address from) public view returns(uint repayAmount)
     {
         uint _interestPerBorrow = interestPerBorrow.add(getInterests().mul(block.number - lastInterestUpdate));
         uint _totalInterest = borrows[from].interests.add(_interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
 
-        uint repayInterest = _totalInterest.mul(amountCollateral).div(borrows[from].amountCollateral);
-        repayAmount = borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral).add(repayInterest);
+        uint repayInterest = borrows[from].amountCollateral == 0 ? 0 : _totalInterest.mul(amountCollateral).div(borrows[from].amountCollateral);
+        repayAmount = borrows[from].amountCollateral == 0 ? 0 : borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral).add(repayInterest);
     }
 
     function repay(uint amountCollateral, address from) public onlyPlatform returns(uint repayAmount, uint repayInterest)
