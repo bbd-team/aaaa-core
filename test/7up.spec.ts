@@ -252,6 +252,8 @@ describe('deploy', () => {
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
+		let tx = await poolContract.liquidationHistory(walletOther.address, 0);
+		console.log(tx)
 		await SupplyStruct(walletMe.address);
 		await platformContract.connect(walletMe).reinvest(tokenFIL.address, tokenUSDT.address);
 		await SupplyStruct(walletMe.address);
@@ -291,9 +293,15 @@ describe('deploy', () => {
 		let tx = await queryContract.iterateLiquidationInfo(0, 0, 10);
 
 		console.log(tx.liquidationList)
+		for(var i = 0 ;i < tx.liquidationList[0].length; i ++)
+		{
+			console.log(tx.liquidationList[i].user, tx.liquidationList[i].test1.toString(), tx.liquidationList[i].test2.toString())
+		}
 		console.log(tx.liquidationCount.toString())
 		console.log(tx.poolIndex.toString())
 		console.log(tx.userIndex.toString())
+		//1000000000000000000000
+		//   1000000038717656007
 	});
 
 })

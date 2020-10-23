@@ -31,11 +31,18 @@ contract SevenUpPool is Configable
         uint interests;
     }
 
+    struct LiquidationStruct {
+        uint amountCollateral;
+        uint liquidationAmount;
+    }
+
     address[] public borrowerList;
     uint public numberBorrowers;
 
     mapping(address => SupplyStruct) public supplys;
     mapping(address => BorrowStruct) public borrows;
+    mapping(address => LiquidationStruct []) public liquidationHistory;
+    mapping(address => uint) public liquidationHistoryLength;
 
     uint public interestPerSupply;
     uint public liquidationPerSupply;
@@ -315,6 +322,12 @@ contract SevenUpPool is Configable
         totalBorrow = totalBorrow.sub(borrows[_user].amountBorrow);
 
         borrowAmount = borrows[_user].amountBorrow;
+
+        LiquidationStruct memory liq;
+        liq.amountCollateral = borrows[_user].amountCollateral;
+        liq.liquidationAmount = expectedRepay;
+        liquidationHistory[_user].push(liq);
+        liquidationHistoryLength[_user] ++;
         
         emit Liquidation(from, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
 
