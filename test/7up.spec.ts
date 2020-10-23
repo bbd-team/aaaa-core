@@ -61,6 +61,7 @@ describe('deploy', () => {
 
 		console.log('team:', ethers.utils.formatBytes32String("team"))
 		console.log('spare:', ethers.utils.formatBytes32String("spare"))
+		console.log('price:', ethers.utils.formatBytes32String("price"))
 		console.log('pledgePrice:', ethers.utils.formatBytes32String("pledgePrice"))
 		
 		await configContract.connect(walletDeveloper).initialize(
