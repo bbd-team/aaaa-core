@@ -259,7 +259,7 @@ describe('deploy', () => {
 		await SupplyStruct(walletMe.address);
 		await sevenInfo();
 		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02'));
+			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02')); 
 		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
 		console.log('after withdraw: ', 
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
@@ -290,10 +290,12 @@ describe('deploy', () => {
 		await platformContract.connect(wallet4).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
 		await platformContract.connect(wallet5).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
 
+		await platformContract.connect(walletDeveloper).updatePoolParameter(
+			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.001')); 
+
 		let tx = await queryContract.iterateLiquidationInfo(0, 0, 10);
 
-		console.log(tx.liquidationList)
-		for(var i = 0 ;i < tx.liquidationList[0].length; i ++)
+		for(var i = 0 ;i < tx.liquidationCount.toNumber(); i ++)
 		{
 			console.log(tx.liquidationList[i].user, tx.liquidationList[i].test1.toString(), tx.liquidationList[i].test2.toString())
 		}
