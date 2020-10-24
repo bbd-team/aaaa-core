@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.5.16;
+pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
@@ -56,6 +56,12 @@ interface ISevenUpMint {
     function mintCumulation() external view returns(uint);
     function takeLendWithAddress(address user) external view returns (uint);
     function takeBorrowWithAddress(address user) external view returns (uint);
+}
+
+interface ISwapPair {
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 }
 
 contract SevenUpQuery {
@@ -327,4 +333,11 @@ contract SevenUpQuery {
         }
     }
 
+    function getSwapPairReserve(address _pair) public view returns (address token0, address token1, uint8 decimals0, uint8 decimals1, uint reserve0, uint reserve1) {
+        token0 = ISwapPair(_pair).token0();
+        token1 = ISwapPair(_pair).token1();
+        decimals0 = IERC20(token0).decimals();
+        decimals1 = IERC20(token1).decimals();
+        (reserve0, reserve1, ) = ISwapPair(_pair).getReserves();
+    }
 }

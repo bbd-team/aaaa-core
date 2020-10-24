@@ -34,6 +34,7 @@ contract SevenUpPool is Configable
     struct LiquidationStruct {
         uint amountCollateral;
         uint liquidationAmount;
+        uint timestamp;
     }
 
     address[] public borrowerList;
@@ -326,6 +327,8 @@ contract SevenUpPool is Configable
         LiquidationStruct memory liq;
         liq.amountCollateral = borrows[_user].amountCollateral;
         liq.liquidationAmount = expectedRepay;
+        liq.timestamp = block.timestamp;
+        
         liquidationHistory[_user].push(liq);
         liquidationHistoryLength[_user] ++;
         
