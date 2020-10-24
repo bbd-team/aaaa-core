@@ -81,14 +81,14 @@ contract SevenUpConfig {
     }
 
     function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
-        require(block.number >= lastPriceBlock.add(params[bytes32("changePriceDuration")]), "7UP: Price FORBIDDEN")
+        require(block.number >= lastPriceBlock.add(params[bytes32("changePriceDuration")]), "7UP: Price FORBIDDEN");
         require(msg.sender == wallets[bytes32("price")], "7UP: Config FORBIDDEN");
         require(_pools.length == _prices.length ,"7UP: PRICES LENGTH MISMATCH");
 
         for(uint i = 0; i < _pools.length; i ++)
         {
             uint currentPrice = poolParams[_pools[i]][bytes32("pledgePrice")];
-            if(_price[i] > currentPrice) {
+            if(_prices[i] > currentPrice) {
                 uint maxPrice = currentPrice.add(currentPrice.mul(params[bytes32("changePricePercent")]).div(10000));
                 poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] > maxPrice ? maxPrice: _prices[i];
             } else {
