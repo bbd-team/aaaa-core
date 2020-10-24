@@ -150,10 +150,7 @@ contract SevenUpPool is Configable
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
-        require(platformShare <= remainSupply, "7UP: NOT ENOUGH BALANCE");
-        remainSupply = remainSupply.sub(platformShare);
-
-        if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
+        distributePlatformShare(platformShare);
 
         emit Reinvest(from, reinvestAmount);
     }
@@ -171,6 +168,19 @@ contract SevenUpPool is Configable
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : liquidationAmount.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
 
         withdrawAmount = supplys[from].amountSupply.sub(withdrawLiquidationSupplyAmount).add(interestAmount);
+    }
+
+    function distributePlatformShare(uint platformShare) internal 
+    {
+        require(platformShare <= remainSupply, "7UP: NOT ENOUGH PLATFORM SHARE");
+        if(platformShare > 0) {
+            uint buybackShare = IConfig(config).params(bytes32("buybackShare"));
+            uint buybackAmount = platformShare.mul(buybackShare).div(1e18);
+            uint dividendAmount = platformShare.sub(buybackShare);
+            if(dividendAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), dividendAmount);
+            if(buybackAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).wallets(bytes32("spare")), buybackAmount);
+            remainSupply = remainSupply.sub(platformShare);
+        }
     }
 
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
@@ -191,10 +201,7 @@ contract SevenUpPool is Configable
         uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
         uint userShare = withdrawInterest.sub(platformShare);
 
-        require(platformShare <= remainSupply, "7UP: NOT ENOUGH PLATFORM SHARE");
-        if(platformShare > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), platformShare);
-
-        remainSupply = remainSupply.sub(platformShare);
+        distributePlatformShare(platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
         uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(userShare);
