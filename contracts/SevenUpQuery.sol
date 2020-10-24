@@ -271,6 +271,43 @@ contract SevenUpQuery {
         }
     }
 
+    function iteratePairLiquidationInfo(address _pair, uint _start, uint _end) public view returns (
+        LiquidationStruct[] memory list)
+    {
+        require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
+        uint count = ISevenUpPool(_pair).numberBorrowers();
+        if (_end > count) _end = count;
+        count = _end - _start;
+        uint index = 0;
+        uint liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
+        uint pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
+        for(uint i = _start; i < _end; i++) {
+            address user = ISevenUpPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
+            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            {
+                index++;
+            }
+        }
+        list = new LiquidationStruct[](index);
+        index = 0;
+        for(uint i = _start; i < _end; i++) {
+            address user = ISevenUpPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
+            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            {
+                list[index].user             = user;
+                list[index].pool             = _pair;
+                list[index].amountCollateral = amountCollateral;
+                list[index].expectedRepay    = repayAmount;
+                list[index].liquidationRate  = liquidationRate;
+                index++;
+            }
+        }
+    }
+
     function getPoolConf(address _pair) public view returns (PoolConfigInfo memory info) {
         info.baseInterests = IConfig(config).poolParams(_pair, bytes32("baseInterests"));
         info.marketFrenzy = IConfig(config).poolParams(_pair, bytes32("marketFrenzy"));
@@ -289,4 +326,5 @@ contract SevenUpQuery {
             }
         }
     }
+
 }
