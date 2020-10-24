@@ -233,6 +233,13 @@ contract SevenUpMint is Configable {
         return (earn, block.number);
     }
 
+    function takeAll() public view returns (uint) {
+        return takeBorrowWithAddress(msg.sender).add(takeLendWithAddress(msg.sender));
+    }
+
+    function takeAllWithBlock() external view returns (uint, uint) {
+        return (takeAll(), block.number);
+    }
 
     // External function call
     // When user calls this function, it will calculate how many token will mint to user from his productivity * time
@@ -254,6 +261,22 @@ contract SevenUpMint is Configable {
         uint amount = lenders[msg.sender].rewardEarn;
         _mintDistribution(msg.sender, amount);
         lenders[msg.sender].rewardEarn = 0;
+        return amount;
+    }
+
+    function mintAll() external returns (uint) {
+        _update();
+
+        _auditBorrower(msg.sender);
+        _auditLender(msg.sender);
+        uint borrowAmount = borrowers[msg.sender].rewardEarn;
+        uint lendAmount = lenders[msg.sender].rewardEarn;
+        uint amount = lendAmount.add(borrowAmount);
+        require(amount > 0, "NOTHING TO MINT");
+        _mintDistribution(msg.sender, amount);
+        borrowers[msg.sender].rewardEarn = 0;
+        lenders[msg.sender].rewardEarn = 0;
+
         return amount;
     }
 
