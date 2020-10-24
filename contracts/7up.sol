@@ -178,7 +178,7 @@ contract SevenUpPool is Configable
             uint buybackAmount = platformShare.mul(buybackShare).div(1e18);
             uint dividendAmount = platformShare.sub(buybackShare);
             if(dividendAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), dividendAmount);
-            if(buybackAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).wallets(bytes32("spare")), buybackAmount);
+            if(buybackAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).wallets(bytes32("team")), buybackAmount);
             remainSupply = remainSupply.sub(platformShare);
         }
     }
