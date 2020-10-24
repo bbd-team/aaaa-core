@@ -47,7 +47,7 @@ interface ISevenUpPool {
     function borrowerList(uint index) external view returns(address);
     function borrows(address user) external view returns(uint,uint,uint,uint,uint);
     function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
-    function liquidationHistory(address user) external view returns(uint,uint,uint);
+    function liquidationHistory(address user, uint index) external view returns(uint,uint,uint);
     function liquidationHistoryLength(address user) external view returns(uint);
 }
 
@@ -328,7 +328,7 @@ contract SevenUpQuery {
         if(count > 0) {
             list = new UserLiquidationStruct[](count);
             for(uint i = 0;i < count; i++) {
-                (uint amountCollateral, uint liquidationAmount, uint timestamp) = ISevenUpPool(_pair).liquidationHistory(_user);
+                (uint amountCollateral, uint liquidationAmount, uint timestamp) = ISevenUpPool(_pair).liquidationHistory(_user, i);
                 list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount, timestamp);
             }
         }
