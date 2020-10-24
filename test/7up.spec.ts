@@ -97,6 +97,8 @@ describe('deploy', () => {
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
 		poolContract  = new Contract(pool, SevenUp.abi, provider).connect(walletMe);
 
+		await configContract.connect(walletPrice).setPoolPrice([pool], ['43318171973142730']);
+
 		await tokenFIL.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
 		await tokenFIL.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
 		await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
