@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
+import "./libraries/SafeMath.sol";
 
 contract SevenUpConfig {
+    using SafeMath for uint;
     address public factory;
     address public platform;
     address public developer;
@@ -10,6 +12,8 @@ contract SevenUpConfig {
     address public base;
     address public share;
     address public governor;
+
+    uint public lastPriceBlock;
     
     mapping (address => mapping (bytes32 => uint)) public poolParams;
     mapping (bytes32 => uint) public params;
@@ -54,6 +58,9 @@ contract SevenUpConfig {
         params[bytes32("7upTokenUserMint")] = 5000;
         params[bytes32("7upTokenTeamMint")] = 3000;
 
+        params[bytes32("changePriceDuration")] = 20;
+        params[bytes32("changePricePercent")] = 500;
+
         params[bytes32("depositEnable")] = 1;
         params[bytes32("withdrawEnable")] = 1;
         params[bytes32("borrowEnable")] = 1;
@@ -74,13 +81,24 @@ contract SevenUpConfig {
     }
 
     function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
+        require(block.number >= lastPriceBlock.add(params[bytes32("changePriceDuration")]), "7UP: Price FORBIDDEN")
         require(msg.sender == wallets[bytes32("price")], "7UP: Config FORBIDDEN");
         require(_pools.length == _prices.length ,"7UP: PRICES LENGTH MISMATCH");
+
         for(uint i = 0; i < _pools.length; i ++)
         {
-            poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i];
+            uint currentPrice = poolParams[_pools[i]][bytes32("pledgePrice")];
+            if(_price[i] > currentPrice) {
+                uint maxPrice = currentPrice.add(currentPrice.mul(params[bytes32("changePricePercent")]).div(10000));
+                poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] > maxPrice ? maxPrice: _prices[i];
+            } else {
+                uint minPrice = currentPrice.sub(currentPrice.mul(params[bytes32("changePricePercent")]).div(10000));
+                poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] > minPrice ? minPrice: _prices[i];
+            }
             emit PoolParameterChange(_pools[i], bytes32("pledgePrice"), _prices[i]);
         }
+
+        lastPriceBlock = block.number;
     }
     
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external {
