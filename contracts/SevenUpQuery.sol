@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.5.16;
+pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
@@ -47,7 +47,7 @@ interface ISevenUpPool {
     function borrowerList(uint index) external view returns(address);
     function borrows(address user) external view returns(uint,uint,uint,uint,uint);
     function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
-    function liquidationHistory(address user) external view returns(uint,uint);
+    function liquidationHistory(address user) external view returns(uint,uint,uint);
     function liquidationHistoryLength(address user) external view returns(uint);
 }
 
@@ -56,6 +56,12 @@ interface ISevenUpMint {
     function mintCumulation() external view returns(uint);
     function takeLendWithAddress(address user) external view returns (uint);
     function takeBorrowWithAddress(address user) external view returns (uint);
+}
+
+interface ISwapPair {
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 }
 
 contract SevenUpQuery {
@@ -121,6 +127,7 @@ contract SevenUpQuery {
     struct UserLiquidationStruct {
         uint amountCollateral;
         uint liquidationAmount;
+        uint timestamp;
     }
 
     constructor() public {
@@ -321,10 +328,17 @@ contract SevenUpQuery {
         if(count > 0) {
             list = new UserLiquidationStruct[](count);
             for(uint i = 0;i < count; i++) {
-                (uint amountCollateral, uint liquidationAmount) = ISevenUpPool(_pair).liquidationHistory(_user);
-                list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount);
+                (uint amountCollateral, uint liquidationAmount, uint timestamp) = ISevenUpPool(_pair).liquidationHistory(_user);
+                list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount, timestamp);
             }
         }
     }
 
+    function getSwapPairReserve(address _pair) public view returns (address token0, address token1, uint8 decimals0, uint8 decimals1, uint reserve0, uint reserve1) {
+        token0 = ISwapPair(_pair).token0();
+        token1 = ISwapPair(_pair).token1();
+        decimals0 = IERC20(token0).decimals();
+        decimals1 = IERC20(token1).decimals();
+        (reserve0, reserve1, ) = ISwapPair(_pair).getReserves();
+    }
 }

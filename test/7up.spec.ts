@@ -63,6 +63,7 @@ describe('deploy', () => {
 		console.log('spare:', ethers.utils.formatBytes32String("spare"))
 		console.log('price:', ethers.utils.formatBytes32String("price"))
 		console.log('pledgePrice:', ethers.utils.formatBytes32String("pledgePrice"))
+		console.log('7upTokenUserMint:', ethers.utils.formatBytes32String("7upTokenUserMint"))
 		
 		await configContract.connect(walletDeveloper).initialize(
 			platformContract.address, 
@@ -300,7 +301,7 @@ describe('deploy', () => {
 
 		for(var i = 0 ;i < tx.liquidationCount.toNumber(); i ++)
 		{
-			console.log(tx.liquidationList[i].user, tx.liquidationList[i].test1.toString(), tx.liquidationList[i].test2.toString())
+			console.log(tx.liquidationList[i].user, tx.liquidationList[i].expectedRepay.toString(), tx.liquidationList[i].amountCollateral.toString())
 		}
 		console.log(tx.liquidationCount.toString())
 		console.log(tx.poolIndex.toString())
