@@ -204,6 +204,7 @@ contract SevenUpPool is Configable
         remainSupply = remainSupply.sub(withdrawSupplyAmount);
         totalLiquidation = totalLiquidation.sub(withdrawLiquidation);
         totalLiquidationSupplyAmount = totalLiquidationSupplyAmount.sub(withdrawLiquidationSupplyAmount);
+        totalPledge = totalPledge.sub(withdrawLiquidation);
 
         supplys[from].interests = supplys[from].interests.sub(withdrawInterest);
         supplys[from].liquidation = supplys[from].liquidation.sub(withdrawLiquidation);
