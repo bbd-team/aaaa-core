@@ -15,7 +15,8 @@ contract SevenUpConfig {
     mapping (bytes32 => uint) public params;
     mapping (bytes32 => address) public wallets;
 
-    event ParameterChange(uint key, uint value);
+    event ParameterChange(bytes32 key, uint value);
+    event PoolParameterChange(address pool, bytes32 key, uint value);
     
     constructor() public {
         developer = msg.sender;
@@ -68,6 +69,7 @@ contract SevenUpConfig {
         for(uint i = 0; i < _keys.length; i ++)
         {
             params[_keys[i]] = _values[i];
+            emit ParameterChange(_keys[i], _values[i]);
         }
     }
 
@@ -77,11 +79,13 @@ contract SevenUpConfig {
         for(uint i = 0; i < _pools.length; i ++)
         {
             poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i];
+            emit PoolParameterChange(_pools[i], bytes32("pledgePrice"), _prices[i]);
         }
     }
     
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external {
         require(msg.sender == governor || msg.sender == _pool || msg.sender == platform, "7UP: FORBIDDEN");
         poolParams[_pool][_key] = _value;
+        emit PoolParameterChange(_pool, _key, _value);
     }
 }
