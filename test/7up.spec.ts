@@ -299,7 +299,7 @@ describe('deploy', () => {
 
 		for(var i = 0 ;i < tx.liquidationCount.toNumber(); i ++)
 		{
-			console.log(tx.liquidationList[i].user, tx.liquidationList[i].test1.toString(), tx.liquidationList[i].test2.toString())
+			console.log(tx.liquidationList[i].user, tx.liquidationList[i].expectedRepay.toString(), tx.liquidationList[i].amountCollateral.toString())
 		}
 		console.log(tx.liquidationCount.toString())
 		console.log(tx.poolIndex.toString())
