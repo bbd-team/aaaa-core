@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.5.16;
+pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
@@ -56,6 +56,12 @@ interface ISevenUpMint {
     function mintCumulation() external view returns(uint);
     function takeLendWithAddress(address user) external view returns (uint);
     function takeBorrowWithAddress(address user) external view returns (uint);
+}
+
+interface ISwapPair {
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 }
 
 contract SevenUpQuery {
@@ -271,6 +277,43 @@ contract SevenUpQuery {
         }
     }
 
+    function iteratePairLiquidationInfo(address _pair, uint _start, uint _end) public view returns (
+        LiquidationStruct[] memory list)
+    {
+        require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
+        uint count = ISevenUpPool(_pair).numberBorrowers();
+        if (_end > count) _end = count;
+        count = _end - _start;
+        uint index = 0;
+        uint liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
+        uint pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
+        for(uint i = _start; i < _end; i++) {
+            address user = ISevenUpPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
+            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            {
+                index++;
+            }
+        }
+        list = new LiquidationStruct[](index);
+        index = 0;
+        for(uint i = _start; i < _end; i++) {
+            address user = ISevenUpPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
+            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            {
+                list[index].user             = user;
+                list[index].pool             = _pair;
+                list[index].amountCollateral = amountCollateral;
+                list[index].expectedRepay    = repayAmount;
+                list[index].liquidationRate  = liquidationRate;
+                index++;
+            }
+        }
+    }
+
     function getPoolConf(address _pair) public view returns (PoolConfigInfo memory info) {
         info.baseInterests = IConfig(config).poolParams(_pair, bytes32("baseInterests"));
         info.marketFrenzy = IConfig(config).poolParams(_pair, bytes32("marketFrenzy"));
@@ -288,5 +331,13 @@ contract SevenUpQuery {
                 list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount);
             }
         }
+    }
+
+    function getSwapPairReserve(address _pair) public view returns (address token0, address token1, uint8 decimals0, uint8 decimals1, uint reserve0, uint reserve1) {
+        token0 = ISwapPair(_pair).token0();
+        token1 = ISwapPair(_pair).token1();
+        decimals0 = IERC20(token0).decimals();
+        decimals1 = IERC20(token1).decimals();
+        (reserve0, reserve1, ) = ISwapPair(_pair).getReserves();
     }
 }
