@@ -31,11 +31,18 @@ contract SevenUpMint is Configable {
         uint amount;     // How many tokens the user has provided.
         uint rewardDebt; // Reward debt. 
         uint rewardEarn; // Reward earn and not minted
+        uint index;
     }
     
     mapping(address => UserInfo) public lenders;
     mapping(address => UserInfo) public borrowers;
-    
+
+    address[] public lenderList;
+    address[] public borrowerList;
+
+    uint public numberOfLender;
+    uint public numberOfBorrower;
+
     event BorrowPowerChange (uint oldValue, uint newValue);
     event InterestRatePerBlockChanged (uint oldValue, uint newValue);
     event BorrowerProductivityIncreased (address indexed user, uint value);
@@ -138,6 +145,13 @@ contract SevenUpMint is Configable {
         _update();
         _auditBorrower(user);
 
+        if(borrowers[user].index == 0)
+        {
+            borrowerList.push(user);
+            numberOfBorrower++;
+            borrowers[user].index = numberOfBorrower;
+        }
+
         totalBorrowProducitivity = totalBorrowProducitivity.add(value);
 
         userInfo.amount = userInfo.amount.add(value);
@@ -168,6 +182,13 @@ contract SevenUpMint is Configable {
         UserInfo storage userInfo = lenders[user];
         _update();
         _auditLender(user);
+
+        if(lenders[user].index == 0)
+        {
+            lenderList.push(user);
+            numberOfLender++;
+            lenders[user].index = numberOfLender;
+        }
 
         totalLendProductivity = totalLendProductivity.add(value);
 
