@@ -57,7 +57,7 @@ contract SevenUpConfig {
         params[bytes32("buybackShare")] = 5 * 1e17;
         params[bytes32("7upMaxSupply")] = 100000 * 1e18;
         params[bytes32("7upTokenUserMint")] = 5000;
-        params[bytes32("7upTokenTeamMint")] = 3000;
+        params[bytes32("7upTokenTeamMint")] = 4000;
 
         params[bytes32("changePriceDuration")] = 20;
         params[bytes32("changePricePercent")] = 500;
