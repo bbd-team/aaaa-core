@@ -93,7 +93,7 @@ contract SevenUpConfig {
                 poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] > maxPrice ? maxPrice: _prices[i];
             } else {
                 uint minPrice = currentPrice.sub(currentPrice.mul(params[bytes32("changePricePercent")]).div(10000));
-                poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] > minPrice ? minPrice: _prices[i];
+                poolParams[_pools[i]][bytes32("pledgePrice")] = _prices[i] < minPrice ? minPrice: _prices[i];
             }
             emit PoolParameterChange(_pools[i], bytes32("pledgePrice"), _prices[i]);
         }
