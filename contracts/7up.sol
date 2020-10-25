@@ -167,7 +167,10 @@ contract SevenUpPool is Configable
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : liquidationAmount.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
 
-        withdrawAmount = supplys[from].amountSupply.sub(withdrawLiquidationSupplyAmount).add(interestAmount);
+        if(withdrawLiquidationSupplyAmount > supplys[from].amountSupply.add(interestAmount))
+            withdrawAmount = 0;
+        else 
+            withdrawAmount = supplys[from].amountSupply.add(interestAmount).sub(withdrawLiquidationSupplyAmount);
     }
 
     function distributePlatformShare(uint platformShare) internal 
@@ -204,7 +207,9 @@ contract SevenUpPool is Configable
         distributePlatformShare(platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
-        uint withdrawSupplyAmount = amountWithdraw.sub(withdrawLiquidationSupplyAmount).add(userShare);
+        uint withdrawSupplyAmount = 0;
+        if(withdrawLiquidationSupplyAmount < amountWithdraw.add(userShare))
+            withdrawSupplyAmount = amountWithdraw.add(userShare).sub(withdrawLiquidationSupplyAmount);
         
         require(withdrawSupplyAmount <= remainSupply, "7UP: NOT ENOUGH POOL BALANCE");
         require(withdrawLiquidation <= totalLiquidation, "7UP: NOT ENOUGH LIQUIDATION");
