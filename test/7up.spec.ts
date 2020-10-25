@@ -64,6 +64,7 @@ describe('deploy', () => {
 		console.log('price:', ethers.utils.formatBytes32String("price"))
 		console.log('pledgePrice:', ethers.utils.formatBytes32String("pledgePrice"))
 		console.log('7upTokenUserMint:', ethers.utils.formatBytes32String("7upTokenUserMint"))
+		console.log('changePricePercent:', ethers.utils.formatBytes32String("changePricePercent"))
 		
 		await configContract.connect(walletDeveloper).initialize(
 			platformContract.address, 
