@@ -54,6 +54,7 @@ contract SevenUpConfig {
     function initParameter() external {
         require(msg.sender == developer, "Config FORBIDDEN");
         params[bytes32("platformShare")] = 1e17;
+        params[bytes32("buybackShare")] = 5 * 1e17;
         params[bytes32("7upMaxSupply")] = 100000 * 1e18;
         params[bytes32("7upTokenUserMint")] = 5000;
         params[bytes32("7upTokenTeamMint")] = 3000;
