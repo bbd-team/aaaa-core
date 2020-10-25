@@ -44,7 +44,7 @@ contract SevenUpMint is Configable {
     event LenderProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint userAmount, uint teamAmount, uint spareAmount);
     
-    function changeBorrowPower(uint _value) external onlyDeveloper {
+    function changeBorrowPower(uint _value) external onlyGovernor {
         uint old = borrowPower;
         require(_value != old, 'POWER_NO_CHANGE');
         require(_value <= 10000, 'INVALID_POWER_VALUE');
@@ -59,7 +59,7 @@ contract SevenUpMint is Configable {
     // This function adjust how many token will be produced by each block, eg:
     // changeAmountPerBlock(100)
     // will set the produce rate to 100/block.
-    function changeInterestRatePerBlock(uint value) external onlyDeveloper returns (bool) {
+    function changeInterestRatePerBlock(uint value) external onlyGovernor returns (bool) {
         uint old = amountPerBlock;
         require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
 
