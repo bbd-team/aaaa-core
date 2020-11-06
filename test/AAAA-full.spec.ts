@@ -1,7 +1,7 @@
 import {expect, use} from 'chai';
 import {Contract, ethers, BigNumber} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
-import SevenUp from '../build/SevenUpPool.json';
+import AAAA from '../build/AAAAPool.json';
 import ERC20 from '../build/ERC20Token.json';
 import { BigNumber as BN } from 'bignumber.js'
 
@@ -11,7 +11,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 	return new BN(bnAmount.toString()).dividedBy(new BN(divider)).toFixed();
 }
 
-// describe('7up-full', () => {
+// describe('AAAA-full', () => {
 // 	let provider = new MockProvider();
 // 	const [walletMe, walletOther, walletPool, newGovernor, walletTeam, walletInit] = provider.getWallets();
 // 	let tokenUSDT 	: Contract;
@@ -30,7 +30,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 // 	  }
 
 // 	before(async () => {
-// 		sevenContract  = await deployContract(walletMe, SevenUp);
+// 		sevenContract  = await deployContract(walletMe, AAAA);
 // 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
 // 		tokenFIL 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
 		
@@ -41,7 +41,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 		
 // 		console.log('walletMe = ', walletMe.address);
 // 		console.log('walletOther = ', walletOther.address);
-// 		console.log('7up address = ', sevenContract.address);
+// 		console.log('AAAA address = ', sevenContract.address);
 // 		console.log('USDT address = ', tokenUSDT.address);
 // 		console.log('FIL address = ', tokenFIL.address);
 // 		await tokenFIL.connect(walletMe).approve(sevenContract.address, ethers.utils.parseEther('1000000'));

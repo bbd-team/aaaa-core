@@ -1,14 +1,14 @@
 import {expect, use} from 'chai';
 import {Contract, ethers, BigNumber} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
-import SevenUp from '../build/SevenUpPool.json';
-import SevenUpConfig from '../build/SevenUpConfig.json';
-import SevenUpMint from '../build/SevenUpMint.json';
-import SevenUpFactory from '../build/SevenUpFactory.json';
-import SevenUpPlatform from '../build/SevenUpPlatform.json';
-import SevenUpToken from '../build/SevenUpToken.json';
-import SevenUpShare from '../build/SevenUpShare.json';
-import SevenUpQuery from '../build/SevenUpQuery.json'
+import AAAA from '../build/AAAAPool.json';
+import AAAAConfig from '../build/AAAAConfig.json';
+import AAAAMint from '../build/AAAAMint.json';
+import AAAAFactory from '../build/AAAAFactory.json';
+import AAAAPlatform from '../build/AAAAPlatform.json';
+import AAAAToken from '../build/AAAAToken.json';
+import AAAAShare from '../build/AAAAShare.json';
+import AAAAQuery from '../build/AAAAQuery.json'
 import ERC20 from '../build/ERC20Token.json';
 import { BigNumber as BN } from 'bignumber.js'
 
@@ -33,15 +33,15 @@ describe('deploy', () => {
 	let queryContract : Contract;
 
 	before(async () => {
-		shareContract = await deployContract(walletDeveloper, SevenUpShare);
-		configContract  = await deployContract(walletDeveloper, SevenUpConfig);
-		factoryContract  = await deployContract(walletDeveloper, SevenUpFactory);
-		mintContract  = await deployContract(walletDeveloper, SevenUpMint);
-		platformContract  = await deployContract(walletDeveloper, SevenUpPlatform);
-		tokenContract  = await deployContract(walletDeveloper, SevenUpToken);
+		shareContract = await deployContract(walletDeveloper, AAAAShare);
+		configContract  = await deployContract(walletDeveloper, AAAAConfig);
+		factoryContract  = await deployContract(walletDeveloper, AAAAFactory);
+		mintContract  = await deployContract(walletDeveloper, AAAAMint);
+		platformContract  = await deployContract(walletDeveloper, AAAAPlatform);
+		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
 		tokenFIL 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
-		queryContract = await deployContract(walletDeveloper, SevenUpQuery);
+		queryContract = await deployContract(walletDeveloper, AAAAQuery);
 
 		console.log('configContract = ', configContract.address);
 		console.log('factoryContract = ', factoryContract.address);
@@ -54,7 +54,7 @@ describe('deploy', () => {
 		console.log('spare:', ethers.utils.formatBytes32String("spare"))
 		console.log('price:', ethers.utils.formatBytes32String("price"))
 		console.log('pledgePrice:', ethers.utils.formatBytes32String("pledgePrice"))
-		console.log('7upTokenUserMint:', ethers.utils.formatBytes32String("7upTokenUserMint"))
+		console.log('AAAATokenUserMint:', ethers.utils.formatBytes32String("AAAATokenUserMint"))
 		console.log('changePricePercent:', ethers.utils.formatBytes32String("changePricePercent"))
 		console.log('liquidationRate:', ethers.utils.formatBytes32String("liquidationRate"))
 		console.log('marketFrenzy:', ethers.utils.formatBytes32String("marketFrenzy"))
@@ -90,7 +90,7 @@ describe('deploy', () => {
 		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);
 
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
-		poolContract  = new Contract(pool, SevenUp.abi, provider).connect(walletMe);
+		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
 		await configContract.connect(walletPrice).setPoolPrice([pool], ['43318171973142730']);
 

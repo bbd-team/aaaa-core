@@ -293,6 +293,7 @@ contract AAAAPool is Configable
 
         if(collateralStrategy != address(0))
         {
+            IERC20(ICollateralStrategy(collateralStrategy).collateralToken()).approve(collateralStrategy, amountCollateral);
             ICollateralStrategy(collateralStrategy).invest(amountCollateral); 
         }
 
