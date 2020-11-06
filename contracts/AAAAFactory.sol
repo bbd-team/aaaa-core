@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
 
-import "./7up.sol";
+import "./AAAA.sol";
 import "./modules/Configable.sol";
 
-interface ISevenUpPool {
+interface IAAAAPool {
     function init(address _supplyToken,  address _collateralToken) external;
     function setupConfig(address config) external;
 }
 
 
-contract SevenUpFactory is Configable{
+contract AAAAFactory is Configable{
     event PoolCreated(address indexed lendToken, address indexed collateralToken, address pool);
     
     address[] public allPools;
@@ -20,7 +20,7 @@ contract SevenUpFactory is Configable{
     function createPool(address _lendToken, address _collateralToken) onlyDeveloper external returns (address pool) {
         require(getPool[_lendToken][_collateralToken] == address(0), "ALREADY CREATED");
         
-        bytes memory bytecode = type(SevenUpPool).creationCode;
+        bytes memory bytecode = type(AAAAPool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_lendToken, _collateralToken));
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
@@ -29,8 +29,8 @@ contract SevenUpFactory is Configable{
             
         allPools.push(pool);
         isPool[pool] = true;
-        ISevenUpPool(pool).setupConfig(config);
-        ISevenUpPool(pool).init(_lendToken, _collateralToken);
+        IAAAAPool(pool).setupConfig(config);
+        IAAAAPool(pool).init(_lendToken, _collateralToken);
         
         emit PoolCreated(_lendToken, _collateralToken, pool);
     }

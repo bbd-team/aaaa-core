@@ -3,12 +3,12 @@ pragma solidity >=0.5.16;
 import "./libraries/SafeMath.sol";
 import "./modules/Configable.sol";
 
-contract SevenUpToken is Configable {
+contract AAAAToken is Configable {
     using SafeMath for uint;      
     
     // implementation of ERC20 interfaces.
-    string public name = "Seven Up Token";
-    string public symbol = "7UP";
+    string public name = "AAAA Token";
+    string public symbol = "AAAA";
     uint8 public decimals = 18;
     uint public totalSupply = 100000 * (1e18);
     
@@ -27,7 +27,7 @@ contract SevenUpToken is Configable {
     }
     
     function _transfer(address from, address to, uint value) internal {
-        require(balanceOf[from] >= value, '7UP: INSUFFICIENT_BALANCE');
+        require(balanceOf[from] >= value, 'AAAA: INSUFFICIENT_BALANCE');
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         if (to == address(0)) { // burn
@@ -48,7 +48,7 @@ contract SevenUpToken is Configable {
     }
 
     function transferFrom(address from, address to, uint value) external returns (bool) {
-        require(allowance[from][msg.sender] >= value, '7UP: INSUFFICIENT_ALLOWANCE');
+        require(allowance[from][msg.sender] >= value, 'AAAA: INSUFFICIENT_ALLOWANCE');
         allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         _transfer(from, to, value);
         return true;

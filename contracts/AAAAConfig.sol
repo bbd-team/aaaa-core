@@ -2,7 +2,7 @@
 pragma solidity >=0.5.16;
 import "./libraries/SafeMath.sol";
 
-contract SevenUpConfig {
+contract AAAAConfig {
     using SafeMath for uint;
     address public factory;
     address public platform;
@@ -27,7 +27,7 @@ contract SevenUpConfig {
     }
     
     function initialize (address _platform, address _factory, address _mint, address _token, address _base, address _share, address _governor) external {
-        require(msg.sender == developer, "7UP: Config FORBIDDEN");
+        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
         mint        = _mint;
         platform    = _platform;
         factory     = _factory;
@@ -38,13 +38,13 @@ contract SevenUpConfig {
     }
 
     function changeDeveloper(address _developer) external {
-        require(msg.sender == developer, "7UP: Config FORBIDDEN");
+        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
         developer = _developer;
     }
 
     function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external {
-        require(msg.sender == developer, "7UP: ONLY DEVELOPER");
-        require(_names.length == _wallets.length ,"7UP: WALLETS LENGTH MISMATCH");
+        require(msg.sender == developer, "AAAA: ONLY DEVELOPER");
+        require(_names.length == _wallets.length ,"AAAA: WALLETS LENGTH MISMATCH");
         for(uint i = 0; i < _names.length; i ++)
         {
             wallets[_names[i]] = _wallets[i];
@@ -55,9 +55,9 @@ contract SevenUpConfig {
         require(msg.sender == developer, "Config FORBIDDEN");
         params[bytes32("platformShare")] = 1e17;
         params[bytes32("buybackShare")] = 5 * 1e17;
-        params[bytes32("7upMaxSupply")] = 100000 * 1e18;
-        params[bytes32("7upTokenUserMint")] = 5000;
-        params[bytes32("7upTokenTeamMint")] = 4000;
+        params[bytes32("AAAAMaxSupply")] = 100000 * 1e18;
+        params[bytes32("AAAATokenUserMint")] = 5000;
+        params[bytes32("AAAATokenTeamMint")] = 4000;
 
         params[bytes32("changePriceDuration")] = 20;
         params[bytes32("changePricePercent")] = 500;
@@ -72,8 +72,8 @@ contract SevenUpConfig {
 
     function setParameter(bytes32[] calldata _keys, uint[] calldata _values) external
     {
-        require(msg.sender == governor, "7UP: ONLY DEVELOPER");
-        require(_keys.length == _values.length ,"7UP: PARAMS LENGTH MISMATCH");
+        require(msg.sender == governor, "AAAA: ONLY DEVELOPER");
+        require(_keys.length == _values.length ,"AAAA: PARAMS LENGTH MISMATCH");
         for(uint i = 0; i < _keys.length; i ++)
         {
             params[_keys[i]] = _values[i];
@@ -82,9 +82,9 @@ contract SevenUpConfig {
     }
 
     function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
-        require(block.number >= lastPriceBlock.add(params[bytes32("changePriceDuration")]), "7UP: Price FORBIDDEN");
-        require(msg.sender == wallets[bytes32("price")], "7UP: Config FORBIDDEN");
-        require(_pools.length == _prices.length ,"7UP: PRICES LENGTH MISMATCH");
+        require(block.number >= lastPriceBlock.add(params[bytes32("changePriceDuration")]), "AAAA: Price FORBIDDEN");
+        require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
+        require(_pools.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
 
         for(uint i = 0; i < _pools.length; i ++)
         {
@@ -103,7 +103,7 @@ contract SevenUpConfig {
     }
     
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external {
-        require(msg.sender == governor || msg.sender == _pool || msg.sender == platform, "7UP: FORBIDDEN");
+        require(msg.sender == governor || msg.sender == _pool || msg.sender == platform, "AAAA: FORBIDDEN");
         poolParams[_pool][_key] = _value;
         emit PoolParameterChange(_pool, _key, _value);
     }

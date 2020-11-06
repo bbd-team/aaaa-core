@@ -5,7 +5,14 @@ import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
 import "./modules/Configable.sol";
 
-contract SevenUpPool is Configable
+interface ICollateralStrategy {
+    function invest(uint amount) external;
+    function withdraw(uint amount) external returns(uint);
+    function interestToken() external returns (address);
+    function collateralToken() external returns (address);
+}
+
+contract AAAAPool is Configable
 {
     using SafeMath for uint;
 
@@ -59,12 +66,30 @@ contract SevenUpPool is Configable
 
     uint public lastInterestUpdate;
 
+    address public collateralStrategy;
+
     event Deposit(address indexed _user, uint _amount, uint _collateralAmount);
     event Withdraw(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
     event Borrow(address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Repay(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
     event Liquidation(address indexed _liquidator, address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Reinvest(address indexed _user, uint _reinvestAmount);
+
+    function switchStrategy(address _collateralStrategy) external onlyFactory 
+    {
+        if(collateralStrategy != address(0))
+        {
+            ICollateralStrategy(collateralStrategy).withdraw(totalPledge);
+        }
+
+        if(_collateralStrategy != address(0))
+        {
+            require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
+            ICollateralStrategy(_collateralStrategy).invest(totalPledge);
+        }
+
+        collateralStrategy = _collateralStrategy;
+    }
 
     constructor() public 
     {
@@ -112,7 +137,7 @@ contract SevenUpPool is Configable
 
     function deposit(uint amountDeposit, address from) public onlyPlatform
     {
-        require(amountDeposit > 0, "7UP: INVALID AMOUNT");
+        require(amountDeposit > 0, "AAAA: INVALID AMOUNT");
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), amountDeposit);
 
         updateInterests();
@@ -175,7 +200,7 @@ contract SevenUpPool is Configable
 
     function distributePlatformShare(uint platformShare) internal 
     {
-        require(platformShare <= remainSupply, "7UP: NOT ENOUGH PLATFORM SHARE");
+        require(platformShare <= remainSupply, "AAAA: NOT ENOUGH PLATFORM SHARE");
         if(platformShare > 0) {
             uint buybackShare = IConfig(config).params(bytes32("buybackShare"));
             uint buybackAmount = platformShare.mul(buybackShare).div(1e18);
@@ -188,8 +213,8 @@ contract SevenUpPool is Configable
 
     function withdraw(uint amountWithdraw, address from) public onlyPlatform
     {
-        require(amountWithdraw > 0, "7UP: INVALID AMOUNT");
-        require(amountWithdraw <= supplys[from].amountSupply, "7UP: NOT ENOUGH BALANCE");
+        require(amountWithdraw > 0, "AAAA: INVALID AMOUNT");
+        require(amountWithdraw <= supplys[from].amountSupply, "AAAA: NOT ENOUGH BALANCE");
 
         updateInterests();
 
@@ -211,8 +236,8 @@ contract SevenUpPool is Configable
         if(withdrawLiquidationSupplyAmount < amountWithdraw.add(userShare))
             withdrawSupplyAmount = amountWithdraw.add(userShare).sub(withdrawLiquidationSupplyAmount);
         
-        require(withdrawSupplyAmount <= remainSupply, "7UP: NOT ENOUGH POOL BALANCE");
-        require(withdrawLiquidation <= totalLiquidation, "7UP: NOT ENOUGH LIQUIDATION");
+        require(withdrawSupplyAmount <= remainSupply, "AAAA: NOT ENOUGH POOL BALANCE");
+        require(withdrawLiquidation <= totalLiquidation, "AAAA: NOT ENOUGH LIQUIDATION");
 
         remainSupply = remainSupply.sub(withdrawSupplyAmount);
         totalLiquidation = totalLiquidation.sub(withdrawLiquidation);
@@ -227,7 +252,14 @@ contract SevenUpPool is Configable
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
         if(withdrawSupplyAmount > 0) TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount); 
-        if(withdrawLiquidation > 0) TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
+        if(withdrawLiquidation > 0) {
+            if(collateralStrategy != address(0))
+            {
+                uint collateralInterest = ICollateralStrategy(collateralStrategy).withdraw(withdrawLiquidation);
+                if(collateralInterest > 0) TransferHelper.safeTransfer(ICollateralStrategy(collateralStrategy).interestToken(), from, collateralInterest);    
+            }
+            TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
+        }
 
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
@@ -252,12 +284,17 @@ contract SevenUpPool is Configable
         uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
         uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
 
-        require(repayAmount + expectBorrow <= maximumBorrow, "7UP: EXCEED MAX ALLOWED");
-        require(expectBorrow <= remainSupply, "7UP: INVALID BORROW");
+        require(repayAmount + expectBorrow <= maximumBorrow, "AAAA: EXCEED MAX ALLOWED");
+        require(expectBorrow <= remainSupply, "AAAA: INVALID BORROW");
 
         totalBorrow = totalBorrow.add(expectBorrow);
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
+
+        if(collateralStrategy != address(0))
+        {
+            ICollateralStrategy(collateralStrategy).invest(amountCollateral); 
+        }
 
         if(borrows[from].index == 0)
         {
@@ -287,8 +324,8 @@ contract SevenUpPool is Configable
 
     function repay(uint amountCollateral, address from) public onlyPlatform returns(uint repayAmount, uint repayInterest)
     {
-        require(amountCollateral <= borrows[from].amountCollateral, "7UP: NOT ENOUGH COLLATERAL");
-        require(amountCollateral > 0, "7UP: INVALID AMOUNT");
+        require(amountCollateral <= borrows[from].amountCollateral, "AAAA: NOT ENOUGH COLLATERAL");
+        require(amountCollateral > 0, "AAAA: INVALID AMOUNT");
 
         updateInterests();
 
@@ -307,6 +344,11 @@ contract SevenUpPool is Configable
 
         remainSupply = remainSupply.add(repayAmount.add(repayInterest));
 
+        if(collateralStrategy != address(0))
+        {
+            uint collateralInterest = ICollateralStrategy(collateralStrategy).withdraw(amountCollateral);
+            if(collateralInterest > 0) TransferHelper.safeTransfer(ICollateralStrategy(collateralStrategy).interestToken(), from, collateralInterest);    
+        }
         TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
 
@@ -315,7 +357,7 @@ contract SevenUpPool is Configable
 
     function liquidation(address _user, address from) public onlyPlatform returns(uint borrowAmount)
     {
-        require(supplys[from].amountSupply > 0, "7UP: ONLY SUPPLIER");
+        require(supplys[from].amountSupply > 0, "AAAA: ONLY SUPPLIER");
 
         updateInterests();
 
@@ -327,7 +369,7 @@ contract SevenUpPool is Configable
         uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
 
-        require(expectedRepay >= collateralValue.mul(liquidationRate).div(1e18), '7UP: NOT LIQUIDABLE');
+        require(expectedRepay >= collateralValue.mul(liquidationRate).div(1e18), 'AAAA: NOT LIQUIDABLE');
 
         updateLiquidation(borrows[_user].amountCollateral);
 

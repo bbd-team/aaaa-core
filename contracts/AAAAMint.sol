@@ -4,7 +4,7 @@ import "./libraries/SafeMath.sol";
 import "./libraries/TransferHelper.sol";
 import "./modules/Configable.sol";
 
-contract SevenUpMint is Configable {
+contract AAAAMint is Configable {
     using SafeMath for uint;
     
     uint public mintCumulation;
@@ -21,9 +21,9 @@ contract SevenUpMint is Configable {
     
     uint public borrowPower = 0;
 
-    bytes32 public MaxSupplyKey = bytes32("7upMaxSupply");
-    bytes32 public UserMintKey = bytes32("7upTokenUserMint");
-    bytes32 public TeamMintKey = bytes32("7upTokenTeamMint");
+    bytes32 public MaxSupplyKey = bytes32("AAAAMaxSupply");
+    bytes32 public UserMintKey = bytes32("AAAATokenUserMint");
+    bytes32 public TeamMintKey = bytes32("AAAATokenTeamMint");
     bytes32 public TeamWalletKey = bytes32("team");
     bytes32 public SpareWalletKey = bytes32("spare");
     

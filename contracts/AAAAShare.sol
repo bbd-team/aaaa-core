@@ -5,7 +5,7 @@ import './libraries/TransferHelper.sol';
 import './modules/Configable.sol';
 import './modules/BaseShareField.sol';
 
-contract SevenUpShare is Configable, BaseShareField {
+contract AAAAShare is Configable, BaseShareField {
     event ProductivityIncreased (address indexed user, uint value);
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint amount);

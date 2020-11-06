@@ -29,14 +29,14 @@ interface IConfig {
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
 }
 
-interface ISevenUpFactory {
+interface IAAAAFactory {
     function countPools() external view returns(uint);
     function allPools(uint index) external view returns(address);
     function isPool(address addr) external view returns(bool);
     function getPool(address lend, address collateral) external view returns(address);
 }
 
-interface ISevenUpPool {
+interface IAAAAPool {
     function supplyToken() external view returns(address);
     function collateralToken() external view returns(address);
     function totalBorrow() external view returns(uint);
@@ -51,7 +51,7 @@ interface ISevenUpPool {
     function liquidationHistoryLength(address user) external view returns(uint);
 }
 
-interface ISevenUpMint {
+interface IAAAAMint {
     function maxSupply() external view returns(uint);
     function mintCumulation() external view returns(uint);
     function takeLendWithAddress(address user) external view returns (uint);
@@ -64,7 +64,7 @@ interface ISwapPair {
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 }
 
-contract SevenUpQuery {
+contract AAAAQuery {
     address public owner;
     address public config;
     using SafeMath for uint;
@@ -140,31 +140,31 @@ contract SevenUpQuery {
     }
 
     function getPoolInfoByIndex(uint index) public view returns (PoolInfoStruct memory info) {
-        uint count = ISevenUpFactory(IConfig(config).factory()).countPools();
+        uint count = IAAAAFactory(IConfig(config).factory()).countPools();
         if (index >= count || count == 0) {
             return info;
         }
-        address pair = ISevenUpFactory(IConfig(config).factory()).allPools(index);
+        address pair = IAAAAFactory(IConfig(config).factory()).allPools(index);
         return getPoolInfo(pair);
     }
 
     function getPoolInfoByTokens(address lend, address collateral) public view returns (PoolInfoStruct memory info) {
-        address pair = ISevenUpFactory(IConfig(config).factory()).getPool(lend, collateral);
+        address pair = IAAAAFactory(IConfig(config).factory()).getPool(lend, collateral);
         return getPoolInfo(pair);
     }
     
     function getPoolInfo(address pair) public view returns (PoolInfoStruct memory info) {
-        if(!ISevenUpFactory(IConfig(config).factory()).isPool(pair)) {
+        if(!IAAAAFactory(IConfig(config).factory()).isPool(pair)) {
             return info;
         }
         info.pair = pair;
-        info.totalBorrow = ISevenUpPool(pair).totalBorrow();
-        info.totalPledge = ISevenUpPool(pair).totalPledge();
-        info.remainSupply = ISevenUpPool(pair).remainSupply();
-        info.borrowInterests = ISevenUpPool(pair).getInterests();
+        info.totalBorrow = IAAAAPool(pair).totalBorrow();
+        info.totalPledge = IAAAAPool(pair).totalPledge();
+        info.remainSupply = IAAAAPool(pair).remainSupply();
+        info.borrowInterests = IAAAAPool(pair).getInterests();
         info.supplyInterests = info.borrowInterests;
-        info.supplyToken = ISevenUpPool(pair).supplyToken();
-        info.collateralToken = ISevenUpPool(pair).collateralToken();
+        info.supplyToken = IAAAAPool(pair).supplyToken();
+        info.collateralToken = IAAAAPool(pair).collateralToken();
         info.supplyTokenDecimals = IERC20(info.supplyToken).decimals();
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
@@ -176,7 +176,7 @@ contract SevenUpQuery {
     }
 
     function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
-        uint count = ISevenUpFactory(IConfig(config).factory()).countPools();
+        uint count = IAAAAFactory(IConfig(config).factory()).countPools();
         if(count > 0) {
             list = new PoolInfoStruct[](count);
             for(uint i = 0;i < count;i++) {
@@ -208,26 +208,26 @@ contract SevenUpQuery {
 
     function queryMintToken(address user) public view returns (MintTokenStruct memory info) {
         address token = IConfig(config).mint();
-        info.mintCumulation = ISevenUpMint(token).mintCumulation();
+        info.mintCumulation = IAAAAMint(token).mintCumulation();
         info.maxSupply = IConfig(config).params(bytes32("7upMaxSupply"));
-        info.takeBorrow = ISevenUpMint(token).takeBorrowWithAddress(user);
-        info.takeLend = ISevenUpMint(token).takeLendWithAddress(user);
+        info.takeBorrow = IAAAAMint(token).takeBorrowWithAddress(user);
+        info.takeLend = IAAAAMint(token).takeLendWithAddress(user);
     }
 
     function getBorrowInfo(address _pair, address _user) public view returns (BorrowInfo memory info){
-        (, uint amountCollateral, uint interestSettled, uint amountBorrow, uint interests) = ISevenUpPool(_pair).borrows(_user);
+        (, uint amountCollateral, uint interestSettled, uint amountBorrow, uint interests) = IAAAAPool(_pair).borrows(_user);
         info = BorrowInfo(_user, amountCollateral, interestSettled, amountBorrow, interests);
     }
 
     function iterateBorrowInfo(address _pair, uint _start, uint _end) public view returns (BorrowInfo[] memory list){
         require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
-        uint count = ISevenUpPool(_pair).numberBorrowers();
+        uint count = IAAAAPool(_pair).numberBorrowers();
         if (_end > count) _end = count;
         count = _end - _start;
         list = new BorrowInfo[](count);
         uint index = 0;
         for(uint i = _start; i < _end; i++) {
-            address user = ISevenUpPool(_pair).borrowerList(i);
+            address user = IAAAAPool(_pair).borrowerList(i);
             list[index] = getBorrowInfo(_pair, user);
             index++;
         }
@@ -241,23 +241,23 @@ contract SevenUpQuery {
     {
         require(_countLiquidation < 30, "EXCEEDING MAX ALLOWED");
         liquidationList = new LiquidationStruct[](_countLiquidation);
-        uint poolCount = ISevenUpFactory(IConfig(config).factory()).countPools();
+        uint poolCount = IAAAAFactory(IConfig(config).factory()).countPools();
 
         require(_startPoolIndex < poolCount, "INVALID POOL INDEX");
 
         for(uint i = _startPoolIndex; i < poolCount; i++) {
-            address pool = ISevenUpFactory(IConfig(config).factory()).allPools(i);
+            address pool = IAAAAFactory(IConfig(config).factory()).allPools(i);
             uint liquidationRate = IConfig(config).poolParams(pool, bytes32("liquidationRate"));
             uint pledgePrice = IConfig(config).poolParams(pool, bytes32("pledgePrice"));
-            uint borrowsCount = ISevenUpPool(pool).numberBorrowers();
+            uint borrowsCount = IAAAAPool(pool).numberBorrowers();
             require(_startIndex < borrowsCount, "INVALID START INDEX");
             poolIndex = i;
 
             for(uint j = _startIndex; j < borrowsCount; j ++)
             {
-                address user = ISevenUpPool(pool).borrowerList(j);
-                (, uint amountCollateral, , , ) = ISevenUpPool(pool).borrows(user);
-                uint repayAmount = ISevenUpPool(pool).getRepayAmount(amountCollateral, user);
+                address user = IAAAAPool(pool).borrowerList(j);
+                (, uint amountCollateral, , , ) = IAAAAPool(pool).borrows(user);
+                uint repayAmount = IAAAAPool(pool).getRepayAmount(amountCollateral, user);
                 userIndex = j + 1;
 
                 if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
@@ -282,16 +282,16 @@ contract SevenUpQuery {
         LiquidationStruct[] memory list)
     {
         require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
-        uint count = ISevenUpPool(_pair).numberBorrowers();
+        uint count = IAAAAPool(_pair).numberBorrowers();
         if (_end > count) _end = count;
         count = _end - _start;
         uint index = 0;
         uint liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
         uint pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
         for(uint i = _start; i < _end; i++) {
-            address user = ISevenUpPool(_pair).borrowerList(i);
-            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
-            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            address user = IAAAAPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
+            uint repayAmount = IAAAAPool(_pair).getRepayAmount(amountCollateral, user);
             if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
             {
                 index++;
@@ -300,9 +300,9 @@ contract SevenUpQuery {
         list = new LiquidationStruct[](index);
         index = 0;
         for(uint i = _start; i < _end; i++) {
-            address user = ISevenUpPool(_pair).borrowerList(i);
-            (, uint amountCollateral, , , ) = ISevenUpPool(_pair).borrows(user);
-            uint repayAmount = ISevenUpPool(_pair).getRepayAmount(amountCollateral, user);
+            address user = IAAAAPool(_pair).borrowerList(i);
+            (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
+            uint repayAmount = IAAAAPool(_pair).getRepayAmount(amountCollateral, user);
             if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
             {
                 list[index].user             = user;
@@ -324,11 +324,11 @@ contract SevenUpQuery {
     }
 
     function queryUserLiquidationList(address _pair, address _user) public view returns (UserLiquidationStruct[] memory list) {
-        uint count = ISevenUpPool(_pair).liquidationHistoryLength(_user);
+        uint count = IAAAAPool(_pair).liquidationHistoryLength(_user);
         if(count > 0) {
             list = new UserLiquidationStruct[](count);
             for(uint i = 0;i < count; i++) {
-                (uint amountCollateral, uint liquidationAmount, uint timestamp) = ISevenUpPool(_pair).liquidationHistory(_user, i);
+                (uint amountCollateral, uint liquidationAmount, uint timestamp) = IAAAAPool(_pair).liquidationHistory(_user, i);
                 list[i] = UserLiquidationStruct(amountCollateral, liquidationAmount, timestamp);
             }
         }
