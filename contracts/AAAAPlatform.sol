@@ -22,6 +22,7 @@ interface IAAAAPool {
     function updatePledgeRate(uint _pledgeRate) external;
     function updatePledgePrice(uint _pledgePrice) external;
     function updateLiquidationRate(uint _liquidationRate) external;
+    function switchStrategy(address _collateralStrategy) external;
 }
 
 interface IAAAAFactory {
@@ -89,6 +90,13 @@ contract AAAAPlatform is Configable {
             IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
         }
     } 
+
+    function switchStrategy(address _lendToken, address _collateralToken, address _collateralStrategy) external onlyDeveloper
+    {
+        address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
+        require(pool != address(0), "POOL NOT EXIST");
+        IAAAAPool(pool).switchStrategy(_collateralStrategy);
+    }
 
     function updatePoolParameter(address _lendToken, address _collateralToken, bytes32 _key, uint _value) external onlyDeveloper
     {

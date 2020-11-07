@@ -160,8 +160,8 @@ describe('deploy', () => {
 		console.log('after liquidation: ', 
 			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1e18), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18));
-		await SupplyStruct(walletMe.address);
-		await sevenInfo();
+		// await SupplyStruct(walletMe.address);
+		// await sevenInfo();
 		await platformContract.connect(walletDeveloper).updatePoolParameter(
 			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02'));
 		// await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
