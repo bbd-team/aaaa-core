@@ -76,7 +76,7 @@ contract AAAAPool is Configable
     event Liquidation(address indexed _liquidator, address indexed _user, uint _supplyAmount, uint _collateralAmount);
     event Reinvest(address indexed _user, uint _reinvestAmount);
 
-    function switchStrategy(address _collateralStrategy) external onlyFactory 
+    function switchStrategy(address _collateralStrategy) external onlyPlatform
     {
         if(collateralStrategy != address(0))
         {
@@ -86,7 +86,7 @@ contract AAAAPool is Configable
         if(_collateralStrategy != address(0))
         {
             require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
-            ICollateralStrategy(_collateralStrategy).invest(totalPledge);
+            if(totalPledge > 0) ICollateralStrategy(_collateralStrategy).invest(totalPledge);
         }
 
         collateralStrategy = _collateralStrategy;

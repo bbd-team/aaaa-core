@@ -112,7 +112,7 @@ contract AAAAConfig {
     function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
         uint duration = params[ConfigNames.CHANGE_PRICE_DURATION].value;
         uint maxPercent = params[ConfigNames.CHANGE_PRICE_PERCENT].value;
-        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price FORBIDDEN");
+        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
         require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
         require(_pools.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
 
