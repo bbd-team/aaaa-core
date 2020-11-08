@@ -49,6 +49,7 @@ contract UniLPStrategy is ICollateralStrategy
     {
         require(msg.sender == poolAddress, "INVALID CALLER");
         TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
+        IERC20(collateralToken).approve(uniswapPoolAddress, amount);
         IUniswapStakingReward(uniswapPoolAddress).stake(amount);
     }
 

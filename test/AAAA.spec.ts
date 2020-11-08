@@ -31,8 +31,8 @@ describe('deploy', () => {
 	let tokenContract: Contract;
 	let shareContract: Contract;
 	let masterChef 	: Contract;
-	let tokenFIL 	: Contract;
 	let tokenUSDT 	: Contract;
+	let tokenLP	 	: Contract;
 	let poolContract: Contract;
 	let queryContract : Contract;
 	let stakingReward : Contract;
@@ -46,7 +46,11 @@ describe('deploy', () => {
 		const blockNumber = await provider.getBlockNumber()
 		console.log("Current block number: " + blockNumber);
 		return blockNumber;
-	  }
+	}
+
+	async function mineBlock(provider: MockProvider, timestamp: number): Promise<void> {
+		  return provider.send('evm_mine', [timestamp])
+	}
 
 	before(async () => {
 		shareContract = await deployContract(walletDeveloper, AAAAShare);
@@ -56,22 +60,32 @@ describe('deploy', () => {
 		platformContract  = await deployContract(walletDeveloper, AAAAPlatform);
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
-		tokenFIL 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
-		rewardToken = await deployContract(walletMe, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
+		// tokenUSDT 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
+		tokenLP 	= await deployContract(walletMe, ERC20, ['Uniswap V2 LP ETH/DAI', 'Uniswap v2 ETH/DAI', 18, ethers.utils.parseEther('1000000')]);
+		rewardToken = await deployContract(walletDeveloper, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery);
 
 		await getBlockNumber();
-		stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
-		stakingReward = await deployContract(walletMe, StakingReward, [stakingRewardFactory.address, rewardToken.address, tokenUSDT.address]);
+		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
+		stakingReward = await deployContract(walletMe, StakingReward, [walletDeveloper.address, rewardToken.address, tokenLP.address]);
+		// rewardToken.connect(walletDeveloper).transfer(stakingReward.address, ethers.utils.parseEther('100'));
+		// stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
+
+	    await rewardToken.connect(walletDeveloper).transfer(stakingReward.address, ethers.utils.parseEther('100'));
+		await stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
+
+		const rewardsDuration = await stakingReward.rewardsDuration()
+		const startTime: BigNumber = await stakingReward.lastUpdateTime()
+	    const endTime: BigNumber = await stakingReward.periodFinish()
 
 		console.log('configContract = ', configContract.address);
 		console.log('factoryContract = ', factoryContract.address);
 		console.log('mintContract address = ', mintContract.address);
 		console.log('platformContract address = ', platformContract.address);
 		console.log('tokenContract address = ', tokenContract.address);
-		console.log('tokenFIL address = ', tokenFIL.address);
+		// console.log('tokenUSDT address = ', tokenUSDT.address);
 		console.log('rewardToken address = ', rewardToken.address);
-		console.log('stakingRewardFactory address = ', stakingRewardFactory.address);
+		// console.log('stakingRewardFactory address = ', stakingRewardFactory.address);
 		console.log('stakingReward address = ', stakingReward.address);
 
 		console.log('team:', ethers.utils.formatBytes32String("team"))
@@ -87,7 +101,7 @@ describe('deploy', () => {
 			factoryContract.address, 
 			mintContract.address, 
 			tokenContract.address, 
-			tokenFIL.address,
+			tokenUSDT.address,
 			shareContract.address,
 			walletDeveloper.address
 		);
@@ -110,45 +124,48 @@ describe('deploy', () => {
 		]);
 		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
-		await factoryContract.connect(walletDeveloper).createPool(tokenFIL.address, tokenUSDT.address);
+		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
-		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
+		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
-		strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenUSDT.address, poolContract.address, stakingReward.address]);
-		await platformContract.connect(walletDeveloper).switchStrategy(tokenFIL.address, tokenUSDT.address, strategy.address);
+		strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
+		await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address);
 
 		await configContract.connect(walletPrice).setPoolPrice([pool], ['43318171973142730']);
 
-		await tokenFIL.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenFIL.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
 		await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-
-		await tokenFIL.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'));
+		await tokenLP.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		await tokenLP.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		await tokenLP.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'));
+		await tokenUSDT.connect(walletOther).transfer(walletMe.address, ethers.utils.parseEther('100000'));
 	})
 
 	it("simple test", async () => {
 		await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
-		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenFIL.address, tokenUSDT.address);
-		await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
+		await (await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		const poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 		console.log(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18));
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('1000');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('1000');
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('500'));
-		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1e18)).to.equals('899500');
+		await (await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'))).wait();
+		expect(convertBigNumber(await tokenUSDT.balanceOf(walletMe.address), 1e18)).to.equals('99500');
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('500');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('500');
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('500'));
-		console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-		expect(convertBigNumber(await tokenFIL.balanceOf(walletMe.address), 1e18)).to.equals('900000');
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		await (await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'))).wait();
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		expect(convertBigNumber(await tokenUSDT.balanceOf(walletMe.address), 1e18)).to.equals('100000');
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('0');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('0');
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await mintContract.connect(walletMe).mintLender();
+		await (await mintContract.connect(walletMe).mintLender()).wait();
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletMe.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletTeam.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
@@ -199,23 +216,23 @@ describe('deploy', () => {
 	};
 
 	it('deposit(1000) -> borrow(100) -> repay(100) -> withdraw(1000)', async() => {
-		await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await(await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		console.log('after deposit: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
-			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
+			'pool USDT', convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
+			'pool LP', convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1));
 
 		let maxBorrow = await poolContract.getMaximumBorrowAmount(ethers.utils.parseEther('10000'));
-		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1));
-		await platformContract.connect(walletOther).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('10000'), maxBorrow);
+		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1), 'USDT');
+		await(await platformContract.connect(walletOther).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('10000'), maxBorrow)).wait();
 		console.log('after borrow: ', 
-			convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1),
-			convertBigNumber(await tokenFIL.balanceOf(walletOther.address), 1),
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
-			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
+			'wallet USDT', convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1),
+			'wallet LP', convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1),
+			'pool USDT', convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
+			'pool LP', convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1));
 
 		console.log('getInterests:', convertBigNumber(await poolContract.getInterests(),1));
 
-		tx = await platformContract.connect(walletOther).repay(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('10000'));
+		tx = await platformContract.connect(walletOther).repay(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('10000'));
 		let receipt = await tx.wait()
 		console.log('repay gas:', receipt.gasUsed.toString())
 		// console.log('events:', receipt.events)
@@ -224,117 +241,123 @@ describe('deploy', () => {
 		// console.log('_collateralAmount:', convertBigNumber(receipt.events[2].args._collateralAmount, 1))
 		// console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
 
-		console.log('after repay: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
-			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
+		console.log('after repay with UNI: ', 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1),
+			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1),
+			convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
 
 		// await SupplyStruct(walletMe.address);
 		// await sevenInfo();
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
 		console.log('after withdraw: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
-		console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 	});
 
 	it('deposit(1000) -> borrow(100) -> liquidation(100) -> withdraw(1000)', async() => {
-		await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await(await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		console.log('after deposit: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 		let maxBorrow = await poolContract.getMaximumBorrowAmount(ethers.utils.parseEther('10000'));
-		await platformContract.connect(walletOther).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('10000'), maxBorrow);
+		await(await platformContract.connect(walletOther).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('10000'), maxBorrow)).wait();
 		console.log('after borrow: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
-		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.01'));
-		await platformContract.connect(walletMe).liquidation(tokenFIL.address, tokenUSDT.address, walletOther.address);
+		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
+			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.01'))).wait();
+		await(await platformContract.connect(walletMe).liquidation(tokenUSDT.address, tokenLP.address, walletOther.address)).wait();
 		console.log('after liquidation: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 		// await SupplyStruct(walletMe.address);
 		// await sevenInfo();
-		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02'));
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
+			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02'))).wait();
+		await(await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		console.log('after withdraw: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
-		console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 	});
 
 	it('deposit(1000) -> borrow(100) -> liquidation(100) -> reinvest() -> withdraw(1000)', async() => {
-		await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await(await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		console.log('after deposit: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 		let maxBorrow = await poolContract.getMaximumBorrowAmount(ethers.utils.parseEther('10000'));
-		await platformContract.connect(walletOther).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('10000'), maxBorrow);
+		console.log('before borrow', 
+			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1)
+			)
+		await(await platformContract.connect(walletOther).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('10000'), maxBorrow)).wait();
 		console.log('after borrow: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
-		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.01'));
-		await platformContract.connect(walletMe).liquidation(tokenFIL.address, tokenUSDT.address, walletOther.address);
+		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
+			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.01'))).wait();
+		await(await platformContract.connect(walletMe).liquidation(tokenUSDT.address, tokenLP.address, walletOther.address)).wait();
 		console.log('after liquidation: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 		let tx = await poolContract.liquidationHistory(walletOther.address, 0);
 		// console.log(tx)
 		// await SupplyStruct(walletMe.address);
-		// console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-		await platformContract.connect(walletMe).reinvest(tokenFIL.address, tokenUSDT.address);
-		// console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
+		// console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		await(await platformContract.connect(walletMe).reinvest(tokenUSDT.address, tokenLP.address)).wait();
+		// console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 		// await SupplyStruct(walletMe.address);
 		// await sevenInfo();
-		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02')); 
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
+		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
+			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.02'))).wait(); 
+		await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
 		console.log('after withdraw: ', 
-			convertBigNumber(await tokenFIL.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1));
 		// await sevenInfo();
 	});
 
 	it('liquidation list test', async() => {
-
-		await platformContract.connect(walletMe).deposit(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'));
-
-		await tokenUSDT.connect(walletOther).transfer(wallet1.address, ethers.utils.parseEther('1000'));
-		await tokenUSDT.connect(walletOther).transfer(wallet2.address, ethers.utils.parseEther('1000'));
-		await tokenUSDT.connect(walletOther).transfer(wallet3.address, ethers.utils.parseEther('1000'));
-		await tokenUSDT.connect(walletOther).transfer(wallet4.address, ethers.utils.parseEther('1000'));
-
-		await tokenUSDT.connect(wallet1).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenUSDT.connect(wallet2).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenUSDT.connect(wallet3).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenUSDT.connect(wallet4).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		// console.log('wallet team2:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-
-		await platformContract.connect(wallet1).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
-		// await platformContract.connect(wallet2).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
-		// await platformContract.connect(wallet3).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
-		// await platformContract.connect(wallet4).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
-		//await platformContract.connect(wallet5).borrow(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
-
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('500'));
-		// console.log('wallet share:', convertBigNumber(await tokenFIL.balanceOf(shareContract.address),1e18))
-		// console.log('wallet team3:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-		// console.log('user:', await mintContract.connect(walletOther).numberOfLender(), await mintContract.connect(walletOther).numberOfBorrower());
-
-		await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0')); 
-		// console.log('wallet team4:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
+		// console.log('1')
+		// await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
+		// console.log('2')
+		// await tokenLP.connect(walletOther).transfer(wallet1.address, ethers.utils.parseEther('1000'));
+		// await tokenLP.connect(walletOther).transfer(wallet2.address, ethers.utils.parseEther('1000'));
+		// await tokenLP.connect(walletOther).transfer(wallet3.address, ethers.utils.parseEther('1000'));
+		// await tokenLP.connect(walletOther).transfer(wallet4.address, ethers.utils.parseEther('1000'));
+		// console.log('3')
+		// await tokenLP.connect(wallet1).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// await tokenLP.connect(wallet2).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// await tokenLP.connect(wallet3).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// await tokenLP.connect(wallet4).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+		// // console.log('wallet team2:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		// console.log('4')
+		// await platformContract.connect(wallet1).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
+		// // await platformContract.connect(wallet2).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
+		// // await platformContract.connect(wallet3).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
+		// // await platformContract.connect(wallet4).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
+		// //await platformContract.connect(wallet5).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1'));
+		// console.log('5')
+		// await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'));
+		// // console.log('wallet share:', convertBigNumber(await tokenUSDT.balanceOf(shareContract.address),1e18))
+		// // console.log('wallet team3:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		// // console.log('user:', await mintContract.connect(walletOther).numberOfLender(), await mintContract.connect(walletOther).numberOfBorrower());
+		// console.log('6')
 		// await platformContract.connect(walletDeveloper).updatePoolParameter(
-		// 	tokenFIL.address, tokenUSDT.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.001')); 
-		await platformContract.connect(walletMe).liquidation(tokenFIL.address, tokenUSDT.address, wallet1.address);
+		// 	tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0')); 
+		// // console.log('wallet team4:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		// // await platformContract.connect(walletDeveloper).updatePoolParameter(
+		// // 	tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("pledgePrice"), ethers.utils.parseEther('0.001')); 
+		// await platformContract.connect(walletMe).liquidation(tokenUSDT.address, tokenLP.address, wallet1.address);
 
-		await platformContract.connect(walletMe).withdraw(tokenFIL.address, tokenUSDT.address, ethers.utils.parseEther('500'));
+		// await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'));
 
-		// console.log('hello world')
+		// // console.log('hello world')
 
-		let tx = await queryContract.iterateLiquidationInfo(0, 0, 10);
+		// let tx = await queryContract.iterateLiquidationInfo(0, 0, 10);
 
 		// for(var i = 0 ;i < tx.liquidationCount.toNumber(); i ++)
 		// {
@@ -350,8 +373,8 @@ describe('deploy', () => {
 	});
 
 	it('test circuit breaker', async()=>{
-		console.log('wallet team:', convertBigNumber(await tokenFIL.balanceOf(walletTeam.address),1e18))
-		console.log('wallet share:', convertBigNumber(await tokenFIL.balanceOf(shareContract.address),1e18))
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		console.log('wallet share:', convertBigNumber(await tokenUSDT.balanceOf(shareContract.address),1e18))
 
 		// let priceDurationKey = ethers.utils.formatBytes32String('changePriceDuration');
 		// let price002 = ethers.utils.parseEther('0.002')
