@@ -2,6 +2,7 @@
 pragma solidity >=0.5.16;
 
 import "./modules/Configable.sol";
+import "./modules/ConfigNames.sol";
 import "./libraries/SafeMath.sol";
 import "./libraries/TransferHelper.sol";
 
@@ -30,7 +31,7 @@ interface IAAAAFactory {
 
 contract AAAAPlatform is Configable {
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
-        require(IConfig(config).params(bytes32("depositEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).deposit(_amountDeposit, msg.sender);
@@ -40,7 +41,7 @@ contract AAAAPlatform is Configable {
     }
     
     function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external {
-        require(IConfig(config).params(bytes32("withdrawEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.WITHDRAW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).withdraw(_amountWithdraw, msg.sender);
@@ -50,7 +51,7 @@ contract AAAAPlatform is Configable {
     }
     
     function borrow(address _lendToken, address _collateralToken, uint _amountCollateral, uint _expectBorrow) external {
-        require(IConfig(config).params(bytes32("borrowEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.BORROW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).borrow(_amountCollateral, _expectBorrow, msg.sender);
@@ -60,7 +61,7 @@ contract AAAAPlatform is Configable {
     }
     
     function repay(address _lendToken, address _collateralToken, uint _amountCollateral) external {
-        require(IConfig(config).params(bytes32("repayEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.REPAY_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         (uint repayAmount, ) = IAAAAPool(pool).repay(_amountCollateral, msg.sender);
@@ -70,7 +71,7 @@ contract AAAAPlatform is Configable {
     }
     
     function liquidation(address _lendToken, address _collateralToken, address _user) external {
-        require(IConfig(config).params(bytes32("liquidationEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.LIQUIDATION_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint borrowAmount = IAAAAPool(pool).liquidation(_user, msg.sender);
@@ -80,7 +81,7 @@ contract AAAAPlatform is Configable {
     }
 
     function reinvest(address _lendToken, address _collateralToken) external {
-        require(IConfig(config).params(bytes32("reinvestEnable")) == 1, "NOT ENABLE NOW");
+        require(IConfig(config).getValue(ConfigNames.REINVEST_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint reinvestAmount = IAAAAPool(pool).reinvest(msg.sender);
@@ -94,6 +95,6 @@ contract AAAAPlatform is Configable {
     {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        IConfig(config).setPoolParameter(pool, _key, _value);
+        IConfig(config).setPoolValue(pool, _key, _value);
     }
 }

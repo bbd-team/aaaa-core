@@ -8,15 +8,21 @@ interface IConfig {
     function factory() external view returns (address);
     function mint() external view returns (address);
     function token() external view returns (address);
+    function governance() external view returns (address);
     function developPercent() external view returns (uint);
     function base() external view returns (address);
     function share() external view returns (address);
     function governor() external view returns (address);
-    function poolParams(address pool, bytes32 key) external view returns (uint);
-    function params(bytes32 key) external view returns(uint);
+    function getPoolValue(address pool, bytes32 key) external view returns (uint);
+    function getValue(bytes32 key) external view returns(uint);
+    function getParams(bytes32 key) external view returns(uint, uint, uint, uint); 
+    function getPoolParams(address pool, bytes32 key) external view returns(uint, uint, uint, uint); 
     function wallets(bytes32 key) external view returns(address);
-    function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
-    function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
+    function setValue(bytes32 key, uint value) external;
+    function setPoolValue(address pool, bytes32 key, uint value) external;
+    function setParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external;
+    function setPoolParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external;
+    function initPoolParams(address _pool) external;
 }
 
 contract Configable {

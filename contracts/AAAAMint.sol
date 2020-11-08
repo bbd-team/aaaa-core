@@ -3,12 +3,12 @@ pragma solidity >=0.5.16;
 import "./libraries/SafeMath.sol";
 import "./libraries/TransferHelper.sol";
 import "./modules/Configable.sol";
+import "./modules/ConfigNames.sol";
 
 contract AAAAMint is Configable {
     using SafeMath for uint;
     
     uint public mintCumulation;
-    uint public amountPerBlock;
     uint public lastRewardBlock;
     
     uint public totalLendProductivity;
@@ -19,11 +19,9 @@ contract AAAAMint is Configable {
     uint public totalBorrowSupply;
     uint public totalLendSupply;
     
+    uint public amountPerBlock = 0;
     uint public borrowPower = 0;
 
-    bytes32 public MaxSupplyKey = bytes32("AAAAMaxSupply");
-    bytes32 public UserMintKey = bytes32("AAAATokenUserMint");
-    bytes32 public TeamMintKey = bytes32("AAAATokenTeamMint");
     bytes32 public TeamWalletKey = bytes32("team");
     bytes32 public SpareWalletKey = bytes32("spare");
     
@@ -108,7 +106,7 @@ contract AAAAMint is Configable {
     function _currentReward() internal virtual view returns (uint){
         uint256 multiplier = block.number.sub(lastRewardBlock);
         uint reward = multiplier.mul(amountPerBlock);
-        uint maxSupply = IConfig(config).params(MaxSupplyKey);
+        uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
         if(totalLendSupply.add(totalBorrowSupply).add(reward) > maxSupply) {
             reward = maxSupply.sub(totalLendSupply).sub(totalBorrowSupply);
         }
@@ -228,7 +226,7 @@ contract AAAAMint is Configable {
         }
 
         uint amount = userInfo.amount.mul(_accAmountPerBorrow).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
-        return amount.mul(IConfig(config).params(UserMintKey)).div(10000);
+        return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
     }
     
     function takeLendWithAddress(address user) public view returns (uint) {
@@ -240,7 +238,7 @@ contract AAAAMint is Configable {
             _accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
         }
         uint amount = userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
-        return amount.mul(IConfig(config).params(UserMintKey)).div(10000);
+        return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
     }
 
     // Returns how much a user could earn plus the giving block number.
@@ -316,9 +314,9 @@ contract AAAAMint is Configable {
     }
 
     function _mintDistribution(address user, uint amount) internal {
-        uint userAmount = amount.mul(IConfig(config).params(UserMintKey)).div(10000);
+        uint userAmount = amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
         uint remainAmount = amount.sub(userAmount);
-        uint teamAmount = remainAmount.mul(IConfig(config).params(TeamMintKey)).div(10000);
+        uint teamAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_TEAM_MINT)).div(10000);
         if(teamAmount > 0) {
             TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(TeamWalletKey), teamAmount);
         }

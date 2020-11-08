@@ -4,8 +4,11 @@ import './libraries/SafeMath.sol';
 import './libraries/TransferHelper.sol';
 import './modules/Configable.sol';
 import './modules/BaseShareField.sol';
+import './modules/ConfigNames.sol';
 
 contract AAAAShare is Configable, BaseShareField {
+    mapping (address => uint) public locks;
+    
     event ProductivityIncreased (address indexed user, uint value);
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint amount);
@@ -17,10 +20,23 @@ contract AAAAShare is Configable, BaseShareField {
     function stake(uint _amount) external {
         TransferHelper.safeTransferFrom(IConfig(config).token(), msg.sender, address(this), _amount);
         _increaseProductivity(msg.sender, _amount);
+        locks[msg.sender] = block.number;
         emit ProductivityIncreased(msg.sender, _amount);
     }
     
+    function stakeTo(uint _amount, address _user) external {
+        TransferHelper.safeTransferFrom(IConfig(config).token(), msg.sender, address(this), _amount);
+        _increaseProductivity(_user, _amount);
+        locks[_user] = block.number;
+        emit ProductivityIncreased(_user, _amount);
+    }
+    
+    function lockStake(address _user) onlyGovernor external {
+        locks[_user] = block.number;
+    }
+    
     function withdraw(uint _amount) external {
+        require(block.number > locks[msg.sender].add(IConfig(config).getValue(ConfigNames.STAKE_LOCK_TIME)), "STAKE LOCKED NOW");
         _decreaseProductivity(msg.sender, _amount);
         TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, _amount);
         emit ProductivityDecreased(msg.sender, _amount);

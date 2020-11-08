@@ -5,23 +5,32 @@ import "./AAAA.sol";
 import "./modules/Configable.sol";
 
 interface IAAAAPool {
-    function init(address _supplyToken,  address _collateralToken) external;
+    function init(address supplyToken,  address collateralToken) external;
     function setupConfig(address config) external;
 }
 
+interface IAAAABallot {
+    function initialize(address creator, address pool, bytes32 name, uint value, uint reward, string calldata subject, string calldata content) external;
+    function setupConfig(address config) external;
+}
 
 contract AAAAFactory is Configable{
     event PoolCreated(address indexed lendToken, address indexed collateralToken, address pool);
+    event BallotCreated(address indexed _creator, address indexed _pool, bytes32 name, uint _value);
     
     address[] public allPools;
     mapping(address => bool) public isPool;
     mapping (address => mapping (address => address)) public getPool;
     
+    address[] public allBallots;
+    
+    bytes ballotByteCode;
+
     function createPool(address _lendToken, address _collateralToken) onlyDeveloper external returns (address pool) {
         require(getPool[_lendToken][_collateralToken] == address(0), "ALREADY CREATED");
         
-        bytes memory bytecode = type(AAAAPool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_lendToken, _collateralToken));
+        bytes memory bytecode = type(AAAAPool).creationCode;
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
@@ -29,6 +38,7 @@ contract AAAAFactory is Configable{
             
         allPools.push(pool);
         isPool[pool] = true;
+        IConfig(config).initPoolParams(pool);
         IAAAAPool(pool).setupConfig(config);
         IAAAAPool(pool).init(_lendToken, _collateralToken);
         
@@ -37,5 +47,27 @@ contract AAAAFactory is Configable{
 
     function countPools() external view returns(uint) {
         return allPools.length;
+    }
+    
+    function createBallot(address _creator, address _pool, bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content) 
+    onlyGovernor external returns (address ballot) {
+        bytes32 salt = keccak256(abi.encodePacked(_creator, _value, _subject));
+        bytes memory bytecode = ballotByteCode;
+        assembly {
+            ballot := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        allBallots.push(ballot);
+        IAAAABallot(ballot).setupConfig(config);
+        IAAAABallot(ballot).initialize(_creator, _pool, _name, _value, _reward, _subject, _content);
+        
+        emit BallotCreated(_creator, _pool, _name, _value);
+    }
+    
+    function countBallots() external view returns (uint){
+        return allBallots.length;
+    }
+    
+    function changeBallotByteCode(string calldata _ballotByteCode) onlyDeveloper external {
+        //ballotByteCode = bytes(_ballotByteCode);
     }
 }
