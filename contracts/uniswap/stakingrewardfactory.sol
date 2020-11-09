@@ -3,7 +3,7 @@
  *Submitted for verification at Etherscan.io on 2020-09-16
 */
 
-pragma solidity ^0.6.8;
+pragma solidity >=0.6.6;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
