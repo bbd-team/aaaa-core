@@ -138,16 +138,16 @@ describe('deploy', () => {
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
 		strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
-		await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address);
+		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address)).wait();
 
 		// await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
 		// await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenLP.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenLP.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
-		await tokenLP.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'));
-		await tokenUSDT.connect(walletOther).transfer(walletMe.address, ethers.utils.parseEther('100000'));
+		await (await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await tokenLP.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await tokenLP.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await tokenLP.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'))).wait();
+		await (await tokenUSDT.connect(walletOther).transfer(walletMe.address, ethers.utils.parseEther('100000'))).wait();
 	})
 
 	it("simple test", async () => {
