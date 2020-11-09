@@ -4,6 +4,7 @@ import "./interface/IERC20.sol";
 import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
 import "./modules/Configable.sol";
+import "./modules/ConfigNames.sol";
 
 interface ICollateralStrategy {
     function invest(uint amount) external;
@@ -128,8 +129,8 @@ contract AAAAPool is Configable
     function getInterests() public view returns(uint interestPerBlock)
     {
         uint totalSupply = totalBorrow + remainSupply;
-        uint baseInterests = IConfig(config).poolParams(address(this), bytes32("baseInterests"));
-        uint marketFrenzy = IConfig(config).poolParams(address(this), bytes32("marketFrenzy"));
+        uint baseInterests = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_BASE_INTERESTS);
+        uint marketFrenzy = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_MARKET_FRENZY);
 
         interestPerBlock = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply)).div(365 * 28800);
     }
@@ -171,7 +172,7 @@ contract AAAAPool is Configable
 
         reinvestAmount = supplys[from].interests;
 
-        uint platformShare = reinvestAmount.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
+        uint platformShare = reinvestAmount.mul(IConfig(config).getValue(ConfigNames.INTEREST_PLATFORM_SHARE)).div(1e18);
         reinvestAmount = reinvestAmount.sub(platformShare);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
@@ -192,7 +193,7 @@ contract AAAAPool is Configable
         uint _totalInterest = supplys[from].interests.add(_interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         liquidationAmount = supplys[from].liquidation.add(liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled));
 
-        uint platformShare = _totalInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
+        uint platformShare = _totalInterest.mul(IConfig(config).getValue(ConfigNames.INTEREST_PLATFORM_SHARE)).div(1e18);
         interestAmount = _totalInterest.sub(platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : liquidationAmount.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
@@ -207,7 +208,7 @@ contract AAAAPool is Configable
     {
         require(platformShare <= remainSupply, "AAAA: NOT ENOUGH PLATFORM SHARE");
         if(platformShare > 0) {
-            uint buybackShare = IConfig(config).params(bytes32("buybackShare"));
+            uint buybackShare = IConfig(config).getValue(ConfigNames.INTEREST_BUYBACK_SHARE);
             uint buybackAmount = platformShare.mul(buybackShare).div(1e18);
             uint dividendAmount = platformShare.sub(buybackAmount);
             if(dividendAmount > 0) TransferHelper.safeTransfer(supplyToken, IConfig(config).share(), dividendAmount);
@@ -231,7 +232,7 @@ contract AAAAPool is Configable
         uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
         uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
 
-        uint platformShare = withdrawInterest.mul(IConfig(config).params(bytes32("platformShare"))).div(1e18);
+        uint platformShare = withdrawInterest.mul(IConfig(config).getValue(ConfigNames.INTEREST_PLATFORM_SHARE)).div(1e18);
         uint userShare = withdrawInterest.sub(platformShare);
 
         distributePlatformShare(platformShare);
@@ -271,8 +272,8 @@ contract AAAAPool is Configable
 
     function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
     {
-        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
-        uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
+        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
 
         amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
     }
@@ -283,8 +284,8 @@ contract AAAAPool is Configable
 
         updateInterests();
 
-        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
-        uint pledgeRate = IConfig(config).poolParams(address(this), bytes32("pledgeRate"));
+        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
 
         uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
         uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
@@ -369,8 +370,8 @@ contract AAAAPool is Configable
 
         borrows[_user].interests = borrows[_user].interests.add(interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
 
-        uint liquidationRate = IConfig(config).poolParams(address(this), bytes32("liquidationRate"));
-        uint pledgePrice = IConfig(config).poolParams(address(this), bytes32("pledgePrice"));
+        uint liquidationRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_LIQUIDATION_RATE);
+        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
 
         uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
