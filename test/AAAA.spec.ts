@@ -107,7 +107,7 @@ describe('deploy', () => {
 			tokenContract.address, 
 			tokenUSDT.address,
 			shareContract.address,
-			walletDeveloper.address
+			governanceContract.address
 		);
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
@@ -137,21 +137,6 @@ describe('deploy', () => {
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
-		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_PRICE"), ethers.utils.parseEther('0.02'))).wait();
-
-		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_PLEDGE_RATE"), ethers.utils.parseEther('0.6'))).wait();
-
-		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_LIQUIDATION_RATE"), ethers.utils.parseEther('0.9'))).wait();
-
-		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_BASE_INTERESTS"), ethers.utils.parseEther('0.2'))).wait();
-
-		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
-			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_MARKET_FRENZY"), ethers.utils.parseEther('1.2'))).wait();
-
 		strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
 		await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address);
 
@@ -166,7 +151,7 @@ describe('deploy', () => {
 	})
 
 	it("simple test", async () => {
-		await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
+		//await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		await (await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		const poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
@@ -198,6 +183,7 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 
+		//await governanceContract.connect(walletMe).createProposal(poolContract.address, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('1'), "", "", AAAABallot.bytecode); 
 	})
 
 	async function sevenInfo() {

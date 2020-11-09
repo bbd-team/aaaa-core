@@ -65,7 +65,7 @@ contract AAAAConfig {
     function initParameter() external {
         _setParams(ConfigNames.PROPOSAL_VOTE_DURATION ,   1*DAY,  7*DAY , 1*DAY,  1*DAY);
         _setParams(ConfigNames.PROPOSAL_EXECUTE_DURATION, 1*HOUR, 48*HOUR, 1*HOUR, 1*HOUR);
-        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, uint(-1), 100 * 1e18, 100 * 1e18);
+        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, uint(-1), 100 * 1e18, 0);
         _setParams(ConfigNames.STAKE_LOCK_TIME, 0, 7*DAY, 1*DAY, 0);
         _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, uint(-1), 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
@@ -88,8 +88,8 @@ contract AAAAConfig {
     function initPoolParams(address _pool) external {
         require(msg.sender == factory, "Config FORBIDDEN");
         _setPoolParams(_pool, ConfigNames.POOL_BASE_INTERESTS, 0, 1e18, 1e16, 2e17);
-        _setPoolParams(_pool, ConfigNames.POOL_MARKET_FRENZY, 0, 1e18, 1e16, 2e17);
-        _setPoolParams(_pool, ConfigNames.POOL_PLEDGE_RATE, 0, 1e18, 1e16, 2e17);
+        _setPoolParams(_pool, ConfigNames.POOL_MARKET_FRENZY, 0, 1e18, 1e16, 12e17);
+        _setPoolParams(_pool, ConfigNames.POOL_PLEDGE_RATE, 0, 1e18, 1e16, 6e17);
         _setPoolParams(_pool, ConfigNames.POOL_PRICE, 0, 0, 0, 2e16);
         _setPoolParams(_pool, ConfigNames.POOL_LIQUIDATION_RATE, 0, 1e18, 1e16, 9e17);
     }
