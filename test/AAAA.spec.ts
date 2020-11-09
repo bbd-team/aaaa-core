@@ -115,6 +115,7 @@ describe('deploy', () => {
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await platformContract.connect(walletDeveloper).setupConfig(configContract.address);
+		await governanceContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await governanceContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await queryContract.connect(walletDeveloper).initialize(configContract.address);
@@ -131,9 +132,9 @@ describe('deploy', () => {
 		]);
 		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
-		let bytecodeHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(AAAABallot.bytecode));
+		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
-		await factoryContract.connect(walletDeveloper).changeBollotByteHash(bytecodeHash);
+		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
 		console.log('hello world2')
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
@@ -186,7 +187,8 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 
-		await governanceContract.connect(walletMe).createProposal(address0, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('100'), "", "", AAAABallot.bytecode); 
+		await governanceContract.connect(walletMe).createProposal(
+			address0, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('100'), "", "", '0x'+AAAABallot.bytecode, {gasLimit: 8000000});
 	})
 
 	async function sevenInfo() {
