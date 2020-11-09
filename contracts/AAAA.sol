@@ -19,7 +19,9 @@ contract AAAAPool is Configable
     address public dev;
     address public factory;
     address public supplyToken;
+    uint public supplyDecimal;
     address public collateralToken;
+    uint public collateralDecimal;
 
     struct SupplyStruct {
         uint amountSupply;
@@ -96,10 +98,13 @@ contract AAAAPool is Configable
         factory = msg.sender;
     }
 
-    function init(address _supplyToken,  address _collateralToken) external onlyFactory
+    function init(address _supplyToken, uint _supplyDecimal, address _collateralToken, uint _collateralDecimal) external onlyFactory
     {
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
+
+        supplyDecimal = _supplyDecimal;
+        collateralDecimal = _collateralDecimal;
 
         IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
         IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1 * 1e18);
