@@ -67,7 +67,7 @@ describe('deploy', () => {
 		tokenLP 	= await deployContract(walletMe, ERC20, ['Uniswap V2 LP ETH/DAI', 'Uniswap v2 ETH/DAI', 18, ethers.utils.parseEther('1000000')]);
 		rewardToken = await deployContract(walletDeveloper, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery);
-		governanceContract = await deployContract(walletDeveloper, governanceContract);
+		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
@@ -183,7 +183,6 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 
-		await 
 	})
 
 	async function sevenInfo() {
