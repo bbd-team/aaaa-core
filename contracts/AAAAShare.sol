@@ -24,13 +24,6 @@ contract AAAAShare is Configable, BaseShareField {
         emit ProductivityIncreased(msg.sender, _amount);
     }
     
-    function stakeTo(uint _amount, address _user) external {
-        TransferHelper.safeTransferFrom(IConfig(config).token(), msg.sender, address(this), _amount);
-        _increaseProductivity(_user, _amount);
-        locks[_user] = block.number;
-        emit ProductivityIncreased(_user, _amount);
-    }
-    
     function lockStake(address _user) onlyGovernor external {
         locks[_user] = block.number;
     }

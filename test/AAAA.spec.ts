@@ -10,6 +10,7 @@ import AAAAToken from '../build/AAAAToken.json';
 import AAAAShare from '../build/AAAAShare.json';
 import AAAAQuery from '../build/AAAAQuery.json';
 import AAAABallot from '../build/AAAAQuery.json';
+import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
 import StakingReward from '../build/StakingRewards.json';
 import StakingRewardFactory from '../build/StakingRewardsFactory.json';
@@ -36,6 +37,7 @@ describe('deploy', () => {
 	let tokenLP	 	: Contract;
 	let poolContract: Contract;
 	let queryContract : Contract;
+	let governanceContract : Contract;
 	let stakingReward : Contract;
 	let stakingRewardFactory : Contract;
 	let rewardToken : Contract;
@@ -65,6 +67,7 @@ describe('deploy', () => {
 		tokenLP 	= await deployContract(walletMe, ERC20, ['Uniswap V2 LP ETH/DAI', 'Uniswap v2 ETH/DAI', 18, ethers.utils.parseEther('1000000')]);
 		rewardToken = await deployContract(walletDeveloper, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery);
+		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
@@ -194,6 +197,7 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletTeam.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
+
 	})
 
 	async function sevenInfo() {

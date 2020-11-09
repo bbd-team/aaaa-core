@@ -4,6 +4,7 @@ pragma solidity >=0.5.16;
 import "./modules/Configable.sol";
 import "./modules/ConfigNames.sol";
 import "./interface/IERC20.sol";
+import './libraries/TransferHelper.sol';
 
 interface IAAAAShare {
     function getProductivity(address user) external view returns (uint, uint);
@@ -80,9 +81,7 @@ contract AAAABallot is Configable {
         require(end(), "Vote not end.");
         uint userReward = voters[msg.sender].weight * reward / total;
         
-        address share = IConfig(config).share();
-        IERC20(IConfig(config).token()).approve(share, userReward);
-        IAAAAShare(share).stakeTo(userReward, msg.sender);
+        TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, userReward);
         voters[msg.sender].claimed = true;
     }
     
