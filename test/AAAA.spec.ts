@@ -67,7 +67,7 @@ describe('deploy', () => {
 		tokenLP 	= await deployContract(walletMe, ERC20, ['Uniswap V2 LP ETH/DAI', 'Uniswap v2 ETH/DAI', 18, ethers.utils.parseEther('1000000')]);
 		rewardToken = await deployContract(walletDeveloper, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery);
-		governanceContract = await deployContract(walletDeveloper, governanceContract);
+		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
@@ -107,7 +107,7 @@ describe('deploy', () => {
 			tokenContract.address, 
 			tokenUSDT.address,
 			shareContract.address,
-			walletDeveloper.address
+			governanceContract.address
 		);
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
@@ -151,7 +151,7 @@ describe('deploy', () => {
 	})
 
 	it("simple test", async () => {
-		await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
+		//await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		await (await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		const poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
@@ -183,7 +183,7 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 
-		await 
+		await governanceContract.connect(walletMe).createProposal(poolContract.address, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('1'), "", "", AAAABallot.bytecode); 
 	})
 
 	async function sevenInfo() {

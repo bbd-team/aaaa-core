@@ -19,7 +19,7 @@ contract AAAAMint is Configable {
     uint public totalBorrowSupply;
     uint public totalLendSupply;
     
-    uint public amountPerBlock = 0;
+    uint public amountPerBlock = 2000 * 1e18;
     uint public borrowPower = 0;
 
     bytes32 public TeamWalletKey = bytes32("team");

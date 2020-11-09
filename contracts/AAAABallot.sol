@@ -78,6 +78,7 @@ contract AAAABallot is Configable {
     function claim() external {
         require(voters[msg.sender].claimed == false, "Already claimed.");
         require(voters[msg.sender].weight > 0, "Not vote yet.");
+        require(reward > 0, "Nothing to claim");
         require(end(), "Vote not end.");
         uint userReward = voters[msg.sender].weight * reward / total;
         
