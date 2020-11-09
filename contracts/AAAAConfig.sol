@@ -65,9 +65,9 @@ contract AAAAConfig {
     function initParameter() external {
         _setParams(ConfigNames.PROPOSAL_VOTE_DURATION ,   1*DAY,  7*DAY , 1*DAY,  1*DAY);
         _setParams(ConfigNames.PROPOSAL_EXECUTE_DURATION, 1*HOUR, 48*HOUR, 1*HOUR, 1*HOUR);
-        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, uint(-1), 100 * 1e18, 0);
+        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, 10000 * 1e18, 100 * 1e18, 0);
         _setParams(ConfigNames.STAKE_LOCK_TIME, 0, 7*DAY, 1*DAY, 0);
-        _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, uint(-1), 1e17, 1e17);
+        _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, 10000 * 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 0, 1e18, 1e17, 5e17);
         _setParams(ConfigNames.CHANGE_PRICE_DURATION, 100, 500, 100, 500);

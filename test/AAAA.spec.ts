@@ -9,7 +9,7 @@ import AAAAPlatform from '../build/AAAAPlatform.json';
 import AAAAToken from '../build/AAAAToken.json';
 import AAAAShare from '../build/AAAAShare.json';
 import AAAAQuery from '../build/AAAAQuery.json';
-import AAAABallot from '../build/AAAAQuery.json';
+import AAAABallot from '../build/AAAABallot.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
 import StakingReward from '../build/StakingRewards.json';
@@ -22,6 +22,8 @@ use(solidity);
 function convertBigNumber(bnAmount: BigNumber, divider: number) {
 	return new BN(bnAmount.toString()).dividedBy(new BN(divider)).toFixed();
 }
+
+let address0 = "0x0000000000000000000000000000000000000000";
 
 describe('deploy', () => {
 	let provider = new MockProvider({ganacheOptions : {gasLimit : 8000000}});
@@ -114,6 +116,7 @@ describe('deploy', () => {
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await platformContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
+		await governanceContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await queryContract.connect(walletDeveloper).initialize(configContract.address);
 
 		await configContract.connect(walletDeveloper).initParameter();
@@ -183,7 +186,7 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
 		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 
-		//await governanceContract.connect(walletMe).createProposal(poolContract.address, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('1'), "", "", AAAABallot.bytecode); 
+		await governanceContract.connect(walletMe).createProposal(address0, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('100'), "", "", AAAABallot.bytecode); 
 	})
 
 	async function sevenInfo() {

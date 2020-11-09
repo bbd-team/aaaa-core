@@ -38,8 +38,8 @@ contract AAAAFactory is Configable{
         allPools.push(pool);
         isPool[pool] = true;
         IConfig(config).initPoolParams(pool);
-        IAAAAPool(pool).setupConfig(config);
-        IAAAAPool(pool).init(_lendToken, _collateralToken);
+        //IAAAAPool(pool).setupConfig(config);
+        //IAAAAPool(pool).init(_lendToken, _collateralToken);
         
         emit PoolCreated(_lendToken, _collateralToken, pool);
     }
