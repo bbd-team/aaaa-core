@@ -23,7 +23,7 @@ function convertBigNumber(bnAmount: BigNumber, divider: number) {
 }
 
 describe('deploy', () => {
-	let provider = new MockProvider();
+	let provider = new MockProvider({ganacheOptions : {gasLimit : 8000000}});
 	const [walletMe, walletOther, walletDeveloper, walletTeam, walletSpare, walletPrice, wallet1, wallet2, wallet3, wallet4] = provider.getWallets();
 	let configContract: Contract;
 	let factoryContract: Contract;
@@ -56,7 +56,7 @@ describe('deploy', () => {
 	before(async () => {
 		shareContract = await deployContract(walletDeveloper, AAAAShare);
 		configContract  = await deployContract(walletDeveloper, AAAAConfig);
-		factoryContract  = await deployContract(walletDeveloper, AAAAFactory);
+		factoryContract  = await deployContract(walletDeveloper, AAAAFactory, [], {gasLimit: 7000000});
 		mintContract  = await deployContract(walletDeveloper, AAAAMint);
 		platformContract  = await deployContract(walletDeveloper, AAAAPlatform);
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
@@ -125,7 +125,10 @@ describe('deploy', () => {
 		]);
 		await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
-		await factoryContract.connect(walletDeveloper).changeBallotByteCode(AAAABallot.bytecode);
+		let bytecodeHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(AAAABallot.bytecode));
+		console.log('hello world', bytecodeHash);
+		await factoryContract.connect(walletDeveloper).changeBollotByteHash(bytecodeHash);
+		console.log('hello world2')
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);

@@ -25,6 +25,7 @@ contract AAAAFactory is Configable{
     address[] public allBallots;
     
     bytes ballotByteCode;
+    bytes32 ballotByteCodeHash;
 
     function createPool(address _lendToken, address _collateralToken) onlyDeveloper external returns (address pool) {
         require(getPool[_lendToken][_collateralToken] == address(0), "ALREADY CREATED");
@@ -49,10 +50,20 @@ contract AAAAFactory is Configable{
         return allPools.length;
     }
     
-    function createBallot(address _creator, address _pool, bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content) 
-    onlyGovernor external returns (address ballot) {
+    function createBallot(
+        address _creator, 
+        address _pool, 
+        bytes32 _name, 
+        uint _value, 
+        uint _reward, 
+        string calldata _subject, 
+        string calldata _content, 
+        string calldata _bytecode) onlyGovernor external returns (address ballot) 
+    {
         bytes32 salt = keccak256(abi.encodePacked(_creator, _value, _subject));
-        bytes memory bytecode = ballotByteCode;
+        bytes memory bytecode = bytes(_bytecode);
+        require(keccak256(bytecode) == ballotByteCodeHash, "INVALID BYTECODE.");
+        
         assembly {
             ballot := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
@@ -68,6 +79,10 @@ contract AAAAFactory is Configable{
     }
     
     function changeBallotByteCode(string calldata _ballotByteCode) onlyDeveloper external {
-        //ballotByteCode = bytes(_ballotByteCode);
+        ballotByteCode = bytes(_ballotByteCode);
+    }
+
+    function changeBollotByteHash(bytes32 _hash) onlyDeveloper external {
+        ballotByteCodeHash = _hash;
     }
 }

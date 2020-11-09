@@ -99,19 +99,20 @@ contract AAAAPool is Configable
         factory = msg.sender;
     }
 
-    function init(address _supplyToken, uint _supplyDecimal, address _collateralToken, uint _collateralDecimal) external onlyFactory
+    // function init(address _supplyToken, uint _supplyDecimal, address _collateralToken, uint _collateralDecimal) external onlyFactory
+    function init(address _supplyToken, address _collateralToken) external onlyFactory
     {
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
 
-        supplyDecimal = _supplyDecimal;
-        collateralDecimal = _collateralDecimal;
+        // supplyDecimal = _supplyDecimal;
+        // collateralDecimal = _collateralDecimal;
 
-        IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
-        IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1 * 1e18);
-        IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 6 * 1e17);
-        IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 2 * 1e16);
-        IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 90 * 1e16);
+        // IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
+        // IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1 * 1e18);
+        // IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 6 * 1e17);
+        // IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 2 * 1e16);
+        // IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 90 * 1e16);
 
         lastInterestUpdate = block.number;
     }

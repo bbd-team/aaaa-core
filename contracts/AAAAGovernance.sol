@@ -6,7 +6,8 @@ import './modules/Configable.sol';
 import './modules/ConfigNames.sol';
 
 interface IAAAAFactory {
-    function createBallot(address _creator, address _pool, bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content) external returns (address ballot);
+    function createBallot(address _creator, address _pool, 
+        bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content, string calldata _bytecode) external returns (address ballot);
 }
 
 interface IAAAABallot {
@@ -29,12 +30,12 @@ interface IAAAAShare {
 }
 
 contract AAAAGovernance is Configable {
-    function createProposal(address _pool, bytes32 _key, uint _value, string calldata _subject, string calldata _content) external {
+    function createProposal(address _pool, bytes32 _key, uint _value, string calldata _subject, string calldata _content, string calldata _bytecode) external {
         _checkValid(_pool, _key, _value);
         uint cost = IConfig(config).getValue(ConfigNames.PROPOSAL_CREATE_COST);
         address token = IConfig(config).token();
         TransferHelper.safeTransferFrom(token, msg.sender, address(this), cost);
-        address ballot = IAAAAFactory(IConfig(config).factory()).createBallot(msg.sender, _pool, _key, _value, cost, _subject, _content);
+        address ballot = IAAAAFactory(IConfig(config).factory()).createBallot(msg.sender, _pool, _key, _value, cost, _subject, _content, _bytecode);
         TransferHelper.safeTransfer(token, ballot, cost);
     }
 
