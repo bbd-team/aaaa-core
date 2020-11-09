@@ -60,6 +60,6 @@ contract UniLPStrategy is ICollateralStrategy
         IUniswapStakingReward(uniswapPoolAddress).getReward();
         interests = IERC20(interestToken).balanceOf(address(this));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
-        TransferHelper.safeTransfer(interestToken, msg.sender, interests);
+        if(interests > 0) TransferHelper.safeTransfer(interestToken, msg.sender, interests);
     }
 }
