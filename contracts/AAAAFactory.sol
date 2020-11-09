@@ -23,8 +23,6 @@ contract AAAAFactory is Configable{
     mapping (address => mapping (address => address)) public getPool;
     
     address[] public allBallots;
-    
-    bytes ballotByteCode;
     bytes32 ballotByteCodeHash;
 
     function createPool(address _lendToken, address _collateralToken) onlyDeveloper external returns (address pool) {
@@ -76,10 +74,6 @@ contract AAAAFactory is Configable{
     
     function countBallots() external view returns (uint){
         return allBallots.length;
-    }
-    
-    function changeBallotByteCode(string calldata _ballotByteCode) onlyDeveloper external {
-        ballotByteCode = bytes(_ballotByteCode);
     }
 
     function changeBollotByteHash(bytes32 _hash) onlyDeveloper external {

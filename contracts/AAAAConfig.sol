@@ -65,7 +65,7 @@ contract AAAAConfig {
     function initParameter() external {
         _setParams(ConfigNames.PROPOSAL_VOTE_DURATION ,   1*DAY,  7*DAY , 1*DAY,  1*DAY);
         _setParams(ConfigNames.PROPOSAL_EXECUTE_DURATION, 1*HOUR, 48*HOUR, 1*HOUR, 1*HOUR);
-        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, uint(-1), 100, 100);
+        _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, uint(-1), 100 * 1e18, 100 * 1e18);
         _setParams(ConfigNames.STAKE_LOCK_TIME, 0, 7*DAY, 1*DAY, 0);
         _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, uint(-1), 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
@@ -133,13 +133,13 @@ contract AAAAConfig {
     }
     
     function setValue(bytes32 _key, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform, "AAAA: ONLY DEVELOPER");
+        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: ONLY DEVELOPER");
         params[_key].value = _value;
         emit ParameterChange(_key, _value);
     }
     
     function setPoolValue(address _pool, bytes32 _key, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform, "AAAA: FORBIDDEN");
+        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setPoolValue(_pool, _key, _value);
     }
     
@@ -152,12 +152,12 @@ contract AAAAConfig {
     } 
 
     function setParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform, "AAAA: FORBIDDEN");
+        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setParams(_key, _min, _max, _span, _value);
     }
 
     function setPoolParams(address _pool, bytes32 _key, uint _min, uint _max, uint _span, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform, "AAAA: FORBIDDEN");
+        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setPoolParams(_pool, _key, _min, _max, _span, _value);
     }
 
