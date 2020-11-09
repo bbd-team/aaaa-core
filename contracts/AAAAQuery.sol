@@ -49,6 +49,11 @@ interface IAAAAPool {
     function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
     function liquidationHistory(address user, uint index) external view returns(uint,uint,uint);
     function liquidationHistoryLength(address user) external view returns(uint);
+    function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow);
+    function interestPerBorrow() external view returns(uint);
+    function lastInterestUpdate() external view returns(uint);
+    function interestPerSupply() external view returns(uint);
+    function supplys(address user) external view returns(uint,uint,uint,uint,uint);
 }
 
 interface IAAAAMint {
@@ -98,6 +103,15 @@ contract AAAAQuery {
         uint maxSupply;
         uint takeBorrow;
         uint takeLend;
+    }
+
+     struct SupplyInfo {
+        uint amountSupply;
+        uint interestSettled;
+        uint liquidationSettled;
+
+        uint interests;
+        uint liquidation;
     }
 
     struct BorrowInfo {
@@ -340,5 +354,40 @@ contract AAAAQuery {
         decimals0 = IERC20(token0).decimals();
         decimals1 = IERC20(token1).decimals();
         (reserve0, reserve1, ) = ISwapPair(_pair).getReserves();
+    }
+
+    function getCanMaxBorrowAmount(address _pair, address _user, uint _blocks) public view returns(uint) {
+        (, uint amountCollateral, uint interestSettled, uint amountBorrow, uint interests) = IAAAAPool(_pair).borrows(_user);
+        uint maxBorrow = IAAAAPool(_pair).getMaximumBorrowAmount(amountCollateral);
+        uint poolBalance = IERC20(IAAAAPool(_pair).supplyToken()).balanceOf(_pair);
+
+        uint _interestPerBorrow = IAAAAPool(_pair).interestPerBorrow().add(IAAAAPool(_pair).getInterests().mul(block.number+_blocks - IAAAAPool(_pair).lastInterestUpdate()));
+        uint _totalInterest = interests.add(_interestPerBorrow.mul(amountBorrow).div(1e18).sub(interestSettled));
+
+        uint repayInterest = amountCollateral == 0 ? 0 : _totalInterest.mul(amountCollateral).div(amountCollateral);
+        uint repayAmount = amountCollateral == 0 ? 0 : amountBorrow.mul(amountCollateral).div(amountCollateral).add(repayInterest);
+
+        uint result = maxBorrow.sub(repayAmount);
+        if(poolBalance < result) {
+            result = poolBalance;
+        }
+        return result;
+    }
+
+    function canReinvest(address _pair, address _user) public view returns(bool) {
+        uint interestPerSupply = IAAAAPool(_pair).interestPerSupply();
+        (uint amountSupply, uint interestSettled, , uint interests, ) = IAAAAPool(_pair).supplys(_user);
+        uint remainSupply = IAAAAPool(_pair).remainSupply();
+        uint platformShare = IConfig(config).params(bytes32("platformShare"));
+
+        uint curInterests = interestPerSupply.mul(amountSupply).div(1e18).sub(interestSettled);
+        interests = interests.add(curInterests);
+        uint reinvestAmount = interests.mul(platformShare).div(1e18);
+  
+        if(reinvestAmount < remainSupply) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
