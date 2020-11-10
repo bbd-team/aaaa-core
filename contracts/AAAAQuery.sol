@@ -461,7 +461,7 @@ contract AAAAQuery {
 
 
     function iterateBallotList(uint _start, uint _end) public view returns (BallotStruct[] memory ballots){
-        require(_start <= _end && _start >= 0 && _end > 0, "INVAID_PARAMTERS");
+        require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
         uint count = IAAAAFactory(IConfig(config).factory()).countBallots();
         if (_end > count) _end = count;
         count = _end - _start;
@@ -477,7 +477,7 @@ contract AAAAQuery {
     }
 
     function iterateReverseBallotList(uint _start, uint _end) public view returns (BallotStruct[] memory ballots){
-        require(_end <= _start && _end >= 0 && _start > 0, "INVAID_PARAMTERS");
+        require(_end <= _start && _end >= 0 && _start >= 0, "INVAID_PARAMTERS");
         uint count = IAAAAFactory(IConfig(config).factory()).countBallots();
         if (_start > count) _start = count;
         count = _start - _end;
