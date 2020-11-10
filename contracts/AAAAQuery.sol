@@ -31,6 +31,8 @@ interface IConfig {
 
 interface IAAAAFactory {
     function countPools() external view returns(uint);
+    function countBallots() external view returns(uint);
+    function allBallots(uint index) external view returns(address);
     function allPools(uint index) external view returns(address);
     function isPool(address addr) external view returns(bool);
     function getPool(address lend, address collateral) external view returns(address);
@@ -67,6 +69,27 @@ interface ISwapPair {
     function token0() external view returns (address);
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+}
+
+interface IAAAABallot {
+    struct Voter {
+        uint weight; // weight is accumulated by delegation
+        bool voted;  // if true, that person already voted
+        uint vote;   // index of the voted proposal 0 YES, 1 NO
+        bool claimed; // already claimed reward
+    }
+    function subject() external view returns(string memory);
+    function content() external view returns(string memory);
+    function createdBlock() external view returns(uint);
+    function createdTime() external view returns(uint);
+    function creator() external view returns(address);
+    function proposals(uint index) external view returns(uint);
+    function end() external view returns (bool);
+    function pool() external view returns (address);
+    function value() external view returns (uint);
+    function total() external view returns (uint);
+    function reward() external view returns (uint);
+    function voters(address user) external view returns (Voter memory);
 }
 
 contract AAAAQuery {
@@ -142,6 +165,26 @@ contract AAAAQuery {
         uint amountCollateral;
         uint liquidationAmount;
         uint timestamp;
+    }
+
+    struct BallotStruct {
+        bytes32 name;
+        address pool; // pool address or address(0)
+        address creator;
+        uint    value;
+        uint    createdBlock;
+        uint    createdTime;
+        uint    total;
+        uint    reward;
+        uint YES;
+        uint NO;
+        uint weight;
+        bool voted;
+        uint voteIndex;
+        bool end;
+        bool claimed;
+        string  subject;
+        string  content;
     }
 
     constructor() public {
@@ -389,5 +432,56 @@ contract AAAAQuery {
         } else {
             return false;
         }
+    }
+
+    function getBallotInfo(address _ballot, address _user) public view returns (BallotStruct memory proposal){
+        proposal.creator = IAAAABallot(_ballot).creator();
+        proposal.subject = IAAAABallot(_ballot).subject();
+        proposal.content = IAAAABallot(_ballot).content();
+        proposal.createdTime = IAAAABallot(_ballot).createdTime();
+        proposal.createdBlock = IAAAABallot(_ballot).createdBlock();
+        proposal.end = IAAAABallot(_ballot).end();
+        proposal.YES = IAAAABallot(_ballot).proposals(0);
+        proposal.NO = IAAAABallot(_ballot).proposals(1);
+        proposal.reward = IAAAABallot(_ballot).reward();
+        proposal.voted = IAAAABallot(_ballot).voters(_user).voted;
+        proposal.voteIndex = IAAAABallot(_ballot).voters(_user).vote;
+        proposal.weight = IAAAABallot(_ballot).voters(_user).weight;
+        proposal.claimed = IAAAABallot(_ballot).voters(_user).claimed;
+        proposal.value = IAAAABallot(_ballot).value();
+    }
+
+
+    function iterateBallotList(uint _start, uint _end) public view returns (BallotStruct[] memory ballots){
+        require(_start <= _end && _start >= 0 && _end > 0, "INVAID_PARAMTERS");
+        uint count = IAAAAFactory(IConfig(config).factory()).countBallots();
+        if (_end > count) _end = count;
+        count = _end - _start;
+        ballots = new BallotStruct[](count);
+        if (count == 0) return ballots;
+        uint index = 0;
+        for(uint i = _start;i < _end;i++) {
+            address ballot = IAAAAFactory(IConfig(config).factory()).allBallots(i);
+            ballots[index] = getBallotInfo(ballot, msg.sender);
+            index++;
+        }
+        return ballots;
+    }
+
+    function iterateReverseBallotList(uint _start, uint _end) public view returns (BallotStruct[] memory ballots){
+        require(_end <= _start && _end >= 0 && _start > 0, "INVAID_PARAMTERS");
+        uint count = IAAAAFactory(IConfig(config).factory()).countBallots();
+        if (_start > count) _start = count;
+        count = _start - _end;
+        ballots = new BallotStruct[](count);
+        if (count == 0) return ballots;
+        uint index = 0;
+        for(uint i = _end;i < _start; i++) {
+            uint j = _start - i -1;
+            address ballot = IAAAAFactory(IConfig(config).factory()).allBallots(j);
+            ballots[index] = getBallotInfo(ballot, msg.sender);
+            index++;
+        }
+        return ballots;
     }
 }
