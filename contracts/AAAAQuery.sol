@@ -168,6 +168,7 @@ contract AAAAQuery {
     }
 
     struct BallotStruct {
+        address ballot;
         bytes32 name;
         address pool; // pool address or address(0)
         address creator;
@@ -435,6 +436,7 @@ contract AAAAQuery {
     }
 
     function getBallotInfo(address _ballot, address _user) public view returns (BallotStruct memory proposal){
+        proposal.ballot = _ballot;
         proposal.creator = IAAAABallot(_ballot).creator();
         proposal.subject = IAAAABallot(_ballot).subject();
         proposal.content = IAAAABallot(_ballot).content();

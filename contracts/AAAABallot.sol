@@ -68,7 +68,7 @@ contract AAAABallot is Configable {
         require(!end(), "BALLOT: ALREADY END");
         
         (, uint amount) = IAAAAShare(IConfig(config).share()).getProductivity(_user);
-        Voter storage sender = voters[msg.sender];
+        Voter storage sender = voters[_user];
         require(!sender.voted, "Already voted.");
         sender.voted = true;
         sender.vote = _index;
