@@ -3,6 +3,7 @@ pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
+import './modules/ConfigNames.sol';
 
 interface IERC20 {
     function name() external view returns (string memory);
@@ -27,6 +28,8 @@ interface IConfig {
     function params(bytes32 key) external view returns(uint);
     function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
+    function getValue(bytes32 _key) external view returns (uint);
+    function getPoolValue(address _pool, bytes32 _key) external view returns (uint);
 }
 
 interface IAAAAFactory {
@@ -78,6 +81,7 @@ interface IAAAABallot {
         uint vote;   // index of the voted proposal 0 YES, 1 NO
         bool claimed; // already claimed reward
     }
+    function name() external view returns(bytes32);
     function subject() external view returns(string memory);
     function content() external view returns(string memory);
     function createdBlock() external view returns(uint);
@@ -174,6 +178,7 @@ contract AAAAQuery {
         bytes32 name;
         address pool; // pool address or address(0)
         address creator;
+        uint currentValue;
         uint    value;
         uint    createdBlock;
         uint    createdTime;
@@ -441,6 +446,7 @@ contract AAAAQuery {
 
     function getBallotInfo(address _ballot, address _user) public view returns (BallotStruct memory proposal){
         proposal.ballot = _ballot;
+        proposal.name = IAAAABallot(_ballot).name();
         proposal.creator = IAAAABallot(_ballot).creator();
         proposal.subject = IAAAABallot(_ballot).subject();
         proposal.content = IAAAABallot(_ballot).content();
@@ -457,6 +463,13 @@ contract AAAAQuery {
         proposal.weight = IAAAABallot(_ballot).voters(_user).weight;
         proposal.claimed = IAAAABallot(_ballot).voters(_user).claimed;
         proposal.value = IAAAABallot(_ballot).value();
+
+        address pool = IAAAABallot(_ballot).pool();
+        if(pool != address(0)) {
+            proposal.currentValue = IConfig(config).getPoolValue(pool, proposal.name);
+        } else {
+            proposal.currentValue = IConfig(config).getValue(proposal.name);
+        }
     }
 
 
