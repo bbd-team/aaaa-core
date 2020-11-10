@@ -41,6 +41,9 @@ contract AAAABallot is Configable {
     // This declares a state variable that
     // stores a `Voter` struct for each possible address.
     mapping(address => Voter) public voters;
+
+    event Voted(address indexed _user, uint _index, uint _weight);
+    event Claimed(address indexed _user, address indexed _token, uint _reward);
     
     constructor () public {
         createdTime = block.timestamp;
@@ -73,6 +76,7 @@ contract AAAABallot is Configable {
         
         proposals[_index] += amount;
         total += amount;
+        emit Voted(_user, _index, amount);
     }
     
     function claim() external {
@@ -84,6 +88,7 @@ contract AAAABallot is Configable {
         
         TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, userReward);
         voters[msg.sender].claimed = true;
+        emit Claimed(msg.sender, IConfig(config).token(), userReward);
     }
     
     function end() public view returns (bool) {
