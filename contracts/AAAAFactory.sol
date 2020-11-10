@@ -15,8 +15,10 @@ interface IAAAABallot {
 }
 
 contract AAAAFactory is Configable{
+
     event PoolCreated(address indexed lendToken, address indexed collateralToken, address indexed pool);
-    event BallotCreated(address indexed _creator, address indexed _pool, address indexed _ballot, bytes32 _name, uint _value);
+    event BallotCreated(address indexed creator, address indexed pool, address indexed ballot, bytes32 name, uint value);
+
     
     address[] public allPools;
     mapping(address => bool) public isPool;
