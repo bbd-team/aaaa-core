@@ -84,8 +84,8 @@ describe('deploy', () => {
 		// rewardToken.connect(walletDeveloper).transfer(stakingReward.address, ethers.utils.parseEther('100'));
 		// stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
 
-	    await rewardToken.connect(walletDeveloper).transfer(stakingReward.address, ethers.utils.parseEther('100'));
-		await stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
+	    await rewardToken.connect(walletDeveloper).transfer(masterChef.address, ethers.utils.parseEther('100'));
+		// await stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
 
 		const rewardsDuration = await stakingReward.rewardsDuration()
 		const startTime: BigNumber = await stakingReward.lastUpdateTime()
