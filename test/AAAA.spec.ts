@@ -13,8 +13,10 @@ import AAAABallot from '../build/AAAABallot.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
 import StakingReward from '../build/StakingRewards.json';
+import MasterChef from '../build/MasterChef.json';
 import StakingRewardFactory from '../build/StakingRewardsFactory.json';
 import UniLPStrategy from '../build/UniLPStrategy.json';
+import CakeLPStrategy from '../build/CakeLPStrategy.json';
 import { BigNumber as BN } from 'bignumber.js'
 
 use(solidity);
@@ -66,10 +68,15 @@ describe('deploy', () => {
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
 		// tokenUSDT 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
-		tokenLP 	= await deployContract(walletMe, ERC20, ['Uniswap V2 LP ETH/DAI', 'Uniswap v2 ETH/DAI', 18, ethers.utils.parseEther('1000000')]);
-		rewardToken = await deployContract(walletDeveloper, ERC20, ['UNI', 'UNI', 18, ethers.utils.parseEther('1000000')]);
-		queryContract = await deployContract(walletDeveloper, AAAAQuery);
+		tokenLP 	= await deployContract(walletMe, ERC20, ['PancakeSwap LP CAKE/BNB', 'PancakeSwap LP CAKE/BNB', 18, ethers.utils.parseEther('1000000')]);
+		rewardToken = await deployContract(walletDeveloper, ERC20, ['CAKE', 'CAKE', 18, ethers.utils.parseEther('1000000')]);
+		queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
 		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
+		masterChef  = await deployContract(walletDeveloper, MasterChef, [rewardToken.address, rewardToken.address, walletDeveloper.address, 20000000, 0]);
+
+		await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
+
+		console.log((await masterChef.poolInfo(1)).lpToken);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
@@ -89,9 +96,9 @@ describe('deploy', () => {
 		console.log('mintContract address = ', mintContract.address);
 		console.log('platformContract address = ', platformContract.address);
 		console.log('tokenContract address = ', tokenContract.address);
-		// console.log('tokenUSDT address = ', tokenUSDT.address);
+		console.log('tokenUSDT address = ', tokenUSDT.address);
 		console.log('rewardToken address = ', rewardToken.address);
-		// console.log('stakingRewardFactory address = ', stakingRewardFactory.address);
+		console.log('tokenLP address = ', tokenLP.address);
 		console.log('stakingReward address = ', stakingReward.address);
 
 		console.log('team:', ethers.utils.formatBytes32String("team"))
@@ -135,13 +142,15 @@ describe('deploy', () => {
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
 		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
-		console.log('hello world2')
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
-		strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
+		// strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
+		strategy = await deployContract(walletMe, CakeLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 1]);
+
+		console.log(strategy.address);
 		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address)).wait();
 
 		// await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
