@@ -56,10 +56,10 @@ contract AAAAFactory is Configable{
         uint _reward, 
         string calldata _subject, 
         string calldata _content, 
-        string calldata _bytecode) onlyGovernor external returns (address ballot) 
+        bytes calldata _bytecode) onlyGovernor external returns (address ballot) 
     {
         bytes32 salt = keccak256(abi.encodePacked(_creator, _value, _subject));
-        bytes memory bytecode = bytes(_bytecode);
+        bytes memory bytecode = _bytecode;
         require(keccak256(bytecode) == ballotByteCodeHash, "INVALID BYTECODE.");
         
         assembly {
@@ -76,7 +76,7 @@ contract AAAAFactory is Configable{
         return allBallots.length;
     }
 
-    function changeBollotByteHash(bytes32 _hash) onlyDeveloper external {
+    function changeBallotByteHash(bytes32 _hash) onlyDeveloper external {
         ballotByteCodeHash = _hash;
     }
 }
