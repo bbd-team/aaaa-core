@@ -37,6 +37,7 @@ contract AAAABallot is Configable {
     string  public content;
     uint    public total;
     uint    public reward;
+    bool    public executed;
 
     // This declares a state variable that
     // stores a `Voter` struct for each possible address.
@@ -62,8 +63,7 @@ contract AAAABallot is Configable {
 
     /// Give your vote (including votes delegated to you)
     /// to proposal `proposals[proposal].name`.
-    function vote(address _user, uint _index) external {
-        require(msg.sender == IConfig(config).governance(), "BALLOT: FORBIDDEN");
+    function vote(address _user, uint _index) onlyGovernor external {
         require(_index == YES || _index == NO, "BALLOT: INVALID INDEX");
         require(!end(), "BALLOT: ALREADY END");
         

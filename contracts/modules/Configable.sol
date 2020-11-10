@@ -8,7 +8,6 @@ interface IConfig {
     function factory() external view returns (address);
     function mint() external view returns (address);
     function token() external view returns (address);
-    function governance() external view returns (address);
     function developPercent() external view returns (uint);
     function base() external view returns (address);
     function share() external view returns (address);
