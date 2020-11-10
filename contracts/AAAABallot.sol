@@ -30,7 +30,7 @@ contract AAAABallot is Configable {
     address public pool; // pool address or address(0)
     address public creator;
     uint    public value;
-    uint[2] public proposals;
+    mapping(uint => uint) public proposals;
     uint    public createdBlock;
     uint    public createdTime;
     string  public subject;
@@ -67,7 +67,7 @@ contract AAAABallot is Configable {
         require(_index == YES || _index == NO, "BALLOT: INVALID INDEX");
         require(!end(), "BALLOT: ALREADY END");
         
-        (, uint amount) = IAAAAShare(IConfig(config).share()).getProductivity(_user);
+        (uint amount, ) = IAAAAShare(IConfig(config).share()).getProductivity(_user);
         Voter storage sender = voters[_user];
         require(!sender.voted, "Already voted.");
         sender.voted = true;
