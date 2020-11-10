@@ -15,8 +15,10 @@ interface IAAAABallot {
 }
 
 contract AAAAFactory is Configable{
-    event PoolCreated(address indexed lendToken, address indexed collateralToken, address pool);
-    event BallotCreated(address indexed _creator, address indexed _pool, bytes32 name, uint _value);
+
+    event PoolCreated(address indexed lendToken, address indexed collateralToken, address indexed pool);
+    event BallotCreated(address indexed creator, address indexed pool, address indexed ballot, bytes32 name, uint value);
+
     
     address[] public allPools;
     mapping(address => bool) public isPool;
@@ -69,7 +71,7 @@ contract AAAAFactory is Configable{
         IAAAABallot(ballot).setupConfig(config);
         IAAAABallot(ballot).initialize(_creator, _pool, _name, _value, _reward, _subject, _content);
         
-        emit BallotCreated(_creator, _pool, _name, _value);
+        emit BallotCreated(_creator, _pool, ballot, _name, _value);
     }
     
     function countBallots() external view returns (uint){

@@ -85,6 +85,8 @@ interface IAAAABallot {
     function creator() external view returns(address);
     function proposals(uint index) external view returns(uint);
     function end() external view returns (bool);
+    function pass() external view returns (bool);
+    function expire() external view returns (bool);
     function pool() external view returns (address);
     function value() external view returns (uint);
     function total() external view returns (uint);
@@ -168,6 +170,7 @@ contract AAAAQuery {
     }
 
     struct BallotStruct {
+        address ballot;
         bytes32 name;
         address pool; // pool address or address(0)
         address creator;
@@ -181,8 +184,10 @@ contract AAAAQuery {
         uint weight;
         bool voted;
         uint voteIndex;
-        bool end;
         bool claimed;
+        bool end;
+        bool pass;
+        bool expire;
         string  subject;
         string  content;
     }
@@ -435,12 +440,15 @@ contract AAAAQuery {
     }
 
     function getBallotInfo(address _ballot, address _user) public view returns (BallotStruct memory proposal){
+        proposal.ballot = _ballot;
         proposal.creator = IAAAABallot(_ballot).creator();
         proposal.subject = IAAAABallot(_ballot).subject();
         proposal.content = IAAAABallot(_ballot).content();
         proposal.createdTime = IAAAABallot(_ballot).createdTime();
         proposal.createdBlock = IAAAABallot(_ballot).createdBlock();
         proposal.end = IAAAABallot(_ballot).end();
+        proposal.pass = IAAAABallot(_ballot).pass();
+        proposal.expire = IAAAABallot(_ballot).expire();
         proposal.YES = IAAAABallot(_ballot).proposals(0);
         proposal.NO = IAAAABallot(_ballot).proposals(1);
         proposal.reward = IAAAABallot(_ballot).reward();
