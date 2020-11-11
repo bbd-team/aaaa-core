@@ -202,7 +202,7 @@ contract AAAAQuery {
         owner = msg.sender;
     }
     
-    function initialize (address _config) external {
+    function setupConfig (address _config) external {
         require(msg.sender == owner, "FORBIDDEN");
         config = _config;
     }

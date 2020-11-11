@@ -48,6 +48,13 @@ contract AAAAMint is Configable {
     event LenderProductivityIncreased (address indexed user, uint value);
     event LenderProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint userAmount, uint teamAmount, uint spareAmount);
+
+        
+    function initialize() external onlyDeveloper {
+        _update();
+        borrowPower = IConfig(config).getValue(ConfigNames.MINT_BORROW_PERCENT);
+        amountPerBlock = IConfig(config).getValue(ConfigNames.MINT_AMOUNT_PER_BLOCK);
+    }
     
     function changeBorrowPower(uint _value) external onlyGovernor {
         uint old = borrowPower;
