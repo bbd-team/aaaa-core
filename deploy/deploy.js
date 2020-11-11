@@ -30,6 +30,7 @@ let QUERY_ADDRESS = ""
 let QUERY2_ADDRESS = ""
 
 let MASTERCHEF_ADDRESS = ""
+let STRATEGY_ADDRESS = ""
 
 const ETHER_SEND_CONFIG = {
   gasPrice: ethers.utils.parseUnits("10", "gwei")
@@ -359,20 +360,28 @@ async function initialize() {
     )
     ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
     await waitForMint(ins.deployTransaction.hash)
-    let strategyAddr = ins.address
+    STRATEGY_ADDRESS = ins.address
 
     ins = new ethers.Contract(
         PLATFORM_ADDRESS,
         AAAAPlateForm.abi,
         getWallet()
       )
-    tx = await ins.switchStrategy(USDT_ADDRESS, LP_TOKEN_ADDRESS, strategyAddr, ETHER_SEND_CONFIG)
+    tx = await ins.switchStrategy(USDT_ADDRESS, LP_TOKEN_ADDRESS, STRATEGY_ADDRESS, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
-    
+
     await transfer()
 }
 
 async function transfer() {
+    ins = new ethers.Contract(
+        REWARD_TOKEN_ADDRESS,
+        ERC20.abi,
+        getWallet()
+      )
+    tx = await ins.transfer(MASTERCHEF_ADDRESS, '5000000000000000000000', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
     for(let user of config.users) {
         ins = new ethers.Contract(
             USDT_ADDRESS,
@@ -408,6 +417,8 @@ async function run() {
     QUERY_ADDRESS = ${QUERY_ADDRESS}
 
     ===============================
+    MASTERCHEF_ADDRESS = ${MASTERCHEF_ADDRESS}
+    STRATEGY_ADDRESS = ${STRATEGY_ADDRESS}
     
     USDT_ADDRESS = ${USDT_ADDRESS}
     LP_TOKEN_ADDRESS = ${LP_TOKEN_ADDRESS}

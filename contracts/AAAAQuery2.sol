@@ -124,7 +124,6 @@ contract AAAAQuery2 {
         address collateralToken;
         uint POOL_BASE_INTERESTS;
         uint POOL_MARKET_FRENZY;
-        uint PROPOSAL_CREATE_COST;
         uint POOL_PLEDGE_RATE;
         uint POOL_LIQUIDATION_RATE;
         string supplyTokenSymbol;
@@ -162,7 +161,6 @@ contract AAAAQuery2 {
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
         info.POOL_BASE_INTERESTS = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_BASE_INTERESTS);
         info.POOL_MARKET_FRENZY = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MARKET_FRENZY);
-        info.PROPOSAL_CREATE_COST = IConfig(config).getPoolValue(_pair, ConfigNames.PROPOSAL_CREATE_COST);
         info.POOL_PLEDGE_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
         info.POOL_LIQUIDATION_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
         return info;
@@ -178,5 +176,9 @@ contract AAAAQuery2 {
             }
         }
         return list;
+    }
+
+    function countConfig() public view returns (uint) {
+        return 10 + IAAAAFactory(IConfig(config).factory()).countPools() * 4;
     }
 }
