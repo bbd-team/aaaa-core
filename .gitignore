@@ -7,3 +7,4 @@ flatten
 .config.js
 report.*.json
 yarn-error.log
+.config.json
