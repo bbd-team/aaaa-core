@@ -12,6 +12,7 @@ const AAAAGovernance = require("../build/AAAAGovernance.json")
 const AAAAMint = require("../build/AAAAMint.json")
 const AAAAShare = require("../build/AAAAShare.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
+const AAAAQuery2 = require("../build/AAAAQuery2.json")
 const MasterChef = require("../build/MasterChef.json");
 const CakeLPStrategy = require("../build/CakeLPStrategy.json");
 
@@ -26,6 +27,7 @@ let FACTORY_ADDRESS = ""
 let MINT_ADDRESS = ""
 let SHARE_ADDRESS = ""
 let QUERY_ADDRESS = ""
+let QUERY2_ADDRESS = ""
 
 let MASTERCHEF_ADDRESS = ""
 
@@ -181,6 +183,15 @@ async function deploy() {
   await waitForMint(ins.deployTransaction.hash)
   QUERY_ADDRESS = ins.address
 
+  // QUERY2
+  factory = new ethers.ContractFactory(
+    AAAAQuery2.abi,
+    AAAAQuery2.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  QUERY2_ADDRESS = ins.address
 
   // MASTERCHEF
   factory = new ethers.ContractFactory(
@@ -215,7 +226,6 @@ async function initialize() {
     tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
     
-
     ins = new ethers.Contract(
         MINT_ADDRESS,
         AAAAMint.abi,
@@ -251,6 +261,14 @@ async function initialize() {
     ins = new ethers.Contract(
         QUERY_ADDRESS,
         AAAAQuery.abi,
+        getWallet()
+      )
+    tx = await ins.setupConfig(CONFIG_ADDRESS, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
+    ins = new ethers.Contract(
+        QUERY2_ADDRESS,
+        AAAAQuery2.abi,
         getWallet()
       )
     tx = await ins.setupConfig(CONFIG_ADDRESS, ETHER_SEND_CONFIG)

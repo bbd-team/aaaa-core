@@ -3,7 +3,6 @@ pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
-import './modules/ConfigNames.sol';
 
 interface IERC20 {
     function name() external view returns (string memory);
@@ -524,4 +523,5 @@ contract AAAAQuery {
         }
         return ballots;
     }
+
 }
