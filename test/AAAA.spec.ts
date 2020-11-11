@@ -72,7 +72,8 @@ describe('deploy', () => {
 		rewardToken = await deployContract(walletDeveloper, ERC20, ['CAKE', 'CAKE', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
 		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
-		masterChef  = await deployContract(walletDeveloper, MasterChef, [rewardToken.address, rewardToken.address, walletDeveloper.address, 20000000, 0]);
+		masterChef  = await deployContract(walletDeveloper, MasterChef, 
+			[rewardToken.address, rewardToken.address, walletDeveloper.address, ethers.utils.parseEther('1'), 0]);
 
 		await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
 
@@ -274,7 +275,7 @@ describe('deploy', () => {
 		// console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
 
 		 
-		//await strategy.connect(walletOther).mint();
+		await strategy.connect(walletOther).mint();
 		console.log('after repay with UNI: ', 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1),
