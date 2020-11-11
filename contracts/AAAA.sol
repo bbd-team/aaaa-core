@@ -265,7 +265,7 @@ contract AAAAPool is Configable
             if(collateralStrategy != address(0))
             {
                 //这里有疑问
-                //ICollateralStrategy(collateralStrategy).claim(from, withdrawLiquidation, totalLiquidation);   
+                ICollateralStrategy(collateralStrategy).claim(from, withdrawLiquidation, totalLiquidation.add(withdrawLiquidation));   
             }
             TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
         }

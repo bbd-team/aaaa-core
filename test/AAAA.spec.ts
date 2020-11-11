@@ -353,11 +353,14 @@ describe('deploy', () => {
 		// await SupplyStruct(walletMe.address);
 		// console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 		await(await platformContract.connect(walletMe).reinvest(tokenUSDT.address, tokenLP.address)).wait();
+		console.log('after reinvest');
 		// console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 		// await SupplyStruct(walletMe.address);
 		// await sevenInfo();
 		await(await platformContract.connect(walletDeveloper).updatePoolParameter(
 			tokenUSDT.address, tokenLP.address, ethers.utils.formatBytes32String("POOL_PRICE"), ethers.utils.parseEther('0.02'))).wait(); 
+
+		console.log('before withdraw');
 		await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
 
 		console.log('after withdraw: ', 
