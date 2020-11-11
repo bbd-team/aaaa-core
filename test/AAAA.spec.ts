@@ -273,11 +273,14 @@ describe('deploy', () => {
 		// console.log('_collateralAmount:', convertBigNumber(receipt.events[2].args._collateralAmount, 1))
 		// console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
 
+		 
+		//await strategy.connect(walletOther).mint();
 		console.log('after repay with UNI: ', 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
 			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1),
 			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1),
-			convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+			convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1), 
+			convertBigNumber(await rewardToken.balanceOf(strategy.address), 1));
 
 		// await SupplyStruct(walletMe.address);
 		// await sevenInfo();
