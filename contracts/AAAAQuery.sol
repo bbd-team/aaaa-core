@@ -30,6 +30,8 @@ interface IConfig {
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
     function getValue(bytes32 _key) external view returns (uint);
     function getPoolValue(address _pool, bytes32 _key) external view returns (uint);
+    function getParams(bytes32 _key) external view returns (uint, uint, uint, uint);
+    function getPoolParams(address _pool, bytes32 _key) external view returns (uint, uint, uint, uint);
 }
 
 interface IAAAAFactory {
@@ -194,6 +196,9 @@ contract AAAAQuery {
         bool end;
         bool pass;
         bool expire;
+        uint confMin;
+        uint confMax;
+        uint confSpan;
         string  subject;
         string  content;
     }
@@ -468,10 +473,19 @@ contract AAAAQuery {
 
         address pool = IAAAABallot(_ballot).pool();
         if(pool != address(0)) {
-            proposal.currentValue = IConfig(config).getPoolValue(pool, proposal.name);
+            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getPoolParams(pool, proposal.name);
         } else {
-            proposal.currentValue = IConfig(config).getValue(proposal.name);
+            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getParams(proposal.name);
         }
+
+        if(proposal.currentValue > proposal.confMin + proposal.confSpan) {
+            proposal.confMin = proposal.currentValue - proposal.confSpan;
+        }
+
+        if(proposal.confMax > proposal.currentValue + proposal.confSpan) {
+            proposal.confMax = proposal.currentValue + proposal.confSpan;
+        }
+
         if(proposal.total > 0) {
            proposal.myReward = proposal.reward * proposal.weight / proposal.total;
         }
