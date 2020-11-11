@@ -11,6 +11,8 @@ const AAAAGovernance = require("../build/AAAAGovernance.json")
 const AAAAMint = require("../build/AAAAMint.json")
 const AAAAShare = require("../build/AAAAShare.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
+const MasterChef = require("../build/MasterChef.json");
+const CakeLPStrategy = require("../build/CakeLPStrategy.json");
 
 let AAAA_ADDRESS = ""
 let USDT_ADDRESS = ""
@@ -24,7 +26,7 @@ let MINT_ADDRESS = ""
 let SHARE_ADDRESS = ""
 let QUERY_ADDRESS = ""
 
-let TOKENA_ADDRESS = ""
+let MASTERCHEF_ADDRESS = ""
 
 const ETHER_SEND_CONFIG = {
   gasPrice: ethers.utils.parseUnits("10", "gwei")
@@ -35,9 +37,11 @@ let config = {
     "pk": "",
     "mintInterestRate": "1000000000000000000",
     "mintBorrowPower": "5000",
+    "walletDev": "", 
     "walletTeam": "", 
     "walletSpare": "", 
-    "walletPrice": ""
+    "walletPrice": "",
+    "users":[]
 }
 
 if(fs.existsSync(path.join(__dirname, ".config.json"))) {
@@ -49,6 +53,7 @@ if(fs.existsSync(path.join(__dirname, ".config.json"))) {
 
 console.log("current endpoint  ", config.url)
 let provider = new ethers.providers.JsonRpcProvider(config.url)
+let walletWithProvider = new ethers.Wallet(config.pk, provider)
 
 function getWallet(key = config.pk) {
   return new ethers.Wallet(key, provider)
@@ -76,8 +81,7 @@ async function getBlockNumber() {
 }
 
 async function deploy() {
-  let walletWithProvider = new ethers.Wallet(config.pk, provider)
-  // let address = walletWithProvider.signingKey.address
+  
   // erc 20 Token
   let factory = new ethers.ContractFactory(
     ERC20.abi,
@@ -92,7 +96,7 @@ async function deploy() {
   await waitForMint(ins.deployTransaction.hash)
   LP_TOKEN_ADDRESS = ins.address
 
-  ins = await factory.deploy('UNI','UNI','18','100000000000000000000000000',ETHER_SEND_CONFIG)
+  ins = await factory.deploy('CAKE','CAKE','18','100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   REWARD_TOKEN_ADDRESS = ins.address
   
@@ -172,10 +176,20 @@ async function deploy() {
     AAAAQuery.bytecode,
     walletWithProvider
   )
-  
   ins = await factory.deploy(ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   QUERY_ADDRESS = ins.address
+
+
+  // MASTERCHEF
+  factory = new ethers.ContractFactory(
+    MasterChef.abi,
+    MasterChef.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(REWARD_TOKEN_ADDRESS, REWARD_TOKEN_ADDRESS, config.walletDev, 20000000, 0, ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  MASTERCHEF_ADDRESS = ins.address
 
 }
 
@@ -294,6 +308,64 @@ async function initialize() {
       )
     tx = await ins.initialize(ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
+
+    ins = new ethers.Contract(
+        MASTERCHEF_ADDRESS,
+        MasterChef.abi,
+        getWallet()
+      )
+    tx = await ins.add(100, LP_TOKEN_ADDRESS, false, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
+    ins = new ethers.Contract(
+        FACTORY_ADDRESS,
+        AAAAFactory.abi,
+        getWallet()
+      )
+    tx = await ins.createPool(USDT_ADDRESS, LP_TOKEN_ADDRESS, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    let poolAddr = await ins.getPool(USDT_ADDRESS, LP_TOKEN_ADDRESS)
+    console.log('pool address:', poolAddr)
+
+    // CakeLPStrategy
+    factory = new ethers.ContractFactory(
+        CakeLPStrategy.abi,
+        CakeLPStrategy.bytecode,
+        walletWithProvider
+    )
+    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    await waitForMint(ins.deployTransaction.hash)
+    let strategyAddr = ins.address
+
+    ins = new ethers.Contract(
+        PLATFORM_ADDRESS,
+        AAAAPlateForm.abi,
+        getWallet()
+      )
+    tx = await ins.switchStrategy(USDT_ADDRESS, LP_TOKEN_ADDRESS, strategyAddr, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    
+    await transfer()
+}
+
+async function transfer() {
+    for(let user of config.users) {
+        ins = new ethers.Contract(
+            USDT_ADDRESS,
+            ERC20.abi,
+            getWallet()
+          )
+        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        await waitForMint(tx.hash)
+
+        ins = new ethers.Contract(
+            LP_TOKEN_ADDRESS,
+            ERC20.abi,
+            getWallet()
+          )
+        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        await waitForMint(tx.hash)
+    }
 }
 
 async function run() {
