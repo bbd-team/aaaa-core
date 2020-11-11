@@ -2,6 +2,7 @@ let fs = require("fs");
 let path = require("path");
 const ethers = require("ethers")
 const ERC20 = require("../build/ERC20TOKEN.json")
+const AAAABallot = require("../build/AAAABallot.json")
 const AAAAConfig = require("../build/AAAAConfig.json")
 const AAAAPlateForm = require("../build/AAAAPlatform.json")
 const AAAAToken = require("../build/AAAAToken")
@@ -209,6 +210,11 @@ async function initialize() {
       )
     tx = await ins.setupConfig(CONFIG_ADDRESS, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
+
+    let codeHash = ethers.utils.keccak256('0x'+ AAAABallot.bytecode)
+    tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    
 
     ins = new ethers.Contract(
         MINT_ADDRESS,
