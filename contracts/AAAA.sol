@@ -7,9 +7,11 @@ import "./modules/Configable.sol";
 import "./modules/ConfigNames.sol";
 
 interface ICollateralStrategy {
-    function invest(uint amount) external;
-    function withdraw(uint amount) external returns(uint);
-    function interestToken() external returns (address);
+    function invest(address user, uint amount) external; 
+    function withdraw(address user, uint amount) external;
+    function liquidation(address user) external;
+    function claim(address user, uint amount, uint total) external;
+    function exit(uint amount) external;
     function collateralToken() external returns (address);
 }
 
@@ -82,14 +84,14 @@ contract AAAAPool is Configable
     {
         if(collateralStrategy != address(0))
         {
-            ICollateralStrategy(collateralStrategy).withdraw(totalPledge);
+            ICollateralStrategy(collateralStrategy).exit(totalPledge);
         }
 
-        if(_collateralStrategy != address(0))
-        {
-            require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
-            if(totalPledge > 0) ICollateralStrategy(_collateralStrategy).invest(totalPledge);
-        }
+        //if(_collateralStrategy != address(0))
+        //{
+            //require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
+            //if(totalPledge > 0) ICollateralStrategy(_collateralStrategy).invest(totalPledge);
+        //}
 
         collateralStrategy = _collateralStrategy;
     }
@@ -262,8 +264,8 @@ contract AAAAPool is Configable
         if(withdrawLiquidation > 0) {
             if(collateralStrategy != address(0))
             {
-                uint collateralInterest = ICollateralStrategy(collateralStrategy).withdraw(withdrawLiquidation);
-                if(collateralInterest > 0) TransferHelper.safeTransfer(ICollateralStrategy(collateralStrategy).interestToken(), from, collateralInterest);    
+                //这里有疑问
+                //ICollateralStrategy(collateralStrategy).claim(from, withdrawLiquidation, totalLiquidation);   
             }
             TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
         }
@@ -301,7 +303,7 @@ contract AAAAPool is Configable
         if(collateralStrategy != address(0))
         {
             IERC20(ICollateralStrategy(collateralStrategy).collateralToken()).approve(collateralStrategy, amountCollateral);
-            ICollateralStrategy(collateralStrategy).invest(amountCollateral); 
+            ICollateralStrategy(collateralStrategy).invest(from, amountCollateral); 
         }
 
         if(borrows[from].index == 0)
@@ -354,8 +356,7 @@ contract AAAAPool is Configable
 
         if(collateralStrategy != address(0))
         {
-            uint collateralInterest = ICollateralStrategy(collateralStrategy).withdraw(amountCollateral);
-            if(collateralInterest > 0) TransferHelper.safeTransfer(ICollateralStrategy(collateralStrategy).interestToken(), from, collateralInterest);    
+            ICollateralStrategy(collateralStrategy).withdraw(from, amountCollateral);
         }
         TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
@@ -394,6 +395,7 @@ contract AAAAPool is Configable
         
         liquidationHistory[_user].push(liq);
         liquidationHistoryLength[_user] ++;
+        ICollateralStrategy(collateralStrategy).liquidation(_user);
         
         emit Liquidation(from, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
 

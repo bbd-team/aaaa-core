@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
-import "./interface/IERC20.sol";
 import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
 import "./modules/Configable.sol";
+import "./modules/BaseShareField.sol";
 
 interface ICollateralStrategy {
-    function invest(uint amount) external returns(uint);
-    function withdraw(uint amount) external returns(uint);
+    function invest(address user, uint amount) external; 
+    function withdraw(address user, uint amount) external;
+    function liquidation(address user) external;
+    function claim(address user, uint amount, uint total) external;
+    function exit(uint amount) external;
+    function query() external returns (uint);
+    function mint() external;
+
     function interestToken() external returns (address);
     function collateralToken() external returns (address);
 }
@@ -18,8 +24,9 @@ interface IMasterChef {
     function pendingCake(uint256 _pid, address _user) external view returns (uint256);
 }
 
-contract CakeLPStrategy is ICollateralStrategy
+contract CakeLPStrategy is ICollateralStrategy, BaseShareField
 {
+    event Mint(address indexed user, uint amount);
     using SafeMath for uint;
 
     address override public interestToken;
@@ -37,24 +44,60 @@ contract CakeLPStrategy is ICollateralStrategy
         poolAddress = _poolAddress;
         masterChef = _cakeMasterChef;
         lpPoolpid = _lpPoolpid;
+        _setShareToken(_interestToken);
     }
 
-    function invest(uint amount) external override returns(uint interests)
+    function invest(address user, uint amount) external override
     {
         require(msg.sender == poolAddress, "INVALID CALLER");
         TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
         IERC20(collateralToken).approve(masterChef, amount);
         IMasterChef(masterChef).deposit(lpPoolpid, amount);
-        interests = IERC20(interestToken).balanceOf(address(this));
-        if(interests > 0) TransferHelper.safeTransfer(interestToken, msg.sender, interests);
+        _increaseProductivity(user, amount);
     }
 
-    function withdraw(uint amount) external override returns(uint interests)
-    {
+    function withdraw(address user, uint amount) external override
+    { 
         require(msg.sender == poolAddress, "INVALID CALLER");
         IMasterChef(masterChef).withdraw(lpPoolpid, amount);
-        interests = IERC20(interestToken).balanceOf(address(this));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
-        if(interests > 0) TransferHelper.safeTransfer(interestToken, msg.sender, interests);
+        _decreaseProductivity(user, amount);
+    }
+
+
+    function liquidation(address user) external override {
+        uint amount = users[user].amount;
+        _decreaseProductivity(user, amount);
+
+        uint reward = users[user].rewardEarn;
+        users[msg.sender].rewardEarn = users[msg.sender].rewardEarn.add(reward);
+        users[user].rewardEarn = 0;
+        _increaseProductivity(msg.sender, amount);
+    }
+
+    function claim(address user, uint amount, uint total) external override {
+        require(msg.sender == poolAddress, "INVALID CALLER");
+        IMasterChef(masterChef).withdraw(lpPoolpid, amount);
+        TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+        _decreaseProductivity(msg.sender, amount);
+    
+        uint claimAmount = users[msg.sender].rewardEarn.mul(amount).div(total);
+        users[user].rewardEarn = users[user].rewardEarn.add(claimAmount);
+        users[msg.sender].rewardEarn = users[msg.sender].rewardEarn.sub(claimAmount);
+    }
+
+    function exit(uint amount) external override {
+        require(msg.sender == poolAddress, "INVALID CALLER");
+        IMasterChef(masterChef).deposit(lpPoolpid, amount);
+        TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+    }
+
+    function query() external override returns (uint){
+        return _takeWithAddress(msg.sender);
+    }
+
+    function mint() external override {
+        uint amount = _mint(msg.sender);
+        emit Mint(msg.sender, amount);
     }
 }

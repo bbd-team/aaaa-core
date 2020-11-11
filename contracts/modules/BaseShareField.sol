@@ -4,6 +4,7 @@ import '../libraries/SafeMath.sol';
 import '../libraries/TransferHelper.sol';
 
 interface IERC20 {
+    function approve(address spender, uint value) external returns (bool);
     function balanceOf(address owner) external view returns (uint);
 }
 
@@ -100,6 +101,24 @@ contract BaseShareField {
         
         return true;
     }
+
+    function _transferTo(address user, address to, uint value) internal virtual returns (bool) {
+        UserInfo storage userInfo = users[user];
+        require(value > 0 && userInfo.amount >= value, 'INSUFFICIENT_PRODUCTIVITY');
+        
+        _update();
+        _audit(user);
+
+        uint transferAmount = value.mul(userInfo.rewardEarn).div(userInfo.amount);
+        userInfo.rewardEarn = userInfo.rewardEarn.sub(transferAmount);
+        users[to].rewardEarn = users[to].rewardEarn.add(transferAmount);
+        
+        userInfo.amount = userInfo.amount.sub(value);
+        userInfo.rewardDebt = userInfo.amount.mul(accAmountPerShare).div(1e12);
+        totalProductivity = totalProductivity.sub(value);
+        
+        return true;
+    }
     
     function _takeWithAddress(address user) internal view returns (uint) {
         UserInfo storage userInfo = users[user];
@@ -120,7 +139,20 @@ contract BaseShareField {
         _audit(user);
         require(users[user].rewardEarn > 0, "NOTHING TO MINT");
         uint amount = users[user].rewardEarn;
-        TransferHelper.safeTransfer(shareToken, msg.sender, amount);
+        TransferHelper.safeTransfer(shareToken, user, amount);
+        users[user].rewardEarn = 0;
+        mintedShare += amount;
+        return amount;
+    }
+
+    function _mintTo(address user, address to) internal virtual lock returns (uint) {
+        _update();
+        _audit(user);
+        uint amount = users[user].rewardEarn;
+        if(amount > 0) {
+            TransferHelper.safeTransfer(shareToken, to, amount);
+        }
+        
         users[user].rewardEarn = 0;
         mintedShare += amount;
         return amount;
