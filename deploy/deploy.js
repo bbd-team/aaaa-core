@@ -32,13 +32,11 @@ let QUERY2_ADDRESS = ""
 let MASTERCHEF_ADDRESS = ""
 let STRATEGY_ADDRESS = ""
 
-const ETHER_SEND_CONFIG = {
-  gasPrice: ethers.utils.parseUnits("10", "gwei")
-}
 
 let config = {
     "url": "",
     "pk": "",
+    "gasPrice": "10",
     "mintInterestRate": "1000000000000000000",
     "mintBorrowPower": "5000",
     "walletDev": "", 
@@ -54,6 +52,11 @@ if(fs.existsSync(path.join(__dirname, ".config.json"))) {
         config[k] = _config[k];
     }
 }
+
+let ETHER_SEND_CONFIG = {
+    gasPrice: ethers.utils.parseUnits(config.gasPrice, "gwei")
+}
+  
 
 console.log("current endpoint  ", config.url)
 let provider = new ethers.providers.JsonRpcProvider(config.url)
@@ -415,6 +418,7 @@ async function run() {
     MINT_ADDRESS = ${MINT_ADDRESS}
     SHARE_ADDRESS = ${SHARE_ADDRESS}
     QUERY_ADDRESS = ${QUERY_ADDRESS}
+    QUERY2_ADDRESS = ${QUERY2_ADDRESS}
 
     ===============================
     MASTERCHEF_ADDRESS = ${MASTERCHEF_ADDRESS}
