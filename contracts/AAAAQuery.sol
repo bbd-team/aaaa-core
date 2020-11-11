@@ -190,6 +190,7 @@ contract AAAAQuery {
         bool voted;
         uint voteIndex;
         bool claimed;
+        uint myReward;
         bool end;
         bool pass;
         bool expire;
@@ -463,12 +464,16 @@ contract AAAAQuery {
         proposal.weight = IAAAABallot(_ballot).voters(_user).weight;
         proposal.claimed = IAAAABallot(_ballot).voters(_user).claimed;
         proposal.value = IAAAABallot(_ballot).value();
+        proposal.total = IAAAABallot(_ballot).total();
 
         address pool = IAAAABallot(_ballot).pool();
         if(pool != address(0)) {
             proposal.currentValue = IConfig(config).getPoolValue(pool, proposal.name);
         } else {
             proposal.currentValue = IConfig(config).getValue(proposal.name);
+        }
+        if(proposal.total > 0) {
+           proposal.myReward = proposal.reward * proposal.weight / proposal.total;
         }
     }
 
