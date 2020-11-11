@@ -125,7 +125,7 @@ describe('deploy', () => {
 		await governanceContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await tokenContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await governanceContract.connect(walletDeveloper).setupConfig(configContract.address);
-		await queryContract.connect(walletDeveloper).initialize(configContract.address);
+		await queryContract.connect(walletDeveloper).setupConfig(configContract.address);
 
 		await configContract.connect(walletDeveloper).initParameter();
 		await configContract.connect(walletDeveloper).setWallets([
