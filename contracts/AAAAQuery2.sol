@@ -136,6 +136,10 @@ contract AAAAQuery2 {
         uint POOL_MARKET_FRENZY;
         uint POOL_PLEDGE_RATE;
         uint POOL_LIQUIDATION_RATE;
+        address lpToken0;
+        address lpToken1;
+        string lpToken0Symbol;
+        string lpToken1Symbol;
         string supplyTokenSymbol;
         string collateralTokenSymbol;
     }
@@ -173,6 +177,10 @@ contract AAAAQuery2 {
         info.POOL_MARKET_FRENZY = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MARKET_FRENZY);
         info.POOL_PLEDGE_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
         info.POOL_LIQUIDATION_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
+        info.lpToken0 = ISwapPair(info.collateralToken).token0();
+        info.lpToken1 = ISwapPair(info.collateralToken).token1();
+        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
+        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
         return info;
     }
 
