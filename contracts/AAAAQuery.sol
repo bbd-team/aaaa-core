@@ -195,9 +195,6 @@ contract AAAAQuery {
         bool end;
         bool pass;
         bool expire;
-        uint confMin;
-        uint confMax;
-        uint confSpan;
         string  subject;
         string  content;
     }
@@ -472,17 +469,9 @@ contract AAAAQuery {
 
         address pool = IAAAABallot(_ballot).pool();
         if(pool != address(0)) {
-            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getPoolParams(pool, proposal.name);
+            proposal.currentValue = IConfig(config).getPoolValue(pool, proposal.name);
         } else {
-            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getParams(proposal.name);
-        }
-
-        if(proposal.currentValue > proposal.confMin + proposal.confSpan) {
-            proposal.confMin = proposal.currentValue - proposal.confSpan;
-        }
-
-        if(proposal.confMax > proposal.currentValue + proposal.confSpan) {
-            proposal.confMax = proposal.currentValue + proposal.confSpan;
+            proposal.currentValue = IConfig(config).getValue(proposal.name);
         }
 
         if(proposal.total > 0) {
