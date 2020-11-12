@@ -36,11 +36,9 @@ contract AAAAGovernance is Configable {
         _checkValid(_pool, _key, _value);
         uint cost = IConfig(config).getValue(ConfigNames.PROPOSAL_CREATE_COST);
         address token = IConfig(config).token();
-        if(cost > 0) {
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), cost);
-        }
         address ballot = IAAAAFactory(IConfig(config).factory()).createBallot(msg.sender, _pool, _key, _value, cost, _subject, _content, _bytecode);
         if(cost > 0) {
+            TransferHelper.safeTransferFrom(token, msg.sender, address(this), cost);
             TransferHelper.safeTransfer(token, ballot, cost);
         }
     }
