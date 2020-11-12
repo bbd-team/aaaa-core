@@ -466,10 +466,9 @@ contract AAAAQuery {
         proposal.claimed = IAAAABallot(_ballot).voters(_user).claimed;
         proposal.value = IAAAABallot(_ballot).value();
         proposal.total = IAAAABallot(_ballot).total();
-
-        address pool = IAAAABallot(_ballot).pool();
-        if(pool != address(0)) {
-            proposal.currentValue = IConfig(config).getPoolValue(pool, proposal.name);
+        proposal.pool = IAAAABallot(_ballot).pool();
+        if(proposal.pool != address(0)) {
+            proposal.currentValue = IConfig(config).getPoolValue(proposal.pool, proposal.name);
         } else {
             proposal.currentValue = IConfig(config).getValue(proposal.name);
         }
