@@ -115,6 +115,10 @@ contract AAAAQuery {
         address collateralToken;
         uint8 supplyTokenDecimals;
         uint8 collateralTokenDecimals;
+        address lpToken0;
+        address lpToken1;
+        string lpToken0Symbol;
+        string lpToken1Symbol;
         string supplyTokenSymbol;
         string collateralTokenSymbol;
     }
@@ -238,6 +242,10 @@ contract AAAAQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
+        info.lpToken0 = ISwapPair(info.collateralToken).token0();
+        info.lpToken1 = ISwapPair(info.collateralToken).token1();
+        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
+        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
 
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);

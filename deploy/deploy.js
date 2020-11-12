@@ -2,6 +2,7 @@ let fs = require("fs");
 let path = require("path");
 const ethers = require("ethers")
 const ERC20 = require("../build/ERC20TOKEN.json")
+const UNIPAIR = require("../build/UniswapPairTest.json")
 const AAAABallot = require("../build/AAAABallot.json")
 const AAAAConfig = require("../build/AAAAConfig.json")
 const AAAAPlateForm = require("../build/AAAAPlatform.json")
@@ -31,6 +32,8 @@ let QUERY2_ADDRESS = ""
 
 let MASTERCHEF_ADDRESS = ""
 let STRATEGY_ADDRESS = ""
+
+let WBTC_TOKEN_ADDRESS = ""
 
 
 let config = {
@@ -99,13 +102,23 @@ async function deploy() {
   await waitForMint(ins.deployTransaction.hash)
   USDT_ADDRESS = ins.address
 
-  ins = await factory.deploy('LP','LP','18','100000000000000000000000000',ETHER_SEND_CONFIG)
-  await waitForMint(ins.deployTransaction.hash)
-  LP_TOKEN_ADDRESS = ins.address
-
   ins = await factory.deploy('CAKE','CAKE','18','100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   REWARD_TOKEN_ADDRESS = ins.address
+
+  ins = await factory.deploy('WBTC','WBTC','18','100000000000000000000000000',ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  WBTC_TOKEN_ADDRESS = ins.address
+
+  // LP
+  factory = new ethers.ContractFactory(
+    UNIPAIR.abi,
+    UNIPAIR.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  LP_TOKEN_ADDRESS = ins.address
   
   // PLATFORM
   factory = new ethers.ContractFactory(
@@ -338,6 +351,16 @@ async function initialize() {
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
+        LP_TOKEN_ADDRESS,
+        UNIPAIR.abi,
+        getWallet()
+      )
+    tx = await ins.initialize(WBTC_TOKEN_ADDRESS, USDT_ADDRESS, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.mint(config.walletDev, '100000000000000000000000000', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
+    ins = new ethers.Contract(
         MASTERCHEF_ADDRESS,
         MasterChef.abi,
         getWallet()
@@ -396,10 +419,10 @@ async function transfer() {
 
         ins = new ethers.Contract(
             LP_TOKEN_ADDRESS,
-            ERC20.abi,
+            UNIPAIR.abi,
             getWallet()
           )
-        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        tx = await ins.mint(user, '5000000000000000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
     }
 }
@@ -427,6 +450,7 @@ async function run() {
     USDT_ADDRESS = ${USDT_ADDRESS}
     LP_TOKEN_ADDRESS = ${LP_TOKEN_ADDRESS}
     REWARD_TOKEN_ADDRESS = ${REWARD_TOKEN_ADDRESS}
+    WBTC_TOKEN_ADDRESS = ${WBTC_TOKEN_ADDRESS}
     `)
 }
 

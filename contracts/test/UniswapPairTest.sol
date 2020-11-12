@@ -70,8 +70,8 @@ contract UniswapPairTest is UniswapV2ERC20 {
     address public token0;
     address public token1;
 
-    uint public token0Coef;
-    uint public token1Coef;
+    uint public token0Coef = 1;
+    uint public token1Coef = 1;
 
     uint private reserve0;           // uses single storage slot, accessible via getReserves
     uint private reserve1;           // uses single storage slot, accessible via getReserves
