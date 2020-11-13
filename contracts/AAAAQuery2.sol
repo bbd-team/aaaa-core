@@ -118,6 +118,16 @@ contract AAAAQuery2 {
         uint MINT_BORROW_PERCENT;
     }
 
+    struct ConfigValueStruct {
+        uint min;
+        uint max;
+        uint span;
+        uint value;
+        address pair;
+        bytes32 key;
+        string name;
+    }
+
     struct ConfigPoolStruct {
         address pair;
         address supplyToken;
@@ -126,6 +136,10 @@ contract AAAAQuery2 {
         uint POOL_MARKET_FRENZY;
         uint POOL_PLEDGE_RATE;
         uint POOL_LIQUIDATION_RATE;
+        address lpToken0;
+        address lpToken1;
+        string lpToken0Symbol;
+        string lpToken1Symbol;
         string supplyTokenSymbol;
         string collateralTokenSymbol;
     }
@@ -163,6 +177,10 @@ contract AAAAQuery2 {
         info.POOL_MARKET_FRENZY = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MARKET_FRENZY);
         info.POOL_PLEDGE_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
         info.POOL_LIQUIDATION_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
+        info.lpToken0 = ISwapPair(info.collateralToken).token0();
+        info.lpToken1 = ISwapPair(info.collateralToken).token1();
+        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
+        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
         return info;
     }
 
@@ -180,5 +198,54 @@ contract AAAAQuery2 {
 
     function countConfig() public view returns (uint) {
         return 10 + IAAAAFactory(IConfig(config).factory()).countPools() * 4;
+    }
+
+    function getConfigValue(address _pair, bytes32 _key, string memory _name) public view returns (ConfigValueStruct memory info){
+        info.pair = _pair;
+        info.key = _key;
+        info.name = _name;
+        if(_pair != address(0)) {
+            (info.min, info.max, info.span, info.value) = IConfig(config).getPoolParams(_pair, _key);
+        } else {
+            (info.min, info.max, info.span, info.value) = IConfig(config).getParams(_key);
+        }
+
+        if(info.value > info.min + info.span) {
+            info.min = info.value - info.span;
+        }
+
+        if(info.max > info.value + info.span) {
+            info.max = info.value + info.span;
+        }
+
+        return info;
+    }
+
+    function getConfigCommonValue(bytes32 _key, string memory _name) public view returns (ConfigValueStruct memory info){
+        return getConfigValue(address(0), _key, _name);
+    }
+
+    function getConfigCommonValues() public view returns (ConfigValueStruct[] memory list){
+        list = new ConfigValueStruct[](10);
+        list[0] = getConfigCommonValue(ConfigNames.PROPOSAL_VOTE_DURATION, 'PROPOSAL_VOTE_DURATION');
+        list[1] = getConfigCommonValue(ConfigNames.PROPOSAL_EXECUTE_DURATION, 'PROPOSAL_EXECUTE_DURATION');
+        list[2] = getConfigCommonValue(ConfigNames.PROPOSAL_CREATE_COST, 'PROPOSAL_CREATE_COST');
+        list[3] = getConfigCommonValue(ConfigNames.STAKE_LOCK_TIME, 'STAKE_LOCK_TIME');
+        list[4] = getConfigCommonValue(ConfigNames.MINT_AMOUNT_PER_BLOCK, 'MINT_AMOUNT_PER_BLOCK');
+        list[5] = getConfigCommonValue(ConfigNames.INTEREST_PLATFORM_SHARE, 'INTEREST_PLATFORM_SHARE');
+        list[6] = getConfigCommonValue(ConfigNames.INTEREST_BUYBACK_SHARE, 'INTEREST_BUYBACK_SHARE');
+        list[7] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_DURATION, 'CHANGE_PRICE_DURATION');
+        list[8] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_PERCENT, 'CHANGE_PRICE_PERCENT');
+        list[9] = getConfigCommonValue(ConfigNames.MINT_BORROW_PERCENT, 'MINT_BORROW_PERCENT');
+        return list;
+    }
+
+    function getConfigPoolValues(address _pair) public view returns (ConfigValueStruct[] memory list){
+        list = new ConfigValueStruct[](4);
+        list[0] = getConfigValue(_pair, ConfigNames.POOL_BASE_INTERESTS, 'POOL_BASE_INTERESTS');
+        list[1] = getConfigValue(_pair, ConfigNames.POOL_MARKET_FRENZY, 'POOL_MARKET_FRENZY');
+        list[2] = getConfigValue(_pair, ConfigNames.POOL_PLEDGE_RATE, 'POOL_PLEDGE_RATE');
+        list[3] = getConfigValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE, 'POOL_LIQUIDATION_RATE');
+        return list;
     }
 }

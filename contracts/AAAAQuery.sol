@@ -115,6 +115,10 @@ contract AAAAQuery {
         address collateralToken;
         uint8 supplyTokenDecimals;
         uint8 collateralTokenDecimals;
+        address lpToken0;
+        address lpToken1;
+        string lpToken0Symbol;
+        string lpToken1Symbol;
         string supplyTokenSymbol;
         string collateralTokenSymbol;
     }
@@ -195,9 +199,6 @@ contract AAAAQuery {
         bool end;
         bool pass;
         bool expire;
-        uint confMin;
-        uint confMax;
-        uint confSpan;
         string  subject;
         string  content;
     }
@@ -241,6 +242,10 @@ contract AAAAQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
+        info.lpToken0 = ISwapPair(info.collateralToken).token0();
+        info.lpToken1 = ISwapPair(info.collateralToken).token1();
+        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
+        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
 
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);
@@ -469,20 +474,11 @@ contract AAAAQuery {
         proposal.claimed = IAAAABallot(_ballot).voters(_user).claimed;
         proposal.value = IAAAABallot(_ballot).value();
         proposal.total = IAAAABallot(_ballot).total();
-
-        address pool = IAAAABallot(_ballot).pool();
-        if(pool != address(0)) {
-            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getPoolParams(pool, proposal.name);
+        proposal.pool = IAAAABallot(_ballot).pool();
+        if(proposal.pool != address(0)) {
+            proposal.currentValue = IConfig(config).getPoolValue(proposal.pool, proposal.name);
         } else {
-            (proposal.confMin, proposal.confMax, proposal.confSpan, proposal.currentValue) = IConfig(config).getParams(proposal.name);
-        }
-
-        if(proposal.currentValue > proposal.confMin + proposal.confSpan) {
-            proposal.confMin = proposal.currentValue - proposal.confSpan;
-        }
-
-        if(proposal.confMax > proposal.currentValue + proposal.confSpan) {
-            proposal.confMax = proposal.currentValue + proposal.confSpan;
+            proposal.currentValue = IConfig(config).getValue(proposal.name);
         }
 
         if(proposal.total > 0) {

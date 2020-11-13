@@ -45,6 +45,7 @@ contract AAAABallot is Configable {
 
     event Voted(address indexed _user, uint _index, uint _weight);
     event Claimed(address indexed _user, address indexed _token, uint _reward);
+    event Executed(address indexed _user);
     
     constructor () public {
         createdTime = block.timestamp;
@@ -77,6 +78,11 @@ contract AAAABallot is Configable {
         proposals[_index] += amount;
         total += amount;
         emit Voted(_user, _index, amount);
+    }
+
+    function execute(address _user) onlyGovernor external {
+        executed = true;
+        emit Executed(_user);
     }
     
     function claim() external {

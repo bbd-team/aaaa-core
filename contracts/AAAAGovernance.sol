@@ -12,6 +12,8 @@ interface IAAAAFactory {
 
 interface IAAAABallot {
     function vote(address _user, uint _index) external;
+    function execute(address _user) external;
+    function executed() external returns (bool);
     function end() external returns (bool);
     function pass() external returns (bool);
     function expire() external returns (bool);
@@ -34,11 +36,9 @@ contract AAAAGovernance is Configable {
         _checkValid(_pool, _key, _value);
         uint cost = IConfig(config).getValue(ConfigNames.PROPOSAL_CREATE_COST);
         address token = IConfig(config).token();
-        if(cost > 0) {
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), cost);
-        }
         address ballot = IAAAAFactory(IConfig(config).factory()).createBallot(msg.sender, _pool, _key, _value, cost, _subject, _content, _bytecode);
         if(cost > 0) {
+            TransferHelper.safeTransferFrom(token, msg.sender, address(this), cost);
             TransferHelper.safeTransfer(token, ballot, cost);
         }
     }
@@ -52,6 +52,7 @@ contract AAAAGovernance is Configable {
         require(IAAAABallot(_ballot).end(), "Vote not end");
         require(!IAAAABallot(_ballot).expire(), "Vote expire");
         require(IAAAABallot(_ballot).pass(), "Vote not pass");
+        require(!IAAAABallot(_ballot).executed(), "Vote executed");
         
         bytes32 key = IAAAABallot(_ballot).name();
         uint value = IAAAABallot(_ballot).value();
@@ -67,6 +68,7 @@ contract AAAAGovernance is Configable {
         } else {
             IConfig(config).setPoolValue(pool, key, value);
         }
+        IAAAABallot(_ballot).execute(msg.sender);
     }
     
     function _checkValid(address _pool, bytes32 _key, uint _value) view internal {
