@@ -24,6 +24,7 @@ library ConfigNames {
     bytes32 public constant AAAA_MAX_SUPPLY = bytes32('AAAA_MAX_SUPPLY');
     bytes32 public constant AAAA_USER_MINT = bytes32('AAAA_USER_MINT');
     bytes32 public constant AAAA_TEAM_MINT = bytes32('AAAA_TEAM_MINT');
+    bytes32 public constant AAAA_REWAED_MINT = bytes32('AAAA_REWAED_MINT');
     bytes32 public constant DEPOSIT_ENABLE = bytes32('DEPOSIT_ENABLE');
     bytes32 public constant WITHDRAW_ENABLE = bytes32('WITHDRAW_ENABLE');
     bytes32 public constant BORROW_ENABLE = bytes32('BORROW_ENABLE');
@@ -33,4 +34,9 @@ library ConfigNames {
 
     //POOL
     bytes32 public constant POOL_PRICE = bytes32('POOL_PRICE');
+
+    //wallet
+    bytes32 public constant TEAM = bytes32('team'); 
+    bytes32 public constant SPARE = bytes32('spare');
+    bytes32 public constant REWARD = bytes32('reward');
 }
