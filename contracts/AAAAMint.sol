@@ -21,9 +21,6 @@ contract AAAAMint is Configable {
     
     uint public amountPerBlock = 2000 * 1e18;
     uint public borrowPower = 0;
-
-    bytes32 public TeamWalletKey = bytes32("team");
-    bytes32 public SpareWalletKey = bytes32("spare");
     
     struct UserInfo {
         uint amount;     // How many tokens the user has provided.
@@ -47,7 +44,7 @@ contract AAAAMint is Configable {
     event BorrowerProductivityDecreased (address indexed user, uint value);
     event LenderProductivityIncreased (address indexed user, uint value);
     event LenderProductivityDecreased (address indexed user, uint value);
-    event Mint(address indexed user, uint userAmount, uint teamAmount, uint spareAmount);
+    event Mint(address indexed user, uint userAmount, uint teamAmount, uint rewardAmount, uint spareAmount);
 
         
     function initialize() external onlyDeveloper {
@@ -325,17 +322,23 @@ contract AAAAMint is Configable {
         uint remainAmount = amount.sub(userAmount);
         uint teamAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_TEAM_MINT)).div(10000);
         if(teamAmount > 0) {
-            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(TeamWalletKey), teamAmount);
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.TEAM), teamAmount);
         }
         
-        uint spareAmount = remainAmount.sub(teamAmount);
+        remainAmount = remainAmount.sub(teamAmount);
+        uint rewardAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_REWAED_MINT)).div(10000);
+        if(rewardAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.REWARD), rewardAmount);
+        }  
+
+        uint spareAmount = remainAmount.sub(rewardAmount);
         if(spareAmount > 0) {
-            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(SpareWalletKey), spareAmount);
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.SPARE), spareAmount);
         }
         
         if(userAmount > 0) {
            TransferHelper.safeTransfer(IConfig(config).token(), user, userAmount); 
         }
-        emit Mint(user, userAmount, teamAmount, spareAmount);
+        emit Mint(user, userAmount, teamAmount, rewardAmount, spareAmount);
     }
 }

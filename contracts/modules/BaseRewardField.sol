@@ -4,11 +4,10 @@ import '../libraries/SafeMath.sol';
 import '../libraries/TransferHelper.sol';
 
 interface IERC20 {
-    function approve(address spender, uint value) external returns (bool);
     function balanceOf(address owner) external view returns (uint);
 }
 
-contract BaseShareField {
+contract BaseRewardField {
     using SafeMath for uint;
     
     uint public totalProductivity;
@@ -17,6 +16,9 @@ contract BaseShareField {
     uint public totalShare;
     uint public mintedShare;
     uint public mintCumulation;
+    
+    uint public lastRewardBlock;
+    uint public amountPerBlock;
     
     uint private unlocked = 1;
     address public shareToken;
@@ -39,21 +41,36 @@ contract BaseShareField {
     function _setShareToken(address _shareToken) internal {
         shareToken = _shareToken;
     }
+    
+    function _changeAmountPerBlock(uint value) internal returns (bool) {
+        uint old = amountPerBlock;
+        require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
+        _update();
+        amountPerBlock = value;
+        return true;
+    }
 
     // Update reward variables of the given pool to be up-to-date.
     function _update() internal virtual {
         if (totalProductivity == 0) {
-            totalShare = totalShare.add(_currentReward());
+            lastRewardBlock = block.number;
             return;
         }
         
         uint256 reward = _currentReward();
         accAmountPerShare = accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
         totalShare += reward;
+        lastRewardBlock = block.number;
     }
     
     function _currentReward() internal virtual view returns (uint) {
-        return mintedShare + IERC20(shareToken).balanceOf(address(this)) - totalShare;
+        uint256 multiplier = block.number.sub(lastRewardBlock);
+        uint reward =  multiplier.mul(amountPerBlock);
+        if(IERC20(shareToken).balanceOf(address(this)) < reward) {
+            return IERC20(shareToken).balanceOf(address(this));
+        } else {
+            return reward;
+        }
     }
     
     // Audit user's reward to be up-to-date
@@ -101,28 +118,11 @@ contract BaseShareField {
         
         return true;
     }
-
-    function _transferTo(address user, address to, uint value) internal virtual returns (bool) {
-        UserInfo storage userInfo = users[user];
-        require(value > 0 && userInfo.amount >= value, 'INSUFFICIENT_PRODUCTIVITY');
-        
-        _update();
-        _audit(user);
-
-        uint transferAmount = value.mul(userInfo.rewardEarn).div(userInfo.amount);
-        userInfo.rewardEarn = userInfo.rewardEarn.sub(transferAmount);
-        users[to].rewardEarn = users[to].rewardEarn.add(transferAmount);
-        
-        userInfo.amount = userInfo.amount.sub(value);
-        userInfo.rewardDebt = userInfo.amount.mul(accAmountPerShare).div(1e12);
-        totalProductivity = totalProductivity.sub(value);
-        
-        return true;
-    }
     
     function _takeWithAddress(address user) internal view returns (uint) {
         UserInfo storage userInfo = users[user];
         uint _accAmountPerShare = accAmountPerShare;
+        // uint256 lpSupply = totalProductivity;
         if (totalProductivity != 0) {
             uint reward = _currentReward();
             _accAmountPerShare = _accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
@@ -138,20 +138,7 @@ contract BaseShareField {
         _audit(user);
         require(users[user].rewardEarn > 0, "NOTHING TO MINT");
         uint amount = users[user].rewardEarn;
-        TransferHelper.safeTransfer(shareToken, user, amount);
-        users[user].rewardEarn = 0;
-        mintedShare += amount;
-        return amount;
-    }
-
-    function _mintTo(address user, address to) internal virtual lock returns (uint) {
-        _update();
-        _audit(user);
-        uint amount = users[user].rewardEarn;
-        if(amount > 0) {
-            TransferHelper.safeTransfer(shareToken, to, amount);
-        }
-        
+        TransferHelper.safeTransfer(shareToken, msg.sender, amount);
         users[user].rewardEarn = 0;
         mintedShare += amount;
         return amount;
@@ -166,5 +153,4 @@ contract BaseShareField {
     function interestsPerBlock() public virtual view returns (uint) {
         return accAmountPerShare;
     }
-    
 }
