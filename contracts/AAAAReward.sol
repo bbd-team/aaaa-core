@@ -2,7 +2,7 @@
 pragma solidity >=0.5.16;
 import './modules/BaseRewardField.sol';
 
-contract SevenUpReward is BaseRewardField {
+contract AAAAReward is BaseRewardField {
     
     address public owner;
     address public stakeToken;
