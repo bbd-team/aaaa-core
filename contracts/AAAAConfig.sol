@@ -118,7 +118,7 @@ contract AAAAConfig {
 
         for(uint i = 0; i < _pools.length; i++)
         {
-            uint currentPrice = poolParams[_pools[i]][bytes32("pledgePrice")].value;
+            uint currentPrice = poolParams[_pools[i]][ConfigNames.POOL_PRICE].value;
             if(_prices[i] > currentPrice) {
                 uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
                 _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
