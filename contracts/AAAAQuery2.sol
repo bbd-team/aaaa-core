@@ -24,7 +24,6 @@ interface IConfig {
     function wallet() external view returns (address);
     function base() external view returns (address);
     function share() external view returns (address);
-    function poolParams(address pool, bytes32 key) external view returns (uint);
     function params(bytes32 key) external view returns(uint);
     function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;

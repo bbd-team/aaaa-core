@@ -3,6 +3,7 @@ pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/SafeMath.sol";
+import './modules/ConfigNames.sol';
 
 interface IERC20 {
     function name() external view returns (string memory);
@@ -23,7 +24,6 @@ interface IConfig {
     function wallet() external view returns (address);
     function base() external view returns (address);
     function share() external view returns (address);
-    function poolParams(address pool, bytes32 key) external view returns (uint);
     function params(bytes32 key) external view returns(uint);
     function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
@@ -286,7 +286,7 @@ contract AAAAQuery {
     function queryMintToken(address user) public view returns (MintTokenStruct memory info) {
         address token = IConfig(config).mint();
         info.mintCumulation = IAAAAMint(token).mintCumulation();
-        info.maxSupply = IConfig(config).params(bytes32("7upMaxSupply"));
+        info.maxSupply = IConfig(config).params(ConfigNames.AAAA_MAX_SUPPLY);
         info.takeBorrow = IAAAAMint(token).takeBorrowWithAddress(user);
         info.takeLend = IAAAAMint(token).takeLendWithAddress(user);
     }
@@ -324,8 +324,8 @@ contract AAAAQuery {
 
         for(uint i = _startPoolIndex; i < poolCount; i++) {
             address pool = IAAAAFactory(IConfig(config).factory()).allPools(i);
-            uint liquidationRate = IConfig(config).poolParams(pool, bytes32("liquidationRate"));
-            uint pledgePrice = IConfig(config).poolParams(pool, bytes32("pledgePrice"));
+            uint liquidationRate = IConfig(config).getPoolValue(pool, ConfigNames.POOL_LIQUIDATION_RATE);
+            uint pledgePrice = IConfig(config).getPoolValue(pool, ConfigNames.POOL_PRICE);
             uint borrowsCount = IAAAAPool(pool).numberBorrowers();
             require(_startIndex < borrowsCount, "INVALID START INDEX");
             poolIndex = i;
@@ -363,8 +363,8 @@ contract AAAAQuery {
         if (_end > count) _end = count;
         count = _end - _start;
         uint index = 0;
-        uint liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
-        uint pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
+        uint liquidationRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
+        uint pledgePrice = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PRICE);
         for(uint i = _start; i < _end; i++) {
             address user = IAAAAPool(_pair).borrowerList(i);
             (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
@@ -393,11 +393,11 @@ contract AAAAQuery {
     }
 
     function getPoolConf(address _pair) public view returns (PoolConfigInfo memory info) {
-        info.baseInterests = IConfig(config).poolParams(_pair, bytes32("baseInterests"));
-        info.marketFrenzy = IConfig(config).poolParams(_pair, bytes32("marketFrenzy"));
-        info.pledgeRate = IConfig(config).poolParams(_pair, bytes32("pledgeRate"));
-        info.pledgePrice = IConfig(config).poolParams(_pair, bytes32("pledgePrice"));
-        info.liquidationRate = IConfig(config).poolParams(_pair, bytes32("liquidationRate"));
+        info.baseInterests = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_BASE_INTERESTS);
+        info.marketFrenzy = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MARKET_FRENZY);
+        info.pledgeRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
+        info.pledgePrice = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PRICE);
+        info.liquidationRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
     }
 
     function queryUserLiquidationList(address _pair, address _user) public view returns (UserLiquidationStruct[] memory list) {
@@ -441,7 +441,7 @@ contract AAAAQuery {
         uint interestPerSupply = IAAAAPool(_pair).interestPerSupply();
         (uint amountSupply, uint interestSettled, , uint interests, ) = IAAAAPool(_pair).supplys(_user);
         uint remainSupply = IAAAAPool(_pair).remainSupply();
-        uint platformShare = IConfig(config).params(bytes32("platformShare"));
+        uint platformShare = IConfig(config).params(ConfigNames.INTEREST_PLATFORM_SHARE);
 
         uint curInterests = interestPerSupply.mul(amountSupply).div(1e18).sub(interestSettled);
         interests = interests.add(curInterests);
