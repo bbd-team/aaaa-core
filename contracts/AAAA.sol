@@ -82,7 +82,7 @@ contract AAAAPool is Configable
 
     function switchStrategy(address _collateralStrategy) external onlyPlatform
     {
-        if(collateralStrategy != address(0))
+        if(collateralStrategy != address(0) && totalPledge > 0)
         {
             ICollateralStrategy(collateralStrategy).exit(totalPledge);
         }
@@ -300,7 +300,7 @@ contract AAAAPool is Configable
         totalPledge = totalPledge.add(amountCollateral);
         remainSupply = remainSupply.sub(expectBorrow);
 
-        if(collateralStrategy != address(0))
+        if(collateralStrategy != address(0) && amountCollateral > 0)
         {
             IERC20(ICollateralStrategy(collateralStrategy).collateralToken()).approve(collateralStrategy, amountCollateral);
             ICollateralStrategy(collateralStrategy).invest(from, amountCollateral); 
@@ -354,7 +354,7 @@ contract AAAAPool is Configable
 
         remainSupply = remainSupply.add(repayAmount.add(repayInterest));
 
-        if(collateralStrategy != address(0))
+        if(collateralStrategy != address(0) && amountCollateral > 0)
         {
             ICollateralStrategy(collateralStrategy).withdraw(from, amountCollateral);
         }
