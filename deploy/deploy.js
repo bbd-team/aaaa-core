@@ -367,6 +367,9 @@ async function initialize() {
     tx = await ins.initialize(BURGER_TOKEN_ADDRESS, AAAA_ADDRESS, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
 
+    tx = await ins.changeAmountPerBlock('1000000000000000000')
+    await waitForMint(tx.hash)
+
     ins = new ethers.Contract(
         AAAA_ADDRESS,
         AAAAToken.abi,
