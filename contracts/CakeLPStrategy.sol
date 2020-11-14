@@ -92,11 +92,16 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
     }
 
+    function _currentReward() internal override view returns (uint) {
+        return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(IMasterChef(masterChef).pendingCake(lpPoolpid, address(this))).sub(totalShare);
+    }
+
     function query() external override returns (uint){
         return _takeWithAddress(msg.sender);
     }
 
     function mint() external override {
+        IMasterChef(masterChef).deposit(lpPoolpid, 0);
         uint amount = _mint(msg.sender);
         emit Mint(msg.sender, amount);
     }

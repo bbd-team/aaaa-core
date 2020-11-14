@@ -53,7 +53,7 @@ contract BaseShareField {
     }
     
     function _currentReward() internal virtual view returns (uint) {
-        return mintedShare + IERC20(shareToken).balanceOf(address(this)) - totalShare;
+        return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).sub(totalShare);
     }
     
     // Audit user's reward to be up-to-date
