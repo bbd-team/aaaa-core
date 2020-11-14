@@ -320,7 +320,7 @@ async function initialize() {
         AAAA_ADDRESS,
         USDT_ADDRESS,
         SHARE_ADDRESS,
-        GOVERNANCE_ADDRESS,
+        config.walletDev,
         ETHER_SEND_CONFIG
     )
     await waitForMint(tx.hash)
@@ -350,6 +350,10 @@ async function initialize() {
       )
     tx = await ins.initialize(ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
+    tx = await ins.changeBorrowPower('5000', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.changeInterestRatePerBlock('1000000000000000000',ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
         SHARE_ADDRESS,
@@ -378,6 +382,31 @@ async function initialize() {
     tx = await ins.initialize(ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
 
+
+    ins = new ethers.Contract(
+      CONFIG_ADDRESS,
+      AAAAConfig.abi,
+      getWallet()
+    )
+    tx = await ins.initialize(
+        PLATFORM_ADDRESS, 
+        FACTORY_ADDRESS,
+        MINT_ADDRESS,
+        AAAA_ADDRESS,
+        USDT_ADDRESS,
+        SHARE_ADDRESS,
+        GOVERNANCE_ADDRESS,
+        ETHER_SEND_CONFIG
+    )
+    await waitForMint(tx.hash)
+    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_USER_MINT"), '3000', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_TEAM_MINT"), '7142', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_REWAED_MINT"), '5000', ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
+    // for pool
     ins = new ethers.Contract(
         LP_TOKEN_ADDRESS,
         UNIPAIR.abi,

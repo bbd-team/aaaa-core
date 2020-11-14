@@ -104,6 +104,7 @@ describe('deploy', () => {
 
 		console.log('team:', ethers.utils.formatBytes32String("team"))
 		console.log('spare:', ethers.utils.formatBytes32String("spare"))
+		console.log('reward:', ethers.utils.formatBytes32String("reward"))
 		console.log('price:', ethers.utils.formatBytes32String("price"))
 		console.log('POOL_PRICE:', ethers.utils.formatBytes32String("POOL_PRICE"))
 		console.log('AAAATokenUserMint:', ethers.utils.formatBytes32String("AAAA_USER_MINT"))
