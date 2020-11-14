@@ -100,6 +100,7 @@ contract AAAAConfig {
         _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 10000 * 1e18);
         _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 5000);
         _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 4000);
+        _setParams(ConfigNames.AAAA_TEAM_REWARD, 0, 0, 0, 0);
         _setParams(ConfigNames.DEPOSIT_ENABLE, 0, 0, 0, 1);
         _setParams(ConfigNames.WITHDRAW_ENABLE, 0, 0, 0, 1);
         _setParams(ConfigNames.BORROW_ENABLE, 0, 0, 0, 1);
