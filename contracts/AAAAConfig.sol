@@ -3,6 +3,14 @@ pragma solidity >=0.5.16;
 import "./libraries/SafeMath.sol";
 import './modules/ConfigNames.sol';
 
+interface IERC20 {
+    function balanceOf(address owner) external view returns (uint);
+}
+
+interface IAAAAPool {
+    function collateralToken() external view returns(address);
+}
+
 contract AAAAConfig {
     using SafeMath for uint;
     address public factory;
@@ -118,15 +126,21 @@ contract AAAAConfig {
 
         for(uint i = 0; i < _pools.length; i++)
         {
-            uint currentPrice = poolParams[_pools[i]][ConfigNames.POOL_PRICE].value;
-            if(_prices[i] > currentPrice) {
-                uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
-                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
-                poolParams[_pools[i]][ConfigNames.POOL_PRICE].value = _prices[i] > maxPrice ? maxPrice: _prices[i];
+            address cToken = IAAAAPool(_pools[i]).collateralToken();
+            uint balance = IERC20(cToken).balanceOf(_pools[i]);
+            if(balance == 0) {
+                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i]);
             } else {
-                uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
-                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] < minPrice ? minPrice: _prices[i]);
-            }
+                uint currentPrice = poolParams[_pools[i]][ConfigNames.POOL_PRICE].value;
+                if(_prices[i] > currentPrice) {
+                    uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
+                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
+                    poolParams[_pools[i]][ConfigNames.POOL_PRICE].value = _prices[i] > maxPrice ? maxPrice: _prices[i];
+                } else {
+                    uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
+                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] < minPrice ? minPrice: _prices[i]);
+                }
+            } 
         }
 
         lastPriceBlock = block.number;
