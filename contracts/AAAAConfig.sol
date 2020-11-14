@@ -56,7 +56,7 @@ contract AAAAConfig {
         governor    = _governor;
     }
 
-    function addMintToken(address calldata _token) external {
+    function addMintToken(address _token) external {
         require(msg.sender == developer, "AAAA: Config FORBIDDEN");
         mintTokenList.push(_token);
     }
