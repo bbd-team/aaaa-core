@@ -77,7 +77,7 @@ contract AAAAConfig {
         _setParams(ConfigNames.STAKE_LOCK_TIME, 0, 7*DAY, 1*DAY, 0);
         _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, 10000 * 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
-        _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 0, 1e18, 1e17, 5e17);
+        _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 10000, 10000, 0, 10000);
         _setParams(ConfigNames.CHANGE_PRICE_DURATION, 100, 500, 100, 500);
         _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 100, 1, 20);
         _setParams(ConfigNames.MINT_BORROW_PERCENT, 0, 10000, 1000, 5000);
