@@ -118,7 +118,7 @@ describe('deploy', () => {
 			shareContract.address,
 			governanceContract.address
 		);
-		await configContract.connect(walletDeveloper).changeMintTokenList([tokenUSDT.address]);
+		await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);

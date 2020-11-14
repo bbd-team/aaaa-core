@@ -56,9 +56,9 @@ contract AAAAConfig {
         governor    = _governor;
     }
 
-    function changeMintTokenList(address[] calldata _tokenList) external {
+    function addMintToken(address calldata _token) external {
         require(msg.sender == developer, "AAAA: Config FORBIDDEN");
-        mintTokenList = _tokenList;
+        mintTokenList.push(_token);
     }
 
     function isMintToken(address _token) public view returns (bool)  {
@@ -98,9 +98,9 @@ contract AAAAConfig {
         _setParams(ConfigNames.MINT_BORROW_PERCENT, 0, 10000, 1000, 5000);
 
         _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 10000 * 1e18);
-        _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 5000);
-        _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 4000);
-        _setParams(ConfigNames.AAAA_TEAM_REWARD, 0, 0, 0, 0);
+        _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 3000);
+        _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 7142);
+        _setParams(ConfigNames.AAAA_REWAED_MINT, 0, 0, 0, 5000);
         _setParams(ConfigNames.DEPOSIT_ENABLE, 0, 0, 0, 1);
         _setParams(ConfigNames.WITHDRAW_ENABLE, 0, 0, 0, 1);
         _setParams(ConfigNames.BORROW_ENABLE, 0, 0, 0, 1);
