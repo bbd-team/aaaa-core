@@ -12,6 +12,7 @@ const AAAAFactory = require("../build/AAAAFactory.json")
 const AAAAGovernance = require("../build/AAAAGovernance.json")
 const AAAAMint = require("../build/AAAAMint.json")
 const AAAAShare = require("../build/AAAAShare.json")
+const AAAAReward = require("../build/AAAAReward.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
 const AAAAQuery2 = require("../build/AAAAQuery2.json")
 const MasterChef = require("../build/MasterChef.json");
@@ -27,6 +28,7 @@ let CONFIG_ADDRESS = ""
 let FACTORY_ADDRESS = ""
 let MINT_ADDRESS = ""
 let SHARE_ADDRESS = ""
+let REWARD_ADDRESS = ""
 let QUERY_ADDRESS = ""
 let QUERY2_ADDRESS = ""
 
@@ -34,6 +36,7 @@ let MASTERCHEF_ADDRESS = ""
 let STRATEGY_ADDRESS = ""
 
 let WBTC_TOKEN_ADDRESS = ""
+let BURGER_TOKEN_ADDRESS = ""
 
 
 let config = {
@@ -109,6 +112,10 @@ async function deploy() {
   ins = await factory.deploy('WBTC','WBTC','18','100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   WBTC_TOKEN_ADDRESS = ins.address
+
+  ins = await factory.deploy('BURGER','BURGER','18','100000000000000000000000000',ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  BURGER_TOKEN_ADDRESS = ins.address
 
   // LP
   factory = new ethers.ContractFactory(
@@ -189,6 +196,16 @@ async function deploy() {
   ins = await factory.deploy(ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   SHARE_ADDRESS = ins.address
+
+  // REWARD
+  factory = new ethers.ContractFactory(
+    AAAAReward.abi,
+    AAAAReward.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  REWARD_ADDRESS = ins.address
 
   // QUERY
   factory = new ethers.ContractFactory(
@@ -343,6 +360,17 @@ async function initialize() {
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
+        REWARD_ADDRESS,
+        AAAAReward.abi,
+        getWallet()
+      )
+    tx = await ins.initialize(BURGER_TOKEN_ADDRESS, AAAA_ADDRESS, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+
+    tx = await ins.changeAmountPerBlock('1000000000000000000')
+    await waitForMint(tx.hash)
+
+    ins = new ethers.Contract(
         AAAA_ADDRESS,
         AAAAToken.abi,
         getWallet()
@@ -418,6 +446,14 @@ async function transfer() {
         await waitForMint(tx.hash)
 
         ins = new ethers.Contract(
+            BURGER_TOKEN_ADDRESS,
+            ERC20.abi,
+            getWallet()
+          )
+        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        await waitForMint(tx.hash)
+
+        ins = new ethers.Contract(
             LP_TOKEN_ADDRESS,
             UNIPAIR.abi,
             getWallet()
@@ -440,6 +476,7 @@ async function run() {
     FACTORY_ADDRESS = ${FACTORY_ADDRESS}
     MINT_ADDRESS = ${MINT_ADDRESS}
     SHARE_ADDRESS = ${SHARE_ADDRESS}
+    REWARD_ADDRESS = ${REWARD_ADDRESS}
     QUERY_ADDRESS = ${QUERY_ADDRESS}
     QUERY2_ADDRESS = ${QUERY2_ADDRESS}
 
@@ -450,6 +487,7 @@ async function run() {
     USDT_ADDRESS = ${USDT_ADDRESS}
     LP_TOKEN_ADDRESS = ${LP_TOKEN_ADDRESS}
     REWARD_TOKEN_ADDRESS = ${REWARD_TOKEN_ADDRESS}
+    BURGER_TOKEN_ADDRESS = ${BURGER_TOKEN_ADDRESS}
     WBTC_TOKEN_ADDRESS = ${WBTC_TOKEN_ADDRESS}
     `)
 }

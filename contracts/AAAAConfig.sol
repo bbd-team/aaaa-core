@@ -3,6 +3,14 @@ pragma solidity >=0.5.16;
 import "./libraries/SafeMath.sol";
 import './modules/ConfigNames.sol';
 
+interface IERC20 {
+    function balanceOf(address owner) external view returns (uint);
+}
+
+interface IAAAAPool {
+    function collateralToken() external view returns(address);
+}
+
 contract AAAAConfig {
     using SafeMath for uint;
     address public factory;
@@ -84,12 +92,12 @@ contract AAAAConfig {
         _setParams(ConfigNames.STAKE_LOCK_TIME, 0, 7*DAY, 1*DAY, 0);
         _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, 10000 * 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
-        _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 0, 1e18, 1e17, 5e17);
+        _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 10000, 10000, 0, 10000);
         _setParams(ConfigNames.CHANGE_PRICE_DURATION, 100, 500, 100, 500);
         _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 100, 1, 20);
         _setParams(ConfigNames.MINT_BORROW_PERCENT, 0, 10000, 1000, 5000);
 
-        _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 100000 * 1e18);
+        _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 10000 * 1e18);
         _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 5000);
         _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 4000);
         _setParams(ConfigNames.DEPOSIT_ENABLE, 0, 0, 0, 1);
@@ -133,15 +141,21 @@ contract AAAAConfig {
 
         for(uint i = 0; i < _pools.length; i++)
         {
-            uint currentPrice = poolParams[_pools[i]][bytes32("pledgePrice")].value;
-            if(_prices[i] > currentPrice) {
-                uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
-                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
-                poolParams[_pools[i]][ConfigNames.POOL_PRICE].value = _prices[i] > maxPrice ? maxPrice: _prices[i];
+            address cToken = IAAAAPool(_pools[i]).collateralToken();
+            uint balance = IERC20(cToken).balanceOf(_pools[i]);
+            if(balance == 0) {
+                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i]);
             } else {
-                uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
-                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] < minPrice ? minPrice: _prices[i]);
-            }
+                uint currentPrice = poolParams[_pools[i]][ConfigNames.POOL_PRICE].value;
+                if(_prices[i] > currentPrice) {
+                    uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
+                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
+                    poolParams[_pools[i]][ConfigNames.POOL_PRICE].value = _prices[i] > maxPrice ? maxPrice: _prices[i];
+                } else {
+                    uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
+                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] < minPrice ? minPrice: _prices[i]);
+                }
+            } 
         }
 
         lastPriceBlock = block.number;
