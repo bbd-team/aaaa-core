@@ -10,9 +10,10 @@ contract AAAAConfig {
     address public developer;
     address public mint;
     address public token;
-    address public base;
     address public share;
     address public governor;
+
+    address[] public mintTokenList;
 
     uint public lastPriceBlock;
 
@@ -37,16 +38,30 @@ contract AAAAConfig {
         developer = msg.sender;
     }
     
-    function initialize (address _platform, address _factory, address _mint, address _token, address _base, address _share, address _governor) external {
+    function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor) external {
         require(msg.sender == developer, "AAAA: Config FORBIDDEN");
         mint        = _mint;
         platform    = _platform;
         factory     = _factory;
         token       = _token;
-        base        = _base;
         share       = _share;
         governor    = _governor;
     }
+
+    function changeMintTokenList(address[] calldata _tokenList) external {
+        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
+        mintTokenList = _tokenList;
+    }
+
+    function isMintToken(address _token) public view returns (bool)  {
+        for(uint i = 0;i < mintTokenList.length;i++) {
+            if(_token == mintTokenList[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     function changeDeveloper(address _developer) external {
         require(msg.sender == developer, "AAAA: Config FORBIDDEN");

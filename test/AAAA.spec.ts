@@ -114,11 +114,11 @@ describe('deploy', () => {
 			platformContract.address, 
 			factoryContract.address, 
 			mintContract.address, 
-			tokenContract.address, 
-			tokenUSDT.address,
+			tokenContract.address,
 			shareContract.address,
 			governanceContract.address
 		);
+		await configContract.connect(walletDeveloper).changeMintTokenList([tokenUSDT.address]);
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await factoryContract.connect(walletDeveloper).setupConfig(configContract.address);
 		await mintContract.connect(walletDeveloper).setupConfig(configContract.address);
@@ -138,7 +138,7 @@ describe('deploy', () => {
 			walletSpare.address, 
 			walletPrice.address
 		]);
-		await shareContract.connect(walletDeveloper).initialize();
+		//await shareContract.connect(walletDeveloper).initialize();
 		await tokenContract.connect(walletDeveloper).initialize();
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);

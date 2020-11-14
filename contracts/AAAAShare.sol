@@ -13,8 +13,8 @@ contract AAAAShare is Configable, BaseShareField {
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint amount);
     
-    function initialize() external onlyDeveloper {
-        shareToken = IConfig(config).base();
+    function setShareToken(address _shareToken) external onlyDeveloper {
+        shareToken = _shareToken;
     }
     
     function stake(uint _amount) external {

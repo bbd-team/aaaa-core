@@ -75,6 +75,7 @@ contract AAAAGovernance is Configable {
         (uint min, uint max, uint span, uint value) = _pool == address(0) ? IConfig(config).getParams(_key): IConfig(config).getPoolParams(_pool, _key);
         
         require(_value <= max && _value >= min, "INVALID VALUE");
+        require(_value != value, "Same VALUE");
         require(value + span >= _value && _value + span >= value, "INVALID SPAN");
     }
 }

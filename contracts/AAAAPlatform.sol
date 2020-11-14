@@ -36,7 +36,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).deposit(_amountDeposit, msg.sender);
-        if(_amountDeposit > 0 && _lendToken == IConfig(config).base()) {
+        if(_amountDeposit > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, _amountDeposit);
         }
     }
@@ -46,7 +46,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).withdraw(_amountWithdraw, msg.sender);
-        if(_amountWithdraw > 0 && _lendToken == IConfig(config).base()) {
+        if(_amountWithdraw > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(msg.sender, _amountWithdraw);
         }
     }
@@ -56,7 +56,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).borrow(_amountCollateral, _expectBorrow, msg.sender);
-        if(_expectBorrow > 0 && _lendToken == IConfig(config).base()) {
+        if(_expectBorrow > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(msg.sender, _expectBorrow);
         }
     }
@@ -66,7 +66,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         (uint repayAmount, ) = IAAAAPool(pool).repay(_amountCollateral, msg.sender);
-        if(repayAmount > 0 && _lendToken == IConfig(config).base()) {
+        if(repayAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(msg.sender, repayAmount);
         }
     }
@@ -76,7 +76,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint borrowAmount = IAAAAPool(pool).liquidation(_user, msg.sender);
-        if(borrowAmount > 0 && _lendToken == IConfig(config).base()) {
+        if(borrowAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, borrowAmount);
         }
     }
@@ -87,7 +87,7 @@ contract AAAAPlatform is Configable {
         require(pool != address(0), "POOL NOT EXIST");
         uint reinvestAmount = IAAAAPool(pool).reinvest(msg.sender);
 
-        if(reinvestAmount > 0 && _lendToken == IConfig(config).base()) {
+        if(reinvestAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
             IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
         }
     } 
