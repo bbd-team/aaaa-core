@@ -11,7 +11,7 @@ interface ICollateralStrategy {
     function liquidation(address user) external;
     function claim(address user, uint amount, uint total) external;
     function exit(uint amount) external;
-    function query() external returns (uint);
+    function query() external view returns (uint);
     function mint() external;
 
     function interestToken() external returns (address);
@@ -96,7 +96,7 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
         return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(IMasterChef(masterChef).pendingCake(lpPoolpid, address(this))).sub(totalShare);
     }
 
-    function query() external override returns (uint){
+    function query() external override view returns (uint){
         return _takeWithAddress(msg.sender);
     }
 
