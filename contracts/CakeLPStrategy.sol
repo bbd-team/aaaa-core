@@ -88,7 +88,7 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
 
     function exit(uint amount) external override {
         require(msg.sender == poolAddress, "INVALID CALLER");
-        IMasterChef(masterChef).deposit(lpPoolpid, amount);
+        IMasterChef(masterChef).withdraw(lpPoolpid, amount);
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
     }
 

@@ -52,7 +52,7 @@ contract AAAABallot is Configable {
         createdBlock = block.number;
     }
     
-    function initialize(address _creator, address _pool, bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content) external {
+    function initialize(address _creator, address _pool, bytes32 _name, uint _value, uint _reward, string calldata _subject, string calldata _content) onlyFactory external {
         creator = _creator;
         content = _content;
         subject = _subject;
