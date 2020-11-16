@@ -123,12 +123,6 @@ contract AAAAQuery {
         string collateralTokenSymbol;
     }
 
-    struct PoolInterestsStruct {
-        address pair;
-        uint borrowInterests;
-        uint supplyInterests;
-    }
-
     struct TokenStruct {
         string name;
         string symbol;
@@ -218,16 +212,15 @@ contract AAAAQuery {
         config = _config;
     }
         
-    function getPoolInterests(address pair) public view returns (PoolInterestsStruct memory info) {
-        info.pair = pair;
-        info.borrowInterests = IAAAAPool(pair).getInterests();
-        info.supplyInterests = info.borrowInterests;
+    function getPoolInterests(address pair) public view returns (uint, uint) {
+        uint borrowInterests = IAAAAPool(pair).getInterests();
+        uint supplyInterests = borrowInterests;
         uint borrow = IAAAAPool(pair).totalBorrow();
         uint total = IAAAAPool(pair).totalBorrow() + IAAAAPool(pair).remainSupply();
         if(total > 0) {
-            info.supplyInterests = info.borrowInterests * borrow / total;
+            supplyInterests = borrowInterests * borrow / total;
         }
-        return info;
+        return (supplyInterests, borrowInterests);
     }
 
     function getPoolInfoByIndex(uint index) public view returns (PoolInfoStruct memory info) {
@@ -268,7 +261,6 @@ contract AAAAQuery {
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);
         }
-        return info;
     }
 
     function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
