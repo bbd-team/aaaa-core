@@ -214,9 +214,9 @@ contract AAAAQuery {
         
     function getPoolInterests(address pair) public view returns (uint, uint) {
         uint borrowInterests = IAAAAPool(pair).getInterests();
-        uint supplyInterests = borrowInterests;
+        uint supplyInterests = 0;
         uint borrow = IAAAAPool(pair).totalBorrow();
-        uint total = IAAAAPool(pair).totalBorrow() + IAAAAPool(pair).remainSupply();
+        uint total = borrow + IAAAAPool(pair).remainSupply();
         if(total > 0) {
             supplyInterests = borrowInterests * borrow / total;
         }
@@ -246,7 +246,6 @@ contract AAAAQuery {
         info.totalPledge = IAAAAPool(pair).totalPledge();
         info.remainSupply = IAAAAPool(pair).remainSupply();
         info.borrowInterests = IAAAAPool(pair).getInterests();
-        info.supplyInterests = info.borrowInterests;
         info.supplyToken = IAAAAPool(pair).supplyToken();
         info.collateralToken = IAAAAPool(pair).collateralToken();
         info.supplyTokenDecimals = IERC20(info.supplyToken).decimals();

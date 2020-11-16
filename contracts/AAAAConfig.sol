@@ -86,6 +86,7 @@ contract AAAAConfig {
     }
 
     function initParameter() external {
+        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
         _setParams(ConfigNames.PROPOSAL_VOTE_DURATION ,   1*DAY,  7*DAY , 1*DAY,  1*DAY);
         _setParams(ConfigNames.PROPOSAL_EXECUTE_DURATION, 1*HOUR, 48*HOUR, 1*HOUR, 1*HOUR);
         _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, 10000 * 1e18, 100 * 1e18, 0);
