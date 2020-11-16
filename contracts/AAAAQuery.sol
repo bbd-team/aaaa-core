@@ -123,6 +123,12 @@ contract AAAAQuery {
         string collateralTokenSymbol;
     }
 
+    struct PoolInterestsStruct {
+        address pair;
+        uint borrowInterests;
+        uint supplyInterests;
+    }
+
     struct TokenStruct {
         string name;
         string symbol;
@@ -211,6 +217,18 @@ contract AAAAQuery {
         require(msg.sender == owner, "FORBIDDEN");
         config = _config;
     }
+        
+    function getPoolInterests(address pair) public view returns (PoolInterestsStruct memory info) {
+        info.pair = pair;
+        info.borrowInterests = IAAAAPool(pair).getInterests();
+        info.supplyInterests = info.borrowInterests;
+        uint borrow = IAAAAPool(pair).totalBorrow();
+        uint total = IAAAAPool(pair).totalBorrow() + IAAAAPool(pair).remainSupply();
+        if(total > 0) {
+            info.supplyInterests = info.borrowInterests * borrow / total;
+        }
+        return info;
+    }
 
     function getPoolInfoByIndex(uint index) public view returns (PoolInfoStruct memory info) {
         uint count = IAAAAFactory(IConfig(config).factory()).countPools();
@@ -250,6 +268,7 @@ contract AAAAQuery {
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);
         }
+        return info;
     }
 
     function queryPoolList() public view returns (PoolInfoStruct[] memory list) {
