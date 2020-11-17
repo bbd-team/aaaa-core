@@ -20,6 +20,7 @@ const CakeLPStrategy = require("../build/CakeLPStrategy.json");
 
 let AAAA_ADDRESS = ""
 let USDT_ADDRESS = ""
+let BUSD_ADDRESS = ""
 let LP_TOKEN_ADDRESS = ""
 let REWARD_TOKEN_ADDRESS = ""
 let PLATFORM_ADDRESS = ""
@@ -34,6 +35,7 @@ let QUERY2_ADDRESS = ""
 
 let MASTERCHEF_ADDRESS = ""
 let STRATEGY_ADDRESS = ""
+let STRATEGY2_ADDRESS = ""
 
 let WBTC_TOKEN_ADDRESS = ""
 let BURGER_TOKEN_ADDRESS = ""
@@ -104,6 +106,10 @@ async function deploy() {
   let ins = await factory.deploy('USDT','USDT','18','100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   USDT_ADDRESS = ins.address
+
+  ins = await factory.deploy('BUSDT','BUSD','18','100000000000000000000000000',ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  BUSD_ADDRESS = ins.address
 
   ins = await factory.deploy('CAKE','CAKE','18','100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
@@ -318,29 +324,40 @@ async function initialize() {
         FACTORY_ADDRESS,
         MINT_ADDRESS,
         AAAA_ADDRESS,
-        USDT_ADDRESS,
         SHARE_ADDRESS,
         config.walletDev,
         ETHER_SEND_CONFIG
     )
+    console.log('AAAAConfig initialize')
     await waitForMint(tx.hash)
 
     tx = await ins.initParameter(ETHER_SEND_CONFIG)
+    console.log('AAAAConfig initParameter')
+    await waitForMint(tx.hash)
+
+    tx = await ins.addMintToken(USDT_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAConfig addMintToken')
+    await waitForMint(tx.hash)
+    console.log('AAAAConfig addMintToken')
+    tx = await ins.addMintToken(BUSD_ADDRESS, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
 
     tx = await ins.setWallets(
         [
             ethers.utils.formatBytes32String("team"), 
             ethers.utils.formatBytes32String("spare"), 
+            ethers.utils.formatBytes32String("reward"), 
             ethers.utils.formatBytes32String("price")
         ], 
         [
             config.walletTeam, 
             config.walletSpare, 
+            REWARD_ADDRESS,
             config.walletPrice
         ],
         ETHER_SEND_CONFIG
     )
+    console.log('AAAAConfig setWallets')
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
@@ -349,19 +366,12 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.initialize(ETHER_SEND_CONFIG)
+    console.log('AAAAMint initialize')
     await waitForMint(tx.hash)
-    tx = await ins.changeBorrowPower('5000', ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-    tx = await ins.changeInterestRatePerBlock('1000000000000000000',ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    ins = new ethers.Contract(
-        SHARE_ADDRESS,
-        AAAAShare.abi,
-        getWallet()
-      )
-    tx = await ins.initialize(ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
+    // tx = await ins.changeBorrowPower('5000', ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
+    // tx = await ins.changeInterestRatePerBlock('1000000000000000000',ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
         REWARD_ADDRESS,
@@ -369,9 +379,11 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.initialize(BURGER_TOKEN_ADDRESS, AAAA_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAReward initialize')
     await waitForMint(tx.hash)
 
     tx = await ins.changeAmountPerBlock('1000000000000000000')
+    console.log('AAAAReward changeAmountPerBlock')
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
@@ -380,6 +392,7 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.initialize(ETHER_SEND_CONFIG)
+    console.log('AAAAToken initialize')
     await waitForMint(tx.hash)
 
 
@@ -393,18 +406,18 @@ async function initialize() {
         FACTORY_ADDRESS,
         MINT_ADDRESS,
         AAAA_ADDRESS,
-        USDT_ADDRESS,
         SHARE_ADDRESS,
         GOVERNANCE_ADDRESS,
         ETHER_SEND_CONFIG
     )
+    console.log('AAAAConfig initialize')
     await waitForMint(tx.hash)
-    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_USER_MINT"), '3000', ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_TEAM_MINT"), '7142', ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-    tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_REWAED_MINT"), '5000', ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
+    // tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_USER_MINT"), '3000', ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
+    // tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_TEAM_MINT"), '7142', ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
+    // tx = await ins.setValue(ethers.utils.formatBytes32String("AAAA_REWAED_MINT"), '5000', ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
 
     // for pool
     ins = new ethers.Contract(
@@ -413,8 +426,10 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.initialize(WBTC_TOKEN_ADDRESS, USDT_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('UNIPAIR initialize')
     await waitForMint(tx.hash)
     tx = await ins.mint(config.walletDev, '100000000000000000000000000', ETHER_SEND_CONFIG)
+    console.log('UNIPAIR mint')
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
@@ -423,6 +438,7 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.add(100, LP_TOKEN_ADDRESS, false, ETHER_SEND_CONFIG)
+    console.log('MasterChef add')
     await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
@@ -431,9 +447,16 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.createPool(USDT_ADDRESS, LP_TOKEN_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAFactory createPool USDT', USDT_ADDRESS)
     await waitForMint(tx.hash)
     let poolAddr = await ins.getPool(USDT_ADDRESS, LP_TOKEN_ADDRESS)
     console.log('pool address:', poolAddr)
+
+    tx = await ins.createPool(BUSD_ADDRESS, LP_TOKEN_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAFactory createPool BUSD', BUSD_ADDRESS)
+    await waitForMint(tx.hash)
+    let poolAddr2 = await ins.getPool(USDT_ADDRESS, LP_TOKEN_ADDRESS)
+    console.log('pool2 address:', poolAddr2)
 
     // CakeLPStrategy
     factory = new ethers.ContractFactory(
@@ -442,8 +465,14 @@ async function initialize() {
         walletWithProvider
     )
     ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    console.log('CakeLPStrategy deploy')
     await waitForMint(ins.deployTransaction.hash)
     STRATEGY_ADDRESS = ins.address
+
+    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr2, MASTERCHEF_ADDRESS, 2, ETHER_SEND_CONFIG)
+    console.log('CakeLPStrategy deploy')
+    await waitForMint(ins.deployTransaction.hash)
+    STRATEGY2_ADDRESS = ins.address
 
     ins = new ethers.Contract(
         PLATFORM_ADDRESS,
@@ -451,8 +480,14 @@ async function initialize() {
         getWallet()
       )
     tx = await ins.switchStrategy(USDT_ADDRESS, LP_TOKEN_ADDRESS, STRATEGY_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAPlateForm switchStrategy')
     await waitForMint(tx.hash)
 
+    tx = await ins.switchStrategy(BUSD_ADDRESS, LP_TOKEN_ADDRESS, STRATEGY2_ADDRESS, ETHER_SEND_CONFIG)
+    console.log('AAAAPlateForm switchStrategy')
+    await waitForMint(tx.hash)
+
+    console.log('transfer...')
     await transfer()
 }
 
@@ -471,6 +506,14 @@ async function transfer() {
             ERC20.abi,
             getWallet()
           )
+        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        await waitForMint(tx.hash)
+
+        ins = new ethers.Contract(
+          BUSD_ADDRESS,
+          ERC20.abi,
+          getWallet()
+        )
         tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
 
@@ -514,6 +557,7 @@ async function run() {
     STRATEGY_ADDRESS = ${STRATEGY_ADDRESS}
     
     USDT_ADDRESS = ${USDT_ADDRESS}
+    BUSD_ADDRESS = ${BUSD_ADDRESS}
     LP_TOKEN_ADDRESS = ${LP_TOKEN_ADDRESS}
     REWARD_TOKEN_ADDRESS = ${REWARD_TOKEN_ADDRESS}
     BURGER_TOKEN_ADDRESS = ${BURGER_TOKEN_ADDRESS}
