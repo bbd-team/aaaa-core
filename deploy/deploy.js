@@ -455,7 +455,7 @@ async function initialize() {
     tx = await ins.createPool(BUSD_ADDRESS, LP_TOKEN_ADDRESS, ETHER_SEND_CONFIG)
     console.log('AAAAFactory createPool BUSD', BUSD_ADDRESS)
     await waitForMint(tx.hash)
-    let poolAddr2 = await ins.getPool(USDT_ADDRESS, LP_TOKEN_ADDRESS)
+    let poolAddr2 = await ins.getPool(BUSD_ADDRESS, LP_TOKEN_ADDRESS)
     console.log('pool2 address:', poolAddr2)
 
     // CakeLPStrategy
@@ -555,6 +555,7 @@ async function run() {
     ===============================
     MASTERCHEF_ADDRESS = ${MASTERCHEF_ADDRESS}
     STRATEGY_ADDRESS = ${STRATEGY_ADDRESS}
+    STRATEGY2_ADDRESS = ${STRATEGY2_ADDRESS}
     
     USDT_ADDRESS = ${USDT_ADDRESS}
     BUSD_ADDRESS = ${BUSD_ADDRESS}
