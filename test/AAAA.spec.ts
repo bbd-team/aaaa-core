@@ -143,7 +143,10 @@ describe('deploy', () => {
 		await tokenContract.connect(walletDeveloper).initialize();
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
+		let developer = await configContract.connect(walletDeveloper).developer();
+		console.log('developer:', developer, walletDeveloper.address)
 		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
+		
 		await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
@@ -151,7 +154,8 @@ describe('deploy', () => {
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
 		// strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
-		strategy = await deployContract(walletMe, CakeLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 1]);
+		strategy = await deployContract(walletDeveloper, CakeLPStrategy, []);
+		await strategy.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 1);
 
 		console.log(strategy.address);
 		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address)).wait();

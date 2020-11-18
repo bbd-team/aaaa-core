@@ -2,7 +2,6 @@
 pragma solidity >=0.5.16;
 import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
-import "./modules/Configable.sol";
 import "./modules/BaseShareField.sol";
 
 interface ICollateralStrategy {
@@ -19,6 +18,7 @@ interface ICollateralStrategy {
 }
 
 interface IMasterChef {
+    function cake() external view returns(address);
     function deposit(uint256 _pid, uint256 _amount) external;
     function withdraw(uint256 _pid, uint256 _amount) external;
     function pendingCake(uint256 _pid, address _user) external view returns (uint256);
@@ -34,11 +34,17 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
 
     address public poolAddress;
     address public masterChef;
-
     uint public lpPoolpid;
 
-    constructor(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) public
+    address public factory;
+
+    constructor() public {
+        factory = msg.sender;
+    }
+
+    function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) public
     {
+        require(msg.sender == factory, 'FORBIDDEN');
         interestToken = _interestToken;
         collateralToken = _collateralToken;
         poolAddress = _poolAddress;
