@@ -7,6 +7,8 @@ import "./libraries/SafeMath.sol";
 import "./libraries/TransferHelper.sol";
 
 interface IAAAAMint {
+    function getBorrowerProductivity(address user) external view returns (uint, uint);
+    function getLenderProductivity(address user) external view returns (uint, uint);
     function increaseBorrowerProductivity(address user, uint value) external returns (bool);
     function decreaseBorrowerProductivity(address user, uint value) external returns (bool);
     function increaseLenderProductivity(address user, uint value) external returns (bool);
@@ -24,13 +26,19 @@ interface IAAAAPool {
     function updatePledgePrice(uint _pledgePrice) external;
     function updateLiquidationRate(uint _liquidationRate) external;
     function switchStrategy(address _collateralStrategy) external;
+    function supplys(address user) external view returns(uint,uint,uint,uint,uint);
+    function borrows(address user) external view returns(uint,uint,uint,uint,uint);
 }
 
 interface IAAAAFactory {
     function getPool(address _lendToken, address _collateralToken) external view returns (address);
+    function allPools() external returns (address[] memory);
 }
 
 contract AAAAPlatform is Configable {
+
+    using SafeMath for uint;
+    
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
         require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
@@ -91,6 +99,37 @@ contract AAAAPlatform is Configable {
             IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
         }
     } 
+
+    function recalculteProdutivity(address _user) external onlyDeveloper {
+        address[] memory pools = IAAAAFactory(IConfig(config).factory()).allPools();
+        (uint oldLendProdutivity, ) = IAAAAMint(IConfig(config).mint()).getLenderProductivity(_user);
+        (uint oldBorrowProdutivity, ) = IAAAAMint(IConfig(config).mint()).getBorrowerProductivity(_user);
+        uint newLendProdutivity;
+        uint newBorrowProdutivity;
+        for(uint i = 0;i < pools.length;i++) {
+            (uint amountSupply, , , , ) = IAAAAPool(pools[i]).supplys(_user);
+            (, , , uint amountBorrow, ) = IAAAAPool(pools[i]).borrows(_user);
+
+            newLendProdutivity = newLendProdutivity.add(amountSupply);
+            newBorrowProdutivity = newBorrowProdutivity.add(amountBorrow);
+        }
+
+        if(oldLendProdutivity > 0) {
+            IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(_user, oldLendProdutivity);
+        }
+
+        if(oldBorrowProdutivity > 0) {
+            IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, oldBorrowProdutivity);
+        }
+
+        if(newLendProdutivity > 0) {
+            IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(_user, newLendProdutivity);
+        }
+
+        if(newBorrowProdutivity > 0) {
+            IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(_user, newBorrowProdutivity);
+        }
+    }
 
     function switchStrategy(address _lendToken, address _collateralToken, address _collateralStrategy) external onlyDeveloper
     {

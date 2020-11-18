@@ -66,6 +66,7 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
 
 
     function liquidation(address user) external override {
+        require(msg.sender == poolAddress, "INVALID CALLER");
         uint amount = users[user].amount;
         _decreaseProductivity(user, amount);
 
