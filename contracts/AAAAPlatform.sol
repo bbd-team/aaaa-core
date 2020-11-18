@@ -32,7 +32,8 @@ interface IAAAAPool {
 
 interface IAAAAFactory {
     function getPool(address _lendToken, address _collateralToken) external view returns (address);
-    function allPools() external returns (address[] memory);
+    function countPools() external view returns(uint);
+    function allPools(uint index) external view returns (address);
 }
 
 contract AAAAPlatform is Configable {
@@ -103,14 +104,15 @@ contract AAAAPlatform is Configable {
     function recalculteProdutivity(address[] calldata _users) external onlyDeveloper {
         for(uint i = 0;i < _users.length;i++) {
             address _user = _users[i];
-            address[] memory pools = IAAAAFactory(IConfig(config).factory()).allPools();
+            uint count = IAAAAFactory(IConfig(config).factory()).countPools();
             (uint oldLendProdutivity, ) = IAAAAMint(IConfig(config).mint()).getLenderProductivity(_user);
             (uint oldBorrowProdutivity, ) = IAAAAMint(IConfig(config).mint()).getBorrowerProductivity(_user);
             uint newLendProdutivity;
             uint newBorrowProdutivity;
-            for(uint j = 0;j < pools.length;j++) {
-                (uint amountSupply, , , , ) = IAAAAPool(pools[i]).supplys(_user);
-                (, , , uint amountBorrow, ) = IAAAAPool(pools[i]).borrows(_user);
+            for(uint j = 0;j < count;j++) {
+                address pool = IAAAAFactory(IConfig(config).factory()).allPools(j);
+                (uint amountSupply, , , , ) = IAAAAPool(pool).supplys(_user);
+                (, , , uint amountBorrow, ) = IAAAAPool(pool).borrows(_user);
 
                 newLendProdutivity = newLendProdutivity.add(amountSupply);
                 newBorrowProdutivity = newBorrowProdutivity.add(amountBorrow);
