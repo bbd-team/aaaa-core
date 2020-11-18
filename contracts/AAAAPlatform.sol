@@ -38,7 +38,7 @@ interface IAAAAFactory {
 contract AAAAPlatform is Configable {
 
     using SafeMath for uint;
-    
+
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
         require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
@@ -100,34 +100,37 @@ contract AAAAPlatform is Configable {
         }
     } 
 
-    function recalculteProdutivity(address _user) external onlyDeveloper {
-        address[] memory pools = IAAAAFactory(IConfig(config).factory()).allPools();
-        (uint oldLendProdutivity, ) = IAAAAMint(IConfig(config).mint()).getLenderProductivity(_user);
-        (uint oldBorrowProdutivity, ) = IAAAAMint(IConfig(config).mint()).getBorrowerProductivity(_user);
-        uint newLendProdutivity;
-        uint newBorrowProdutivity;
-        for(uint i = 0;i < pools.length;i++) {
-            (uint amountSupply, , , , ) = IAAAAPool(pools[i]).supplys(_user);
-            (, , , uint amountBorrow, ) = IAAAAPool(pools[i]).borrows(_user);
+    function recalculteProdutivity(address[] calldata _users) external onlyDeveloper {
+        for(uint i = 0;i < _users.length;i++) {
+            address _user = _users[i];
+            address[] memory pools = IAAAAFactory(IConfig(config).factory()).allPools();
+            (uint oldLendProdutivity, ) = IAAAAMint(IConfig(config).mint()).getLenderProductivity(_user);
+            (uint oldBorrowProdutivity, ) = IAAAAMint(IConfig(config).mint()).getBorrowerProductivity(_user);
+            uint newLendProdutivity;
+            uint newBorrowProdutivity;
+            for(uint j = 0;j < pools.length;j++) {
+                (uint amountSupply, , , , ) = IAAAAPool(pools[i]).supplys(_user);
+                (, , , uint amountBorrow, ) = IAAAAPool(pools[i]).borrows(_user);
 
-            newLendProdutivity = newLendProdutivity.add(amountSupply);
-            newBorrowProdutivity = newBorrowProdutivity.add(amountBorrow);
-        }
+                newLendProdutivity = newLendProdutivity.add(amountSupply);
+                newBorrowProdutivity = newBorrowProdutivity.add(amountBorrow);
+            }
 
-        if(oldLendProdutivity > 0) {
-            IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(_user, oldLendProdutivity);
-        }
+            if(oldLendProdutivity > 0) {
+                IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(_user, oldLendProdutivity);
+            }
 
-        if(oldBorrowProdutivity > 0) {
-            IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, oldBorrowProdutivity);
-        }
+            if(oldBorrowProdutivity > 0) {
+                IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, oldBorrowProdutivity);
+            }
 
-        if(newLendProdutivity > 0) {
-            IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(_user, newLendProdutivity);
-        }
+            if(newLendProdutivity > 0) {
+                IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(_user, newLendProdutivity);
+            }
 
-        if(newBorrowProdutivity > 0) {
-            IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(_user, newBorrowProdutivity);
+            if(newBorrowProdutivity > 0) {
+                IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(_user, newBorrowProdutivity);
+            }
         }
     }
 
