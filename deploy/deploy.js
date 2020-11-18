@@ -469,7 +469,7 @@ async function initialize() {
     await waitForMint(ins.deployTransaction.hash)
     STRATEGY_ADDRESS = ins.address
 
-    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr2, MASTERCHEF_ADDRESS, 2, ETHER_SEND_CONFIG)
+    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr2, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
     console.log('CakeLPStrategy deploy')
     await waitForMint(ins.deployTransaction.hash)
     STRATEGY2_ADDRESS = ins.address
