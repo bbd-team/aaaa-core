@@ -8,6 +8,10 @@ interface ICakeLPStrategy {
     function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) external;
 }
 
+interface IAAAAPool {
+    function collateralToken() external view returns(address);
+}
+
 contract CakeLPStrategyFactory is Configable {
     address public masterchef;
     address[] public strategies;
@@ -20,6 +24,10 @@ contract CakeLPStrategyFactory is Configable {
     }
 
     function createStrategy(address _collateralToken, address _poolAddress, uint _lpPoolpid) onlyDeveloper external returns (address _strategy) {
+        require(IAAAAPool(_poolAddress).collateralToken() == _collateralToken, 'Not found collateralToken in Pool');
+        (address cToken, , ,) = IMasterChef(masterchef).poolInfo(_lpPoolpid);
+        require(cToken == _collateralToken, 'Not found collateralToken in Masterchef');
+        
         bytes memory bytecode = type(CakeLPStrategy).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_collateralToken, _poolAddress, _lpPoolpid, block.number));
         assembly {

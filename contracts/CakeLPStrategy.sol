@@ -22,6 +22,7 @@ interface IMasterChef {
     function deposit(uint256 _pid, uint256 _amount) external;
     function withdraw(uint256 _pid, uint256 _amount) external;
     function pendingCake(uint256 _pid, address _user) external view returns (uint256);
+    function poolInfo(uint _index) external view returns(address, uint, uint, uint);
 }
 
 contract CakeLPStrategy is ICollateralStrategy, BaseShareField
@@ -44,7 +45,7 @@ contract CakeLPStrategy is ICollateralStrategy, BaseShareField
 
     function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) public
     {
-        require(msg.sender == factory, 'FORBIDDEN');
+        require(msg.sender == factory, 'STRATEGY FORBIDDEN');
         interestToken = _interestToken;
         collateralToken = _collateralToken;
         poolAddress = _poolAddress;
