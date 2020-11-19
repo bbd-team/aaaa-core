@@ -464,15 +464,21 @@ async function initialize() {
         CakeLPStrategy.bytecode,
         walletWithProvider
     )
-    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    ins = await factory.deploy(ETHER_SEND_CONFIG)
     console.log('CakeLPStrategy deploy')
     await waitForMint(ins.deployTransaction.hash)
     STRATEGY_ADDRESS = ins.address
+    tx = await ins.initialize(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    console.log('CakeLPStrategy initialize')
+    await waitForMint(tx.hash)
 
-    ins = await factory.deploy(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr2, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    ins = await factory.deploy(ETHER_SEND_CONFIG)
     console.log('CakeLPStrategy deploy')
     await waitForMint(ins.deployTransaction.hash)
     STRATEGY2_ADDRESS = ins.address
+    tx = await ins.initialize(REWARD_TOKEN_ADDRESS, LP_TOKEN_ADDRESS, poolAddr2, MASTERCHEF_ADDRESS, 1, ETHER_SEND_CONFIG)
+    console.log('CakeLPStrategy initialize')
+    await waitForMint(tx.hash)
 
     ins = new ethers.Contract(
         PLATFORM_ADDRESS,

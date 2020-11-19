@@ -18,8 +18,11 @@ contract CakeLPStrategyFactory is Configable {
 
     event StrategyCreated(address indexed _strategy, address indexed _collateralToken, address indexed _poolAddress, uint _lpPoolpid);
 
-    constructor(address _masterchef) public {
+    constructor() public {
         owner = msg.sender;
+    }
+
+    function initialize(address _masterchef) public {
         masterchef = _masterchef;
     }
 

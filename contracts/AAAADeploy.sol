@@ -21,6 +21,7 @@ interface IConfig {
     function addMintToken(address _token) external;
     function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external;
     function isMintToken(address _token) external view returns (bool);
+    function changeDeveloper(address _developer) external;
 }
 
 interface IAAAAMint {
@@ -45,6 +46,7 @@ interface IAAAAFactory {
     function isPool(address addr) external view returns(bool);
     function getPool(address lend, address collateral) external view returns(address);
     function createPool(address _lendToken, address _collateralToken) external returns (address pool);
+    function changeBallotByteHash(bytes32 _hash) external;
 }
 
 interface IMasterChef {
@@ -82,26 +84,14 @@ contract AAAADeploy {
         require(_config != address(0), "ZERO ADDRESS");
         config = _config;
     }
+
+    function changeDeveloper(address _developer) onlyOwner external {
+        IConfig(config).changeDeveloper(_developer);
+    }
     
     function setCakeMasterchef(address _cakeLPStrategyFactory, bool _cakeLPStrategyCanMint) onlyOwner external {
         cakeLPStrategyFactory = _cakeLPStrategyFactory;
         cakeLPStrategyCanMint = _cakeLPStrategyCanMint;
-    }
-
-    function setupCoreConfigs() onlyOwner public {
-        require(config != address(0), "ZERO ADDRESS");
-        IConfigable(config).setupConfig(IConfig(config).platform());
-        IConfigable(config).setupConfig(IConfig(config).factory());
-        IConfigable(config).setupConfig(IConfig(config).mint());
-        IConfigable(config).setupConfig(IConfig(config).token());
-        IConfigable(config).setupConfig(IConfig(config).share());
-        IConfigable(config).setupConfig(IConfig(config).governor());
-    }
-
-    function setupQueryConfigs(address _query1, address _query2) onlyOwner public {
-        require(config != address(0), "ZERO ADDRESS");
-        IConfigable(config).setupConfig(_query1);
-        IConfigable(config).setupConfig(_query2);
     }
 
     function initialize() onlyOwner public {
@@ -118,4 +108,13 @@ contract AAAADeploy {
         address strategy = ICakeLPStrategyFactory(cakeLPStrategyFactory).createStrategy(_collateralToken, pool, _lpPoolpid);
         IAAAAPlatform(IConfig(config).platform()).switchStrategy(_lendToken, _collateralToken, strategy);
     }
+
+    function changeBallotByteHash(bytes32 _hash) onlyOwner external {
+        IAAAAFactory(IConfig(config).factory()).changeBallotByteHash(_hash);
+    }
+
+    function addMintToken(address _token) onlyOwner external {
+        IConfig(config).addMintToken(_token);
+    }
+
   }
