@@ -44,6 +44,7 @@ contract AAAAFactory is Configable{
         IAAAAPool(pool).init(_lendToken, _collateralToken);
         
         emit PoolCreated(_lendToken, _collateralToken, pool);
+        return pool;
     }
 
     function countPools() external view returns(uint) {
@@ -72,6 +73,7 @@ contract AAAAFactory is Configable{
         IAAAABallot(ballot).initialize(_creator, _pool, _name, _value, _reward, _subject, _content);
         
         emit BallotCreated(_creator, _pool, ballot, _name, _value);
+        return ballot;
     }
     
     function countBallots() external view returns (uint){

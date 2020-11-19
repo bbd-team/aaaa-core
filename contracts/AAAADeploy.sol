@@ -29,6 +29,14 @@ interface IAAAAMint {
     function changeInterestRatePerBlock(uint value) external returns (bool);
 }
 
+interface IAAAAShare {
+    function setShareToken(address _shareToken) external;
+}
+
+interface IAAAAToken {
+    function initialize() external;
+}
+
 interface IAAAAFactory {
     function countPools() external view returns(uint);
     function countBallots() external view returns(uint);
@@ -65,11 +73,6 @@ contract AAAADeploy {
         require(msg.sender == owner, 'OWNER FORBIDDEN');
         _;
     }
-
-    modifier onlyDeveloper() {
-        require(msg.sender == IConfig(config).developer(), 'DEVELOPER FORBIDDEN');
-        _;
-    }
  
     constructor() public {
         owner = msg.sender;
@@ -85,7 +88,7 @@ contract AAAADeploy {
         cakeLPStrategyCanMint = _cakeLPStrategyCanMint;
     }
 
-    function setupCoreConfigs() onlyDeveloper public {
+    function setupCoreConfigs() onlyOwner public {
         require(config != address(0), "ZERO ADDRESS");
         IConfigable(config).setupConfig(IConfig(config).platform());
         IConfigable(config).setupConfig(IConfig(config).factory());
@@ -95,13 +98,19 @@ contract AAAADeploy {
         IConfigable(config).setupConfig(IConfig(config).governor());
     }
 
-    function setupQueryConfigs(address _query1, address _query2) onlyDeveloper public {
+    function setupQueryConfigs(address _query1, address _query2) onlyOwner public {
         require(config != address(0), "ZERO ADDRESS");
         IConfigable(config).setupConfig(_query1);
         IConfigable(config).setupConfig(_query2);
     }
 
-    function createPoolForCake(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyDeveloper public {
+    function initialize() onlyOwner public {
+        require(config != address(0), "ZERO ADDRESS");
+        IAAAAMint(IConfig(config).mint()).initialize();
+        IAAAAToken(IConfig(config).token()).initialize();
+    }
+
+    function createPoolForCake(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
         if(cakeLPStrategyCanMint) {
             require(IConfig(config).isMintToken(_lendToken), 'REQUEST ADD MINT TOKEN FIRST');
         }

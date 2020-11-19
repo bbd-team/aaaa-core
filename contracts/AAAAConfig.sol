@@ -13,6 +13,7 @@ interface IAAAAPool {
 
 contract AAAAConfig {
     using SafeMath for uint;
+    address public owner;
     address public factory;
     address public platform;
     address public developer;
@@ -43,6 +44,7 @@ contract AAAAConfig {
     event PoolParameterChange(address pool, bytes32 key, uint value);
     
     constructor() public {
+        owner = msg.sender;
         developer = msg.sender;
     }
     
@@ -72,7 +74,7 @@ contract AAAAConfig {
 
 
     function changeDeveloper(address _developer) external {
-        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
+        require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         developer = _developer;
     }
 
