@@ -49,7 +49,7 @@ contract AAAAConfig {
     }
     
     function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor) external {
-        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
+        require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         mint        = _mint;
         platform    = _platform;
         factory     = _factory;
@@ -59,7 +59,7 @@ contract AAAAConfig {
     }
 
     function addMintToken(address _token) external {
-        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
+        require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         mintTokenList.push(_token);
     }
 
@@ -79,7 +79,7 @@ contract AAAAConfig {
     }
 
     function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external {
-        require(msg.sender == developer, "AAAA: ONLY DEVELOPER");
+        require(msg.sender == owner || msg.sender == developer, "AAAA: ONLY DEVELOPER");
         require(_names.length == _wallets.length ,"AAAA: WALLETS LENGTH MISMATCH");
         for(uint i = 0; i < _names.length; i ++)
         {
@@ -88,7 +88,7 @@ contract AAAAConfig {
     }
 
     function initParameter() external {
-        require(msg.sender == developer, "AAAA: Config FORBIDDEN");
+        require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         _setParams(ConfigNames.PROPOSAL_VOTE_DURATION ,   1*DAY,  7*DAY , 1*DAY,  1*DAY);
         _setParams(ConfigNames.PROPOSAL_EXECUTE_DURATION, 1*HOUR, 48*HOUR, 1*HOUR, 1*HOUR);
         _setParams(ConfigNames.PROPOSAL_CREATE_COST, 0, 10000 * 1e18, 100 * 1e18, 0);
@@ -166,13 +166,13 @@ contract AAAAConfig {
     }
     
     function setValue(bytes32 _key, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: ONLY DEVELOPER");
+        require(msg.sender == owner || msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: ONLY DEVELOPER");
         params[_key].value = _value;
         emit ParameterChange(_key, _value);
     }
     
     function setPoolValue(address _pool, bytes32 _key, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
+        require(msg.sender == owner || msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setPoolValue(_pool, _key, _value);
     }
     
@@ -185,12 +185,12 @@ contract AAAAConfig {
     } 
 
     function setParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
+        require(msg.sender == owner || msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setParams(_key, _min, _max, _span, _value);
     }
 
     function setPoolParams(address _pool, bytes32 _key, uint _min, uint _max, uint _span, uint _value) external {
-        require(msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
+        require(msg.sender == owner || msg.sender == governor || msg.sender == platform || msg.sender == developer, "AAAA: FORBIDDEN");
         _setPoolParams(_pool, _key, _min, _max, _span, _value);
     }
 
