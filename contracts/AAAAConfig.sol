@@ -39,7 +39,9 @@ contract AAAAConfig {
     mapping (address => mapping (bytes32 => ConfigItem)) public poolParams;
     mapping (bytes32 => ConfigItem) public params;
     mapping (bytes32 => address) public wallets;
+    mapping (address => uint) public prices;
 
+    event PriceChange(address token, uint value);
     event ParameterChange(bytes32 key, uint value);
     event PoolParameterChange(address pool, bytes32 key, uint value);
     
@@ -134,6 +136,37 @@ contract AAAAConfig {
     function _setPoolParams(address _pool, bytes32 _key, uint _min, uint _max, uint _span, uint _value) internal {
         poolParams[_pool][_key] = ConfigItem(_min, _max, _span, _value);
         emit PoolParameterChange(_pool, _key, _value);
+    }
+
+    function _setPrice(address _token, uint _value) internal {
+        prices[_token] = _value;
+        emit PriceChange(_token, _value);
+    }
+
+    function setTokenPrice(address[] calldata _tokens, uint[] calldata _prices) external {
+        uint duration = params[ConfigNames.CHANGE_PRICE_DURATION].value;
+        uint maxPercent = params[ConfigNames.CHANGE_PRICE_PERCENT].value;
+        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
+        require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
+        require(_tokens.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
+
+        for(uint i = 0; i < _tokens.length; i++)
+        {
+            if(prices[_tokens[i]] == 0) {
+                _setPrice(_tokens[i], _prices[i]);
+            } else {
+                uint currentPrice = prices[_tokens[i]];
+                if(_prices[i] > currentPrice) {
+                    uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
+                    _setPrice(_tokens[i], _prices[i] > maxPrice ? maxPrice: _prices[i]);
+                } else {
+                    uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
+                    _setPrice(_tokens[i], _prices[i] < minPrice ? minPrice: _prices[i]);
+                }
+            } 
+        }
+
+        lastPriceBlock = block.number;
     }
 
     function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {

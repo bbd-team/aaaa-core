@@ -404,4 +404,8 @@ contract AAAAPool is Configable
         borrows[_user].interests = 0;
         borrows[_user].interestSettled = 0;
     }
+
+    function getTotalAmount() external view returns (uint) {
+        return 0;
+    }
 }

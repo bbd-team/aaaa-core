@@ -21,7 +21,8 @@ interface IConfig {
     function setParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external;
     function setPoolParams(bytes32 _key, uint _min, uint _max, uint _span, uint _value) external;
     function initPoolParams(address _pool) external;
-    function isMintToken(address _token) external returns (bool); 
+    function isMintToken(address _token) external returns (bool);
+    function prices(address _token) external returns (uint);
 }
 
 contract Configable {

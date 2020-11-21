@@ -7,12 +7,9 @@ import "./libraries/SafeMath.sol";
 import "./libraries/TransferHelper.sol";
 
 interface IAAAAMint {
-    function getBorrowerProductivity(address user) external view returns (uint, uint);
-    function getLenderProductivity(address user) external view returns (uint, uint);
-    function increaseBorrowerProductivity(address user, uint value) external returns (bool);
-    function decreaseBorrowerProductivity(address user, uint value) external returns (bool);
-    function increaseLenderProductivity(address user, uint value) external returns (bool);
-    function decreaseLenderProductivity(address user, uint value) external returns (bool);
+    function increaseProductivity(address user, uint value) external returns (bool);
+    function decreaseProductivity(address user, uint value) external returns (bool);
+    function getProductivity(address user) external view returns (uint, uint);
 }
 
 interface IAAAAPool {
@@ -28,6 +25,8 @@ interface IAAAAPool {
     function switchStrategy(address _collateralStrategy) external;
     function supplys(address user) external view returns(uint,uint,uint,uint,uint);
     function borrows(address user) external view returns(uint,uint,uint,uint,uint);
+    function getTotalAmount() external view  returns (uint);
+    function supplyToken() external view  returns (address);
 }
 
 interface IAAAAFactory {
@@ -45,9 +44,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).deposit(_amountDeposit, msg.sender);
-        if(_amountDeposit > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, _amountDeposit);
-        }
+        _updateProdutivity(pool);
     }
     
     function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external {
@@ -55,9 +52,7 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).withdraw(_amountWithdraw, msg.sender);
-        if(_amountWithdraw > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(msg.sender, _amountWithdraw);
-        }
+        _updateProdutivity(pool);
     }
     
     function borrow(address _lendToken, address _collateralToken, uint _amountCollateral, uint _expectBorrow) external {
@@ -65,74 +60,45 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).borrow(_amountCollateral, _expectBorrow, msg.sender);
-        if(_expectBorrow > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(msg.sender, _expectBorrow);
-        }
+        _updateProdutivity(pool);
     }
     
     function repay(address _lendToken, address _collateralToken, uint _amountCollateral) external {
         require(IConfig(config).getValue(ConfigNames.REPAY_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        (uint repayAmount, ) = IAAAAPool(pool).repay(_amountCollateral, msg.sender);
-        if(repayAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(msg.sender, repayAmount);
-        }
+        IAAAAPool(pool).repay(_amountCollateral, msg.sender);
+        _updateProdutivity(pool);
     }
     
     function liquidation(address _lendToken, address _collateralToken, address _user) external {
         require(IConfig(config).getValue(ConfigNames.LIQUIDATION_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        uint borrowAmount = IAAAAPool(pool).liquidation(_user, msg.sender);
-        if(borrowAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, borrowAmount);
-        }
+        IAAAAPool(pool).liquidation(_user, msg.sender);
+        _updateProdutivity(pool);
     }
 
     function reinvest(address _lendToken, address _collateralToken) external {
         require(IConfig(config).getValue(ConfigNames.REINVEST_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        uint reinvestAmount = IAAAAPool(pool).reinvest(msg.sender);
+        IAAAAPool(pool).reinvest(msg.sender);
+        _updateProdutivity(pool);
+    }
 
-        if(reinvestAmount > 0 && IConfig(config).isMintToken(_lendToken)) {
-            IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(msg.sender, reinvestAmount);
+    function _updateProdutivity(address _pool) internal {
+        uint amount = IAAAAPool(_pool).getTotalAmount();
+        (uint old, ) = IAAAAMint(IConfig(config).mint()).getProductivity(_pool);
+        if(old > 0) {
+            IAAAAMint(IConfig(config).mint()).getProductivity(_pool);
+            IAAAAMint(IConfig(config).mint()).decreaseProductivity(_pool, old);
         }
-    } 
-
-    function recalculteProdutivity(address[] calldata _users) external onlyDeveloper {
-        for(uint i = 0;i < _users.length;i++) {
-            address _user = _users[i];
-            uint count = IAAAAFactory(IConfig(config).factory()).countPools();
-            (uint oldLendProdutivity, ) = IAAAAMint(IConfig(config).mint()).getLenderProductivity(_user);
-            (uint oldBorrowProdutivity, ) = IAAAAMint(IConfig(config).mint()).getBorrowerProductivity(_user);
-            uint newLendProdutivity;
-            uint newBorrowProdutivity;
-            for(uint j = 0;j < count;j++) {
-                address pool = IAAAAFactory(IConfig(config).factory()).allPools(j);
-                (uint amountSupply, , , , ) = IAAAAPool(pool).supplys(_user);
-                (, , , uint amountBorrow, ) = IAAAAPool(pool).borrows(_user);
-
-                newLendProdutivity = newLendProdutivity.add(amountSupply);
-                newBorrowProdutivity = newBorrowProdutivity.add(amountBorrow);
-            }
-
-            if(oldLendProdutivity > 0) {
-                IAAAAMint(IConfig(config).mint()).decreaseLenderProductivity(_user, oldLendProdutivity);
-            }
-
-            if(oldBorrowProdutivity > 0) {
-                IAAAAMint(IConfig(config).mint()).decreaseBorrowerProductivity(_user, oldBorrowProdutivity);
-            }
-
-            if(newLendProdutivity > 0) {
-                IAAAAMint(IConfig(config).mint()).increaseLenderProductivity(_user, newLendProdutivity);
-            }
-
-            if(newBorrowProdutivity > 0) {
-                IAAAAMint(IConfig(config).mint()).increaseBorrowerProductivity(_user, newBorrowProdutivity);
-            }
+        
+        address token = IAAAAPool(_pool).supplyToken();
+        uint price = IConfig(config).prices(token);
+        if(amount > 0) {
+            IAAAAMint(IConfig(config).mint()).increaseProductivity(_pool, price.mul(amount).div(1e18));
         }
     }
 
