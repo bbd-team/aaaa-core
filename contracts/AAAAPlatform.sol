@@ -96,9 +96,9 @@ contract AAAAPlatform is Configable {
         }
         
         address token = IAAAAPool(_pool).supplyToken();
-        uint price = IConfig(config).prices(token);
         if(amount > 0) {
-            IAAAAMint(IConfig(config).mint()).increaseProductivity(_pool, price.mul(amount).div(1e18));
+            uint baseAmount = IConfig(config).convertTokenAmount(token, IConfig(config).base(), amount);
+            IAAAAMint(IConfig(config).mint()).increaseProductivity(_pool, baseAmount);
         }
     }
 

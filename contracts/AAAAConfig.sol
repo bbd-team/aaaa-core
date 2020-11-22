@@ -5,6 +5,7 @@ import './modules/ConfigNames.sol';
 
 interface IERC20 {
     function balanceOf(address owner) external view returns (uint);
+    function decimals() external view returns (uint8);
 }
 
 interface IAAAAPool {
@@ -13,6 +14,7 @@ interface IAAAAPool {
 
 contract AAAAConfig {
     using SafeMath for uint;
+    using SafeMath for uint8;
     address public owner;
     address public factory;
     address public platform;
@@ -20,6 +22,7 @@ contract AAAAConfig {
     address public mint;
     address public token;
     address public share;
+    address public base;
     address public governor;
 
     address[] public mintTokenList;
@@ -50,7 +53,7 @@ contract AAAAConfig {
         developer = msg.sender;
     }
     
-    function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor) external {
+    function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor, address _base) external {
         require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         mint        = _mint;
         platform    = _platform;
@@ -58,6 +61,7 @@ contract AAAAConfig {
         token       = _token;
         share       = _share;
         governor    = _governor;
+        base        = _base;
     }
 
     function addMintToken(address _token) external {
@@ -235,5 +239,18 @@ contract AAAAConfig {
     function getPoolParams(address _pool, bytes32 _key) external view returns (uint, uint, uint, uint) {
         ConfigItem memory item = poolParams[_pool][_key];
         return (item.min, item.max, item.span, item.value);
+    }
+
+    function convertTokenAmount(address _fromToken, address _toToken, uint _fromAmount) external view returns(uint toAmount) {
+        uint fromPrice = prices[_fromToken];
+        uint toPrice = prices[_toToken];
+        uint8 fromDecimals = IERC20(_fromToken).decimals();
+        uint8 toDecimals = IERC20(_toToken).decimals();
+        toAmount = _fromAmount.mul(fromPrice).div(toPrice);
+        if(fromDecimals > toDecimals) {
+            toAmount = toAmount.div(10 ** (fromDecimals.sub(toDecimals)));
+        } else if(toDecimals > fromDecimals) {
+            toAmount = toAmount.mul(10 ** (toDecimals.sub(fromDecimals)));
+        }
     }
 }

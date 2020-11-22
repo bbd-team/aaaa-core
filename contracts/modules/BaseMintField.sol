@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
-import "./libraries/SafeMath.sol";
-import "./libraries/TransferHelper.sol";
-import "./modules/Configable.sol";
-import "./modules/ConfigNames.sol";
+import "../libraries/SafeMath.sol";
+import "../libraries/TransferHelper.sol";
+import "../modules/Configable.sol";
+import "../modules/ConfigNames.sol";
 
-contract AAAAMint is Configable {
+interface IERC20 {
+    function approve(address spender, uint value) external returns (bool);
+    function balanceOf(address owner) external view returns (uint);
+}
+
+contract BaseMintField is Configable {
     using SafeMath for uint;
     
     uint public mintCumulation;
-    uint public lastRewardBlock;
     
     uint public totalLendProductivity;
     uint public totalBorrowProducitivity;
@@ -18,9 +22,6 @@ contract AAAAMint is Configable {
     
     uint public totalBorrowSupply;
     uint public totalLendSupply;
-    
-    uint public amountPerBlock = 2000 * 1e18;
-    uint public borrowPower = 0;
     
     struct UserInfo {
         uint amount;     // How many tokens the user has provided.
@@ -31,12 +32,9 @@ contract AAAAMint is Configable {
     
     mapping(address => UserInfo) public lenders;
     mapping(address => UserInfo) public borrowers;
-
-    address[] public lenderList;
-    address[] public borrowerList;
-
-    uint public numberOfLender;
-    uint public numberOfBorrower;
+    
+    uint public totalShare;
+    uint public mintedShare;
 
     event BorrowPowerChange (uint oldValue, uint newValue);
     event InterestRatePerBlockChanged (uint oldValue, uint newValue);
@@ -44,54 +42,17 @@ contract AAAAMint is Configable {
     event BorrowerProductivityDecreased (address indexed user, uint value);
     event LenderProductivityIncreased (address indexed user, uint value);
     event LenderProductivityDecreased (address indexed user, uint value);
-    event Mint(address indexed user, uint userAmount, uint teamAmount, uint rewardAmount, uint spareAmount);
-
-        
-    function initialize() external onlyDeveloper {
-        _update();
-        borrowPower = IConfig(config).getValue(ConfigNames.MINT_BORROW_PERCENT);
-        amountPerBlock = IConfig(config).getValue(ConfigNames.MINT_AMOUNT_PER_BLOCK);
-    }
-    
-    function changeBorrowPower(uint _value) external onlyGovernor {
-        uint old = borrowPower;
-        require(_value != old, 'POWER_NO_CHANGE');
-        require(_value <= 10000, 'INVALID_POWER_VALUE');
-        
-        _update();
-        borrowPower = _value;
-        
-        emit BorrowPowerChange(old, _value);
-    }
-    
-    // External function call
-    // This function adjust how many token will be produced by each block, eg:
-    // changeAmountPerBlock(100)
-    // will set the produce rate to 100/block.
-    function changeInterestRatePerBlock(uint value) external onlyGovernor returns (bool) {
-        uint old = amountPerBlock;
-        require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
-
-        _update();
-        amountPerBlock = value;
-
-        emit InterestRatePerBlockChanged(old, value);
-        return true;
-    }
+    event Mint(address indexed user, uint userAmount);
 
     // Update reward variables of the given pool to be up-to-date.
     function _update() internal virtual {
-        if (block.number <= lastRewardBlock) {
-            return;
-        }
-
         uint256 reward = _currentReward();
         if (totalLendProductivity.add(totalBorrowProducitivity) == 0 || reward == 0) {
-            lastRewardBlock = block.number;
+            totalShare += reward;
             return;
         }
         
-        uint borrowReward = reward.mul(borrowPower).div(10000);
+        uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000);
         uint lendReward = reward.sub(borrowReward);
 
         if(totalLendProductivity != 0 && lendReward > 0) {
@@ -103,19 +64,10 @@ contract AAAAMint is Configable {
             totalBorrowSupply = totalBorrowSupply.add(borrowReward);
             accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
         }
-        
-        lastRewardBlock = block.number;
     }
     
     function _currentReward() internal virtual view returns (uint){
-        uint256 multiplier = block.number.sub(lastRewardBlock);
-        uint reward = multiplier.mul(amountPerBlock);
-        uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
-        if(totalLendSupply.add(totalBorrowSupply).add(reward) > maxSupply) {
-            reward = maxSupply.sub(totalLendSupply).sub(totalBorrowSupply);
-        }
-        
-        return reward;
+        return mintedShare.add(IERC20(IConfig(config).token()).balanceOf(address(this))).sub(totalShare);
     }
     
     // Audit borrowers's reward to be up-to-date
@@ -140,19 +92,12 @@ contract AAAAMint is Configable {
         }
     }
 
-    function increaseBorrowerProductivity(address user, uint value) external onlyPlatform returns (bool) {
+    function _increaseBorrowerProductivity(address user, uint value) internal returns (bool) {
         require(value > 0, 'PRODUCTIVITY_VALUE_MUST_BE_GREATER_THAN_ZERO');
 
         UserInfo storage userInfo = borrowers[user];
         _update();
         _auditBorrower(user);
-
-        if(borrowers[user].index == 0)
-        {
-            borrowerList.push(user);
-            numberOfBorrower++;
-            borrowers[user].index = numberOfBorrower;
-        }
 
         totalBorrowProducitivity = totalBorrowProducitivity.add(value);
 
@@ -162,7 +107,7 @@ contract AAAAMint is Configable {
         return true;
     }
 
-    function decreaseBorrowerProductivity(address user, uint value) external onlyPlatform returns (bool) {
+    function _decreaseBorrowerProductivity(address user, uint value) internal returns (bool) {
         require(value > 0, 'INSUFFICIENT_PRODUCTIVITY');
         
         UserInfo storage userInfo = borrowers[user];
@@ -178,19 +123,12 @@ contract AAAAMint is Configable {
         return true;
     }
     
-    function increaseLenderProductivity(address user, uint value) external onlyPlatform returns (bool) {
+    function _increaseLenderProductivity(address user, uint value) internal returns (bool) {
         require(value > 0, 'PRODUCTIVITY_VALUE_MUST_BE_GREATER_THAN_ZERO');
 
         UserInfo storage userInfo = lenders[user];
         _update();
         _auditLender(user);
-
-        if(lenders[user].index == 0)
-        {
-            lenderList.push(user);
-            numberOfLender++;
-            lenders[user].index = numberOfLender;
-        }
 
         totalLendProductivity = totalLendProductivity.add(value);
 
@@ -203,7 +141,7 @@ contract AAAAMint is Configable {
     // External function call 
     // This function will decreases user's productivity by value, and updates the global productivity
     // it will record which block this is happenning and accumulates the area of (productivity * time)
-    function decreaseLenderProductivity(address user, uint value) external onlyPlatform returns (bool) {
+    function _decreaseLenderProductivity(address user, uint value) internal returns (bool) {
         require(value > 0, 'INSUFFICIENT_PRODUCTIVITY');
         
         UserInfo storage userInfo = lenders[user];
@@ -222,9 +160,9 @@ contract AAAAMint is Configable {
     function takeBorrowWithAddress(address user) public view returns (uint) {
         UserInfo storage userInfo = borrowers[user];
         uint _accAmountPerBorrow = accAmountPerBorrow;
-        if (block.number > lastRewardBlock && totalBorrowProducitivity != 0) {
+        if (totalBorrowProducitivity != 0) {
             uint reward = _currentReward();
-            uint borrowReward = reward.mul(borrowPower).div(10000);
+            uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000);
             
             _accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
         }
@@ -236,16 +174,15 @@ contract AAAAMint is Configable {
     function takeLendWithAddress(address user) public view returns (uint) {
         UserInfo storage userInfo = lenders[user];
         uint _accAmountPerLend = accAmountPerLend;
-        if (block.number > lastRewardBlock && totalLendProductivity != 0) {
+        if (totalLendProductivity != 0) {
             uint reward = _currentReward();
-            uint lendReward = reward.sub(reward.mul(borrowPower).div(10000)); 
+            uint lendReward = reward.sub(reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000)); 
             _accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
         }
         uint amount = userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
         return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
     }
 
-    // Returns how much a user could earn plus the giving block number.
     function takeBorrowWithBlock() external view returns (uint, uint) {
         uint earn = takeBorrowWithAddress(msg.sender);
         return (earn, block.number);
@@ -264,9 +201,6 @@ contract AAAAMint is Configable {
         return (takeAll(), block.number);
     }
 
-    // External function call
-    // When user calls this function, it will calculate how many token will mint to user from his productivity * time
-    // Also it calculates global token supply from last time the user mint to this time.
     function mintBorrower() external returns (uint) {
         _update();
         _auditBorrower(msg.sender);
@@ -318,27 +252,10 @@ contract AAAAMint is Configable {
     }
 
     function _mintDistribution(address user, uint amount) internal {
-        uint userAmount = amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
-        uint remainAmount = amount.sub(userAmount);
-        uint teamAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_TEAM_MINT)).div(10000);
-        if(teamAmount > 0) {
-            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.TEAM), teamAmount);
+        if(amount > 0) {
+           mintedShare += amount;
+           TransferHelper.safeTransfer(IConfig(config).token(), user, amount);
         }
-        
-        remainAmount = remainAmount.sub(teamAmount);
-        uint rewardAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_REWAED_MINT)).div(10000);
-        if(rewardAmount > 0) {
-            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.REWARD), rewardAmount);
-        }  
-
-        uint spareAmount = remainAmount.sub(rewardAmount);
-        if(spareAmount > 0) {
-            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.SPARE), spareAmount);
-        }
-        
-        if(userAmount > 0) {
-           TransferHelper.safeTransfer(IConfig(config).token(), user, userAmount); 
-        }
-        emit Mint(user, userAmount, teamAmount, rewardAmount, spareAmount);
+        emit Mint(user, amount);
     }
 }

@@ -10,6 +10,7 @@ interface IConfig {
     function token() external view returns (address);
     function developPercent() external view returns (uint);
     function share() external view returns (address);
+    function base() external view returns (address); 
     function governor() external view returns (address);
     function getPoolValue(address pool, bytes32 key) external view returns (uint);
     function getValue(bytes32 key) external view returns(uint);
@@ -23,6 +24,7 @@ interface IConfig {
     function initPoolParams(address _pool) external;
     function isMintToken(address _token) external returns (bool);
     function prices(address _token) external returns (uint);
+    function convertTokenAmount(address _fromToken, address _toToken, uint _fromAmount) external view returns (uint);
 }
 
 contract Configable {

@@ -11,13 +11,13 @@ library ConfigNames {
     bytes32 public constant INTEREST_PLATFORM_SHARE =  bytes32('INTEREST_PLATFORM_SHARE');
     bytes32 public constant CHANGE_PRICE_DURATION =  bytes32('CHANGE_PRICE_DURATION');
     bytes32 public constant CHANGE_PRICE_PERCENT =  bytes32('CHANGE_PRICE_PERCENT');
-    bytes32 public constant MINT_BORROW_PERCENT = bytes32('MINT_BORROW_PERCENT');
 
     // POOL
     bytes32 public constant POOL_BASE_INTERESTS = bytes32('POOL_BASE_INTERESTS');
     bytes32 public constant POOL_MARKET_FRENZY = bytes32('POOL_MARKET_FRENZY');
     bytes32 public constant POOL_PLEDGE_RATE = bytes32('POOL_PLEDGE_RATE');
     bytes32 public constant POOL_LIQUIDATION_RATE = bytes32('POOL_LIQUIDATION_RATE');
+    bytes32 public constant MINT_BORROW_PERCENT = bytes32('MINT_BORROW_PERCENT');
     
     //NOT GOVERNANCE
     bytes32 public constant AAAA_MAX_SUPPLY = bytes32('AAAA_MAX_SUPPLY');

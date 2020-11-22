@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
-import "./interface/IERC20.sol";
 import "./libraries/TransferHelper.sol";
 import "./libraries/SafeMath.sol";
 import "./modules/Configable.sol";
 import "./modules/ConfigNames.sol";
+import "./modules/BaseMintField.sol";
 
 interface ICollateralStrategy {
     function invest(address user, uint amount) external; 
@@ -15,7 +15,7 @@ interface ICollateralStrategy {
     function collateralToken() external returns (address);
 }
 
-contract AAAAPool is Configable
+contract AAAAPool is Configable, BaseMintField
 {
     using SafeMath for uint;
 
@@ -64,6 +64,7 @@ contract AAAAPool is Configable
     uint public totalLiquidation;
     uint public totalLiquidationSupplyAmount;
 
+    uint public totalStake;
     uint public totalBorrow;
     uint public totalPledge;
 
@@ -158,6 +159,9 @@ contract AAAAPool is Configable
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(amountDeposit);
         remainSupply = remainSupply.add(amountDeposit);
+        
+        //totalStake = totalStake.add(amountDeposit);
+        _increaseLenderProductivity(from, amountDeposit);
 
         supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
@@ -185,6 +189,7 @@ contract AAAAPool is Configable
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
         distributePlatformShare(platformShare);
+        _increaseLenderProductivity(from, reinvestAmount);
 
         emit Reinvest(from, reinvestAmount);
     }
@@ -264,21 +269,24 @@ contract AAAAPool is Configable
         if(withdrawLiquidation > 0) {
             if(collateralStrategy != address(0))
             {
-                //这里有疑问
                 ICollateralStrategy(collateralStrategy).claim(from, withdrawLiquidation, totalLiquidation.add(withdrawLiquidation));   
             }
             TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
         }
 
+        _decreaseLenderProductivity(from, amountWithdraw);
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
 
     function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
     {
-        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        // uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
+        // amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
+        
+        uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
         uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-
-        amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
+        amountBorrow = pledgeAmount.mul(pledgeRate).div(1e18);
     }
 
     function borrow(uint amountCollateral, uint expectBorrow, address from) public onlyPlatform
@@ -287,10 +295,15 @@ contract AAAAPool is Configable
 
         updateInterests();
 
-        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
-        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
+        // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        // uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
 
-        uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
+        // uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
+        
+        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
+        uint maxAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[from].amountCollateral + amountCollateral);
+
+        uint maximumBorrow = maxAmount.mul(pledgeRate).div(1e18);
         uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
 
         require(repayAmount + expectBorrow <= maximumBorrow, "AAAA: EXCEED MAX ALLOWED");
@@ -319,7 +332,8 @@ contract AAAAPool is Configable
         borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
 
         if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
-
+        _increaseBorrowerProductivity(from, expectBorrow);
+        
         emit Borrow(from, expectBorrow, amountCollateral);
     }
 
@@ -360,6 +374,8 @@ contract AAAAPool is Configable
         }
         TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
+        
+        _decreaseBorrowerProductivity(from, repayAmount);
 
         emit Repay(from, repayAmount, amountCollateral, repayInterest);
     }
@@ -373,9 +389,13 @@ contract AAAAPool is Configable
         borrows[_user].interests = borrows[_user].interests.add(interestPerBorrow.mul(borrows[_user].amountBorrow).div(1e18).sub(borrows[_user].interestSettled));
 
         uint liquidationRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_LIQUIDATION_RATE);
-        uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
-
-        uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
+        
+        // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
+        // uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
+        uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[_user].amountCollateral);
+        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
+        uint collateralValue = pledgeAmount.mul(pledgeRate).div(1e18);
+        
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
 
         require(expectedRepay >= collateralValue.mul(liquidationRate).div(1e18), 'AAAA: NOT LIQUIDABLE');
@@ -403,9 +423,11 @@ contract AAAAPool is Configable
         borrows[_user].amountBorrow = 0;
         borrows[_user].interests = 0;
         borrows[_user].interestSettled = 0;
+        
+        _decreaseBorrowerProductivity(_user, borrowAmount);
     }
 
     function getTotalAmount() external view returns (uint) {
-        return 0;
+        return totalStake.add(totalBorrow);
     }
 }
