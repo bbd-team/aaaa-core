@@ -160,7 +160,7 @@ contract AAAAPool is Configable, BaseMintField
         supplys[from].amountSupply = supplys[from].amountSupply.add(amountDeposit);
         remainSupply = remainSupply.add(amountDeposit);
         
-        //totalStake = totalStake.add(amountDeposit);
+        totalStake = totalStake.add(amountDeposit);
         _increaseLenderProductivity(from, amountDeposit);
 
         supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
@@ -183,6 +183,7 @@ contract AAAAPool is Configable, BaseMintField
         reinvestAmount = reinvestAmount.sub(platformShare);
 
         supplys[from].amountSupply = supplys[from].amountSupply.add(reinvestAmount);
+        totalStake = totalStake.add(reinvestAmount);
         supplys[from].interests = 0;
 
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
@@ -261,6 +262,7 @@ contract AAAAPool is Configable, BaseMintField
         supplys[from].interests = supplys[from].interests.sub(withdrawInterest);
         supplys[from].liquidation = supplys[from].liquidation.sub(withdrawLiquidation);
         supplys[from].amountSupply = supplys[from].amountSupply.sub(amountWithdraw);
+        totalStake = totalStake.sub(amountWithdraw);
 
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
