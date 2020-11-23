@@ -117,7 +117,8 @@ describe('deploy', () => {
 			mintContract.address, 
 			tokenContract.address,
 			shareContract.address,
-			governanceContract.address
+			governanceContract.address,
+			tokenUSDT.address
 		);
 		
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
@@ -148,6 +149,7 @@ describe('deploy', () => {
 		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
 		
 		await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
+		await configContract.connect(walletPrice).setTokenPrice([tokenUSDT.address, tokenLP.address],  [ethers.utils.parseEther('1'), ethers.utils.parseEther('0.02')]);
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);

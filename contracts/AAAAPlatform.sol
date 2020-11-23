@@ -91,7 +91,6 @@ contract AAAAPlatform is Configable {
         uint amount = IAAAAPool(_pool).getTotalAmount();
         (uint old, ) = IAAAAMint(IConfig(config).mint()).getProductivity(_pool);
         if(old > 0) {
-            IAAAAMint(IConfig(config).mint()).getProductivity(_pool);
             IAAAAMint(IConfig(config).mint()).decreaseProductivity(_pool, old);
         }
         

@@ -150,7 +150,7 @@ contract AAAAConfig {
     function setTokenPrice(address[] calldata _tokens, uint[] calldata _prices) external {
         uint duration = params[ConfigNames.CHANGE_PRICE_DURATION].value;
         uint maxPercent = params[ConfigNames.CHANGE_PRICE_PERCENT].value;
-        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
+        //require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
         require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
         require(_tokens.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
 
