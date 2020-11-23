@@ -10,7 +10,7 @@ contract AAAAToken is Configable {
     string public name = "AAAA Token";
     string public symbol = "AAAA";
     uint8 public decimals = 18;
-    uint public totalSupply = 100000 * (1e18);
+    uint public totalSupply = 10240000 * (1e18);
     
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
@@ -19,11 +19,7 @@ contract AAAAToken is Configable {
     event Transfer(address indexed from, address indexed to, uint value);
     
     constructor() public {
-        balanceOf[address(this)] = totalSupply;
-    }
-    
-    function initialize() external onlyDeveloper {
-        _transfer(address(this), IConfig(config).mint(), 100000 * 1e18);
+        balanceOf[msg.sender] = totalSupply;
     }
     
     function _transfer(address from, address to, uint value) internal {

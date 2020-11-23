@@ -26,6 +26,7 @@ contract AAAAMint is Configable {
     event InterestsPerBlockChanged (uint oldValue, uint newValue);
     event ProductivityIncreased (address indexed user, uint value);
     event ProductivityDecreased (address indexed user, uint value);
+    event Mint(address indexed user, uint userAmount, uint teamAmount, uint rewardAmount, uint spareAmount);
 
     function initialize() external onlyDeveloper {
         _update();
@@ -36,7 +37,7 @@ contract AAAAMint is Configable {
     // This function adjust how many token will be produced by each block, eg:
     // changeAmountPerBlock(100)
     // will set the produce rate to 100/block.
-    function changeInterestRatePerBlock(uint value) external virtual onlyGovernor returns (bool) {
+    function changeInterestRatePerBlock(uint value) public virtual onlyGovernor returns (bool) {
         uint old = amountPerBlock;
         require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
 
@@ -59,17 +60,21 @@ contract AAAAMint is Configable {
         }
         
         uint256 reward = _currentReward();
-        totalSupply = totalSupply.add(reward);
+        if(reward == 0) {
+            changeInterestRatePerBlock(0);
+        } else {
+            totalSupply = totalSupply.add(reward);
 
-        accAmountPerShare = accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
-        lastRewardBlock = block.number;
+            accAmountPerShare = accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
+            lastRewardBlock = block.number;
+        }
     }
     
     function _currentReward() internal virtual view returns (uint){
         uint256 multiplier = block.number.sub(lastRewardBlock);
         uint reward = multiplier.mul(amountPerBlock);
         uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
-        if(totalProductivity.add(reward) > maxSupply) {
+        if(totalSupply.add(reward) > maxSupply) {
             reward = maxSupply.sub(totalSupply);
         }
         
@@ -153,7 +158,7 @@ contract AAAAMint is Configable {
         _audit(msg.sender);
         require(users[msg.sender].rewardEarn > 0, "NOTHING_TO_MINT");
         uint amount = users[msg.sender].rewardEarn;
-        TransferHelper.safeTransfer(IConfig(config).token(), msg.sender, users[msg.sender].rewardEarn); 
+        _mintDistribution(msg.sender, amount);
         users[msg.sender].rewardEarn = 0;
         return amount;
     }
@@ -166,5 +171,30 @@ contract AAAAMint is Configable {
     // Returns the current gorss product rate.
     function interestsPerBlock() external virtual view returns (uint) {
         return accAmountPerShare;
+    }
+    
+    function _mintDistribution(address user, uint amount) internal {
+        uint userAmount = amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
+        uint remainAmount = amount.sub(userAmount);
+        uint teamAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_TEAM_MINT)).div(10000);
+        if(teamAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.TEAM), teamAmount);
+        }
+        
+        remainAmount = remainAmount.sub(teamAmount);
+        uint rewardAmount = remainAmount.mul(IConfig(config).getValue(ConfigNames.AAAA_REWAED_MINT)).div(10000);
+        if(rewardAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.REWARD), rewardAmount);
+        }  
+
+        uint spareAmount = remainAmount.sub(rewardAmount);
+        if(spareAmount > 0) {
+            TransferHelper.safeTransfer(IConfig(config).token(), IConfig(config).wallets(ConfigNames.SPARE), spareAmount);
+        }
+        
+        if(userAmount > 0) {
+           TransferHelper.safeTransfer(IConfig(config).token(), user, userAmount); 
+        }
+        emit Mint(user, userAmount, teamAmount, rewardAmount, spareAmount);
     }
 }
