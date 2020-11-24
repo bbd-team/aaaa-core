@@ -135,7 +135,8 @@ contract AAAAMint is Configable {
             uint reward = _currentReward();
             _accAmountPerShare = _accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
         }
-        return userInfo.amount.mul(_accAmountPerShare).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+        uint amount = userInfo.amount.mul(_accAmountPerShare).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
+        return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
     }
 
     function take() external virtual view returns (uint) {
