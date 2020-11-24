@@ -12,11 +12,9 @@ import AAAAQuery from '../build/AAAAQuery.json';
 import AAAABallot from '../build/AAAABallot.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
-import StakingReward from '../build/StakingRewards.json';
-import MasterChef from '../build/MasterChef.json';
-import StakingRewardFactory from '../build/StakingRewardsFactory.json';
-import UniLPStrategy from '../build/UniLPStrategy.json';
-import CakeLPStrategy from '../build/CakeLPStrategy.json';
+import MasterChef from '../build/SushiMasterChef.json';
+import SLPStrategy from '../build/SLPStrategy.json';
+import SushiToken from '../build/SushiToken.json'
 import { BigNumber as BN } from 'bignumber.js'
 
 use(solidity);
@@ -42,8 +40,6 @@ describe('deploy', () => {
 	let poolContract: Contract;
 	let queryContract : Contract;
 	let governanceContract : Contract;
-	let stakingReward : Contract;
-	let stakingRewardFactory : Contract;
 	let rewardToken : Contract;
 	let strategy : Contract;
 	let tx: any;
@@ -68,29 +64,19 @@ describe('deploy', () => {
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
 		// tokenUSDT 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
-		tokenLP 	= await deployContract(walletMe, ERC20, ['PancakeSwap LP CAKE/BNB', 'PancakeSwap LP CAKE/BNB', 18, ethers.utils.parseEther('1000000')]);
-		rewardToken = await deployContract(walletDeveloper, ERC20, ['CAKE', 'CAKE', 18, ethers.utils.parseEther('1000000')]);
+		tokenLP 	= await deployContract(walletMe, ERC20, ['SLP ETH/USDT', 'SLP ETH/USDT', 18, ethers.utils.parseEther('1000000')]);
+		rewardToken = await deployContract(walletDeveloper, SushiToken);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
 		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
 		masterChef  = await deployContract(walletDeveloper, MasterChef, 
-			[rewardToken.address, rewardToken.address, walletDeveloper.address, ethers.utils.parseEther('1'), 0]);
+			[rewardToken.address, walletDeveloper.address, ethers.utils.parseEther('1'), 0, 100]);
 
 		await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
+		await rewardToken.transferOwnership(masterChef.address);
 
-		console.log('masterChef 0 lp:', (await masterChef.poolInfo(1)).lpToken);
+		console.log('masterChef 0 lp:', (await masterChef.poolInfo(0)).lpToken);
 
 		await getBlockNumber();
-		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
-		stakingReward = await deployContract(walletMe, StakingReward, [walletDeveloper.address, rewardToken.address, tokenLP.address]);
-		// rewardToken.connect(walletDeveloper).transfer(stakingReward.address, ethers.utils.parseEther('100'));
-		// stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
-
-	    await rewardToken.connect(walletDeveloper).transfer(masterChef.address, ethers.utils.parseEther('100'));
-		// await stakingReward.connect(walletDeveloper).notifyRewardAmount(ethers.utils.parseEther('100'));
-
-		const rewardsDuration = await stakingReward.rewardsDuration()
-		const startTime: BigNumber = await stakingReward.lastUpdateTime()
-	    const endTime: BigNumber = await stakingReward.periodFinish()
 
 		console.log('configContract = ', configContract.address);
 		console.log('factoryContract = ', factoryContract.address);
@@ -100,7 +86,6 @@ describe('deploy', () => {
 		console.log('tokenUSDT address = ', tokenUSDT.address);
 		console.log('rewardToken address = ', rewardToken.address);
 		console.log('tokenLP address = ', tokenLP.address);
-		console.log('stakingReward address = ', stakingReward.address);
 
 		console.log('team:', ethers.utils.formatBytes32String("team"))
 		console.log('spare:', ethers.utils.formatBytes32String("spare"))
@@ -156,11 +141,9 @@ describe('deploy', () => {
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
-		// strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
-		strategy = await deployContract(walletDeveloper, CakeLPStrategy, []);
-		await strategy.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 1);
+		strategy = await deployContract(walletDeveloper, SLPStrategy, []);
+		await strategy.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 0);
 
-		console.log(strategy.address);
 		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address)).wait();
 
 		// await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
@@ -291,7 +274,7 @@ describe('deploy', () => {
 
 		 
 		await strategy.connect(walletOther).mint();
-		console.log('after repay with UNI: ', 
+		console.log('after repay with SUSHI: ', 
 			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18), 
 			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1e18),
 			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1e18),
