@@ -198,7 +198,9 @@ contract AAAAPool is Configable, BaseMintField
 
         distributePlatformShare(platformShare);
         _mintToPool();
-        _increaseLenderProductivity(from, reinvestAmount);
+        if(reinvestAmount > 0) {
+           _increaseLenderProductivity(from, reinvestAmount); 
+        }
 
         emit Reinvest(from, reinvestAmount);
     }
@@ -342,9 +344,11 @@ contract AAAAPool is Configable, BaseMintField
         borrows[from].amountBorrow = borrows[from].amountBorrow.add(expectBorrow);
         borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
 
-        if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
         _mintToPool();
-        _increaseBorrowerProductivity(from, expectBorrow);
+        if(expectBorrow > 0) {
+            TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
+            _increaseBorrowerProductivity(from, expectBorrow);
+        } 
         
         emit Borrow(from, expectBorrow, amountCollateral);
     }
