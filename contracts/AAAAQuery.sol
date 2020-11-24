@@ -287,7 +287,7 @@ contract AAAAQuery {
             for(uint i = 0;i < count;i++) {
                 PoolInfoStruct memory info = getPoolInfoByIndex(i);
                 if(info.supplyToken == token) {
-                    list[index] = getPoolInfoByIndex(i);
+                    list[index] = info;
                     index++;
                 }
             }
