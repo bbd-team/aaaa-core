@@ -96,8 +96,8 @@ contract AAAAPlatform is Configable {
         }
         
         address token = IAAAAPool(_pool).supplyToken();
-        if(amount > 0) {
-            uint baseAmount = IConfig(config).convertTokenAmount(token, IConfig(config).base(), amount);
+        uint baseAmount = IConfig(config).convertTokenAmount(token, IConfig(config).base(), amount);
+        if(baseAmount > 0) {
             IAAAAMint(IConfig(config).mint()).increaseProductivity(_pool, baseAmount);
         }
     }
