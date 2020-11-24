@@ -27,10 +27,18 @@ let MASTERCHEF_ADDRESS = ""
 let tokens = {
   USDT: '',
   USDC: '',
+  WETH: '',
   LPREWARD: '',
   WBTC: '',
   BURGER: '',
 }
+
+let pairs = []
+pairs.push(['USDC','WETH'])
+pairs.push(['USDT','WETH'])
+pairs.push(['WBTC','WETH'])
+
+let pairAddresses = []
 
 let Contracts = {
   AAAAToken: AAAAToken,
@@ -116,6 +124,28 @@ async function deployTokens() {
   }
 }
 
+async function deployLPs() {
+  let factory = new ethers.ContractFactory(
+    UNIPAIR.abi,
+    UNIPAIR.bytecode,
+    walletWithProvider
+  )
+
+  for(let pair of pairs) {
+    ins = await factory.deploy(ETHER_SEND_CONFIG)
+    await waitForMint(ins.deployTransaction.hash)
+    tokens['LP'+pair[0]+pair[1]] = ins.address
+    pairAddresses.push(ins.address)
+
+    tx = await ins.initialize(tokens[pair[0]], tokens[pair[1]], ETHER_SEND_CONFIG)
+    console.log('UNIPAIR initialize')
+    await waitForMint(tx.hash)
+    tx = await ins.mint(config.walletDev, '100000000000000000000000000', ETHER_SEND_CONFIG)
+    console.log('UNIPAIR mint')
+    await waitForMint(tx.hash)
+  }
+}
+
 async function deployContracts() {
   for (let k in Contracts) {
     let factory = new ethers.ContractFactory(
@@ -135,21 +165,12 @@ async function deploy() {
   console.log('deloy tokens...')
   await deployTokens()
 
+  console.log('deployLPs...')
+  await deployLPs()
+  
   // business contract
   console.log('deloy contract...')
   await deployContracts()
-  
-  // LP
-  console.log('deloy lp...')
-  factory = new ethers.ContractFactory(
-    UNIPAIR.abi,
-    UNIPAIR.bytecode,
-    walletWithProvider
-  )
-  ins = await factory.deploy(ETHER_SEND_CONFIG)
-  await waitForMint(ins.deployTransaction.hash)
-  LP1_ADDRESS = ins.address
-  tokens['LP1'] = LP1_ADDRESS
   
   // MASTERCHEF
   console.log('deloy MASTERCHEF...')
@@ -166,15 +187,12 @@ async function deploy() {
 async function fakeMasterChef() {
   console.log('fakeMasterChef...')
   let ins = new ethers.Contract(
-    LP1_ADDRESS,
-    UNIPAIR.abi,
+    ContractAddress['SLPStrategyFactory'],
+    SLPStrategyFactory.abi,
     getWallet()
   )
-  tx = await ins.initialize(tokens['WBTC'], tokens['USDT'], ETHER_SEND_CONFIG)
-  console.log('UNIPAIR initialize')
-  await waitForMint(tx.hash)
-  tx = await ins.mint(config.walletDev, '100000000000000000000000000', ETHER_SEND_CONFIG)
-  console.log('UNIPAIR mint')
+  let tx = await ins.initialize(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
+  console.log('SLPStrategyFactory initialize')
   await waitForMint(tx.hash)
 
   ins = new ethers.Contract(
@@ -182,18 +200,49 @@ async function fakeMasterChef() {
       MasterChef.abi,
       getWallet()
     )
-  tx = await ins.add(100, LP1_ADDRESS, false, ETHER_SEND_CONFIG)
-  console.log('MasterChef add')
-  await waitForMint(tx.hash)
+  
+  for(let i=0; i< pairAddresses.length; i++) {
+    tx = await ins.add(100, pairAddresses[i], false, ETHER_SEND_CONFIG)
+    console.log('MasterChef add pair:', i, pairAddresses[i])
+    await waitForMint(tx.hash)
+  }
+}
 
+async function deployConfig() {
   ins = new ethers.Contract(
-    ContractAddress['SLPStrategyFactory'],
-    SLPStrategyFactory.abi,
+    ContractAddress['AAAADeploy'],
+    AAAADeploy.abi,
     getWallet()
   )
-  tx = await ins.initialize(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
-  console.log('SLPStrategyFactory initialize')
+
+  console.log('AAAADeploy setMasterchef')
+  tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], true, ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
+
+  console.log('AAAADeploy changeBallotByteHash')
+  let codeHash = ethers.utils.keccak256('0x'+ AAAABallot.bytecode)
+  tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+
+  console.log('AAAADeploy addMintToken')
+  tx = await ins.addMintToken(tokens['USDT'], ETHER_SEND_CONFIG)
+  console.log('AAAAConfig addMintToken')
+  await waitForMint(tx.hash)
+  console.log('AAAAConfig addMintToken')
+  tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+  console.log('AAAAConfig addMintToken')
+  tx = await ins.addMintToken(tokens['WETH'], ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+
+  for(let i=0; i<pairAddresses.length; i++) {
+    tx = await ins.createPool(tokens['USDT'], pairAddresses[i], i, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.createPool(tokens['USDC'], pairAddresses[i], i, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.createPool(tokens['WETH'], pairAddresses[i], i, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+  }
 }
 
 async function setupConfig() {
@@ -213,6 +262,7 @@ async function setupConfig() {
 
 async function initialize() {
   await setupConfig()
+  await fakeMasterChef()
 
     let ins = new ethers.Contract(
         ContractAddress['AAAAConfig'],
@@ -255,46 +305,23 @@ async function initialize() {
     console.log('AAAAConfig setWallets')
     await waitForMint(tx.hash)
 
-    tx = await ins.changeDeveloper(
-      ContractAddress['AAAADeploy'],
-      ETHER_SEND_CONFIG
-    )
+    let _tokens=[tokens['USDT'],tokens['USDC'],tokens['WETH']]
+    let _values=['1000000000000000000','990000000000000000','50000000000000000000']
+    for(let pair of pairAddresses) {
+      _tokens.push(pair)
+      _values.push('100000000000000000000')
+    }
+    tx = await ins.setTokenPrice(_tokens, _values, ETHER_SEND_CONFIG)
+    console.log('AAAAConfig setTokenPrice')
+    await waitForMint(tx.hash)
+
+    tx = await ins.changeDeveloper(ContractAddress['AAAADeploy'], ETHER_SEND_CONFIG)
     console.log('AAAAConfig changeDeveloper')
     await waitForMint(tx.hash)
 
     // run AAAADeploy
-    ins = new ethers.Contract(
-      ContractAddress['AAAADeploy'],
-      AAAADeploy.abi,
-      getWallet()
-    )
+    await deployConfig()
 
-    console.log('AAAADeploy setMasterchef')
-    tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], true, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    console.log('AAAADeploy changeBallotByteHash')
-    let codeHash = ethers.utils.keccak256('0x'+ AAAABallot.bytecode)
-    tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    console.log('AAAADeploy addMintToken')
-    tx = await ins.addMintToken(tokens['USDT'], ETHER_SEND_CONFIG)
-    console.log('AAAAConfig addMintToken')
-    await waitForMint(tx.hash)
-    console.log('AAAAConfig addMintToken')
-    tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    await fakeMasterChef()
-
-    // for pool
-    console.log('AAAADeploy createPool')
-    tx = await ins.createPool(tokens['USDT'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-    tx = await ins.createPool(tokens['USDC'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-     
     console.log('transfer...')
     await transfer()
 }
@@ -326,20 +353,31 @@ async function transfer() {
         await waitForMint(tx.hash)
 
         ins = new ethers.Contract(
-          tokens['BURGER'],
-            ERC20.abi,
-            getWallet()
-          )
+          tokens['WETH'],
+          ERC20.abi,
+          getWallet()
+        )
         tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
 
-        ins = new ethers.Contract(
-          tokens['LP1'],
-            UNIPAIR.abi,
-            getWallet()
-          )
-        tx = await ins.mint(user, '5000000000000000000000', ETHER_SEND_CONFIG)
-        await waitForMint(tx.hash)
+        // ins = new ethers.Contract(
+        //   tokens['BURGER'],
+        //     ERC20.abi,
+        //     getWallet()
+        //   )
+        // tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        // await waitForMint(tx.hash)
+
+        for(let pair of pairAddresses) {
+          ins = new ethers.Contract(
+              pair,
+              UNIPAIR.abi,
+              getWallet()
+            )
+          tx = await ins.mint(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+          await waitForMint(tx.hash)
+        }
+        
     }
 }
 

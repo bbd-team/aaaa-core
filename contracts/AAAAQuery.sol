@@ -272,6 +272,28 @@ contract AAAAQuery {
         }
     }
 
+    function queryPoolListByToken(address token) public view returns (PoolInfoStruct[] memory list) {
+        uint count = IAAAAFactory(IConfig(config).factory()).countPools();
+        uint outCount = 0;
+        if(count > 0) {
+            for(uint i = 0;i < count;i++) {
+                PoolInfoStruct memory info = getPoolInfoByIndex(i);
+                if(info.supplyToken == token) {
+                    outCount++;
+                }
+            }
+            list = new PoolInfoStruct[](outCount);
+            uint index;
+            for(uint i = 0;i < count;i++) {
+                PoolInfoStruct memory info = getPoolInfoByIndex(i);
+                if(info.supplyToken == token) {
+                    list[index] = getPoolInfoByIndex(i);
+                    index++;
+                }
+            }
+        }
+    }
+
     function queryToken(address user, address spender, address token) public view returns (TokenStruct memory info) {
         info.name = IERC20(token).name();
         info.symbol = IERC20(token).symbol();
