@@ -24,6 +24,7 @@ contract AAAAConfig {
     address public share;
     address public base;
     address public governor;
+    address public WETH;
 
     address[] public mintTokenList;
 
@@ -61,7 +62,7 @@ contract AAAAConfig {
         }
     }
     
-    function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor, address _base) external {
+    function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor, address _base, address _WETH) external {
         require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
         mint        = _mint;
         platform    = _platform;
@@ -70,6 +71,7 @@ contract AAAAConfig {
         share       = _share;
         governor    = _governor;
         base        = _base;
+        WETH        = _WETH;
     }
 
     function addMintToken(address _token) external {

@@ -26,6 +26,7 @@ interface IConfig {
     function prices(address _token) external returns (uint);
     function convertTokenAmount(address _fromToken, address _toToken, uint _fromAmount) external view returns (uint);
     function DAY() external view returns (uint);
+    function WETH() external view returns (address);
 }
 
 contract Configable {

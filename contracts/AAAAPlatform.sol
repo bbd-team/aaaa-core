@@ -12,6 +12,11 @@ interface IAAAAMint {
     function getProductivity(address user) external view returns (uint, uint);
 }
 
+interface IWETH {
+    function deposit() external payable;
+    function withdraw(uint) external;
+}
+
 interface IAAAAPool {
     function deposit(uint _amountDeposit, address _from) external;
     function withdraw(uint _amountWithdraw, address _from) external returns(uint, uint);
@@ -45,6 +50,14 @@ interface IAAAAFactory {
 contract AAAAPlatform is Configable {
 
     using SafeMath for uint;
+    
+    uint private unlocked = 1;
+    modifier lock() {
+        require(unlocked == 1, 'Locked');
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
 
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
         require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
@@ -55,14 +68,26 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
     
+    function depositETH(address _lendToken, address _collateralToken) external payable lock {
+        require(_lendToken == IConfig(config).WETH(), "INVALID WETH POOL");
+        require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
+        address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
+        require(pool != address(0), "POOL NOT EXIST");
+        
+        IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
+        TransferHelper.safeTransfer(_lendToken, pool, msg.value);
+        IAAAAPool(pool).deposit(msg.value, msg.sender);
+        _updateProdutivity(pool);
+    }
+    
     function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external {
         require(IConfig(config).getValue(ConfigNames.WITHDRAW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         (uint withdrawSupplyAmount, uint withdrawLiquidationAmount) = IAAAAPool(pool).withdraw(_amountWithdraw, msg.sender);
 
-        if(withdrawSupplyAmount > 0) TransferHelper.safeTransfer(_lendToken, msg.sender, withdrawSupplyAmount);
-        if(withdrawLiquidationAmount > 0) TransferHelper.safeTransfer(_collateralToken, msg.sender, withdrawLiquidationAmount);
+        if(withdrawSupplyAmount > 0) _innerTransfer(_lendToken, msg.sender, withdrawSupplyAmount);
+        if(withdrawLiquidationAmount > 0) _innerTransfer(_collateralToken, msg.sender, withdrawLiquidationAmount);
 
         _updateProdutivity(pool);
     }
@@ -71,13 +96,29 @@ contract AAAAPlatform is Configable {
         require(IConfig(config).getValue(ConfigNames.BORROW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
+        
         TransferHelper.safeTransferFrom(_collateralToken, msg.sender, pool, _amountCollateral);
+        
         (, uint borrowAmountCollateral, , , ) = IAAAAPool(pool).borrows(msg.sender);
-
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, borrowAmountCollateral, msg.sender);
-
         IAAAAPool(pool).borrow(_amountCollateral, repayAmount, _expectBorrow, msg.sender);
-        if(_expectBorrow > 0) TransferHelper.safeTransfer(_lendToken, msg.sender, _expectBorrow);
+        if(_expectBorrow > 0) _innerTransfer(_lendToken, msg.sender, _expectBorrow);
+        _updateProdutivity(pool);
+    }
+    
+    function borrowTokenWithETH(address _lendToken, address _collateralToken, uint _expectBorrow) external payable lock {
+        require(_collateralToken == IConfig(config).WETH(), "INVALID WETH POOL");
+        require(IConfig(config).getValue(ConfigNames.BORROW_ENABLE) == 1, "NOT ENABLE NOW");
+        address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
+        require(pool != address(0), "POOL NOT EXIST");
+        
+        IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
+        TransferHelper.safeTransfer(_collateralToken, pool, msg.value);
+        
+        (, uint borrowAmountCollateral, , , ) = IAAAAPool(pool).borrows(msg.sender);
+        uint repayAmount = getRepayAmount(_lendToken, _collateralToken, borrowAmountCollateral, msg.sender);
+        IAAAAPool(pool).borrow(msg.value, repayAmount, _expectBorrow, msg.sender);
+        if(_expectBorrow > 0) _innerTransfer(_lendToken, msg.sender, _expectBorrow);
         _updateProdutivity(pool);
     }
     
@@ -86,9 +127,11 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, _amountCollateral, msg.sender);
+        
         TransferHelper.safeTransferFrom(_lendToken, msg.sender, pool, repayAmount);
+        
         IAAAAPool(pool).repay(_amountCollateral, msg.sender);
-        TransferHelper.safeTransfer(_collateralToken, msg.sender, _amountCollateral);
+        _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
         _updateProdutivity(pool);
     }
     
@@ -106,6 +149,15 @@ contract AAAAPlatform is Configable {
         require(pool != address(0), "POOL NOT EXIST");
         IAAAAPool(pool).reinvest(msg.sender);
         _updateProdutivity(pool);
+    }
+    
+    function _innerTransfer(address _token, address _to, uint _amount) internal {
+        if(_token == IConfig(config).WETH()) {
+            IWETH(_token).withdraw(_amount);
+            TransferHelper.safeTransferETH(_to, _amount);
+        } else {
+            TransferHelper.safeTransfer(_token, _to, _amount);
+        }
     }
 
     function _updateProdutivity(address _pool) internal {

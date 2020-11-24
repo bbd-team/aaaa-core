@@ -10,6 +10,7 @@ import AAAAToken from '../build/AAAAToken.json';
 import AAAAShare from '../build/AAAAShare.json';
 import AAAAQuery from '../build/AAAAQuery.json';
 import AAAABallot from '../build/AAAABallot.json';
+import WETH from '../build/WETH9.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
 import MasterChef from '../build/SushiMasterChef.json';
@@ -36,6 +37,7 @@ describe('deploy', () => {
 	let shareContract: Contract;
 	let masterChef 	: Contract;
 	let tokenUSDT 	: Contract;
+	let tokenWETH 	: Contract;
 	let tokenLP	 	: Contract;
 	let poolContract: Contract;
 	let queryContract : Contract;
@@ -62,6 +64,7 @@ describe('deploy', () => {
 		mintContract  = await deployContract(walletDeveloper, AAAAMint);
 		platformContract  = await deployContract(walletDeveloper, AAAAPlatform);
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
+		tokenWETH = await deployContract(walletDeveloper, WETH);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
 		// tokenUSDT 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
 		tokenLP 	= await deployContract(walletMe, ERC20, ['SLP ETH/USDT', 'SLP ETH/USDT', 18, ethers.utils.parseEther('1000000')]);
@@ -103,7 +106,8 @@ describe('deploy', () => {
 			tokenContract.address,
 			shareContract.address,
 			governanceContract.address,
-			tokenUSDT.address
+			tokenUSDT.address,
+			tokenWETH.address
 		);
 		
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
