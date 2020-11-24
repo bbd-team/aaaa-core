@@ -29,8 +29,8 @@ contract AAAAConfig {
 
     uint public lastPriceBlock;
 
-    uint constant public DAY = 28800;
-    uint constant public HOUR = 1200;
+    uint public DAY = 6400;
+    uint public HOUR = 267;
     
     struct ConfigItem {
         uint min;
@@ -51,6 +51,14 @@ contract AAAAConfig {
     constructor() public {
         owner = msg.sender;
         developer = msg.sender;
+        uint id;
+        assembly {
+            id := chainid()
+        }
+        if(id != 1) {
+            DAY = 28800;
+            HOUR = 1200;
+        }
     }
     
     function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor, address _base) external {

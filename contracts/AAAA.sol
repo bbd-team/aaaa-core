@@ -141,8 +141,8 @@ contract AAAAPool is Configable, BaseMintField
         uint totalSupply = totalBorrow + remainSupply;
         uint baseInterests = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_BASE_INTERESTS);
         uint marketFrenzy = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_MARKET_FRENZY);
-
-        interestPerBlock = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply)).div(365 * 28800);
+        uint aDay = IConfig(config).DAY();
+        interestPerBlock = totalSupply == 0 ? 0 : baseInterests.add(totalBorrow.mul(marketFrenzy).div(totalSupply)).div(365 * aDay);
     }
 
     function updateLiquidation(uint _liquidation) internal

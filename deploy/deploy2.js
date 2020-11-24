@@ -15,9 +15,9 @@ const AAAAShare = require("../build/AAAAShare.json")
 const AAAAReward = require("../build/AAAAReward.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
 const AAAAQuery2 = require("../build/AAAAQuery2.json")
-const MasterChef = require("../build/MasterChef.json");
-const CakeLPStrategy = require("../build/CakeLPStrategy.json");
-const CakeLPStrategyFactory = require("../build/CakeLPStrategyFactory.json");
+const MasterChef = require("../build/SushiMasterChef.json");
+const SLPStrategy = require("../build/SLPStrategy.json");
+const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
 
 
@@ -26,7 +26,7 @@ let MASTERCHEF_ADDRESS = ""
 
 let tokens = {
   USDT: '',
-  BUSD: '',
+  USDC: '',
   LPREWARD: '',
   WBTC: '',
   BURGER: '',
@@ -44,7 +44,7 @@ let Contracts = {
   AAAAQuery: AAAAQuery,
   AAAAQuery2: AAAAQuery2,
   AAAADeploy: AAAADeploy,
-  CakeLPStrategyFactory: CakeLPStrategyFactory,
+  SLPStrategyFactory: SLPStrategyFactory,
 }
 
 let ContractAddress = {}
@@ -53,8 +53,6 @@ let config = {
     "url": "",
     "pk": "",
     "gasPrice": "10",
-    "mintInterestRate": "1000000000000000000",
-    "mintBorrowPower": "5000",
     "walletDev": "", 
     "walletTeam": "", 
     "walletSpare": "", 
@@ -110,7 +108,9 @@ async function deployTokens() {
     walletWithProvider
   )
   for (let k in tokens) {
-    let ins = await factory.deploy(k,k,'18','100000000000000000000000000',ETHER_SEND_CONFIG)
+    let decimals = '18'
+    if(k=='USDT') decimals = '6'
+    let ins = await factory.deploy(k,k,decimals,'100000000000000000000000000',ETHER_SEND_CONFIG)
     await waitForMint(ins.deployTransaction.hash)
     tokens[k] = ins.address
   }
@@ -187,12 +187,12 @@ async function fakeMasterChef() {
   await waitForMint(tx.hash)
 
   ins = new ethers.Contract(
-    ContractAddress['CakeLPStrategyFactory'],
-    CakeLPStrategyFactory.abi,
+    ContractAddress['SLPStrategyFactory'],
+    SLPStrategyFactory.abi,
     getWallet()
   )
   tx = await ins.initialize(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
-  console.log('CakeLPStrategyFactory initialize')
+  console.log('SLPStrategyFactory initialize')
   await waitForMint(tx.hash)
 }
 
@@ -228,6 +228,7 @@ async function initialize() {
       ContractAddress['AAAAToken'],
       ContractAddress['AAAAShare'],
       ContractAddress['AAAAGovernance'],
+      tokens['USDT'],
       ETHER_SEND_CONFIG
     )
     await waitForMint(tx.hash)
@@ -268,16 +269,8 @@ async function initialize() {
       getWallet()
     )
 
-    console.log('AAAADeploy setupConfig')
-    tx = await ins.setupConfig(ContractAddress['AAAAConfig'], ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    console.log('AAAADeploy setCakeMasterchef')
-    tx = await ins.setCakeMasterchef(ContractAddress['CakeLPStrategyFactory'], true, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
-
-    console.log('AAAADeploy initialize')
-    tx = await ins.initialize(ETHER_SEND_CONFIG)
+    console.log('AAAADeploy setMasterchef')
+    tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], true, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
 
     console.log('AAAADeploy changeBallotByteHash')
@@ -290,16 +283,16 @@ async function initialize() {
     console.log('AAAAConfig addMintToken')
     await waitForMint(tx.hash)
     console.log('AAAAConfig addMintToken')
-    tx = await ins.addMintToken(tokens['BUSD'], ETHER_SEND_CONFIG)
+    tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
 
     await fakeMasterChef()
 
     // for pool
-    console.log('AAAADeploy createPoolForCake')
-    tx = await ins.createPoolForCake(tokens['USDT'], LP1_ADDRESS, 1, ETHER_SEND_CONFIG)
+    console.log('AAAADeploy createPool')
+    tx = await ins.createPool(tokens['USDT'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
-    tx = await ins.createPoolForCake(tokens['BUSD'], LP1_ADDRESS, 1, ETHER_SEND_CONFIG)
+    tx = await ins.createPool(tokens['USDC'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
      
     console.log('transfer...')
@@ -321,11 +314,11 @@ async function transfer() {
             ERC20.abi,
             getWallet()
           )
-        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
+        tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
 
         ins = new ethers.Contract(
-          tokens['BUSD'],
+          tokens['USDC'],
           ERC20.abi,
           getWallet()
         )

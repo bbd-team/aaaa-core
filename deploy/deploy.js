@@ -45,8 +45,6 @@ let config = {
     "url": "",
     "pk": "",
     "gasPrice": "10",
-    "mintInterestRate": "1000000000000000000",
-    "mintBorrowPower": "5000",
     "walletDev": "", 
     "walletTeam": "", 
     "walletSpare": "", 

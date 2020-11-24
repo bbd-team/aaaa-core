@@ -296,7 +296,7 @@ contract AAAAQuery {
     function queryMintToken(address user) public view returns (MintTokenStruct memory info) {
         address token = IConfig(config).mint();
         info.mintCumulation = IAAAAMint(token).mintCumulation();
-        //info.maxSupply = IConfig(config).params(ConfigNames.AAAA_MAX_SUPPLY);
+        info.maxSupply = IAAAAMint(token).maxSupply();
         info.takeBorrow = IAAAAMint(token).takeBorrowWithAddress(user);
         info.takeLend = IAAAAMint(token).takeLendWithAddress(user);
     }

@@ -22,12 +22,11 @@ interface IConfig {
     function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external;
     function isMintToken(address _token) external view returns (bool);
     function changeDeveloper(address _developer) external;
+    function setValue(bytes32 _key, uint _value) external;
 }
 
 interface IAAAAMint {
-    function initialize() external;
-    function changeBorrowPower(uint _value) external;
-    function changeInterestRatePerBlock(uint value) external returns (bool);
+    function sync() external;
 }
 
 interface IAAAAShare {
@@ -53,11 +52,7 @@ interface IMasterChef {
     function cake() external view returns(address);
 }
 
-interface ICakeLPStrategy {
-    function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) external;
-}
-
-interface ICakeLPStrategyFactory {
+interface ILPStrategyFactory {
     function createStrategy(address _collateralToken, address _poolAddress, uint _lpPoolpid) external returns (address _strategy);
 }
 
@@ -68,8 +63,8 @@ interface IAAAAPlatform {
 contract AAAADeploy {
     address public owner;
     address public config;
-    address public cakeLPStrategyFactory;
-    bool public cakeLPStrategyCanMint;
+    address public LPStrategyFactory;
+    bool public LPStrategyCanMint;
 
     modifier onlyOwner() {
         require(msg.sender == owner, 'OWNER FORBIDDEN');
@@ -89,23 +84,17 @@ contract AAAADeploy {
         IConfig(config).changeDeveloper(_developer);
     }
     
-    function setCakeMasterchef(address _cakeLPStrategyFactory, bool _cakeLPStrategyCanMint) onlyOwner external {
-        cakeLPStrategyFactory = _cakeLPStrategyFactory;
-        cakeLPStrategyCanMint = _cakeLPStrategyCanMint;
+    function setMasterchef(address _LPStrategyFactory, bool _LPStrategyCanMint) onlyOwner external {
+        LPStrategyFactory = _LPStrategyFactory;
+        LPStrategyCanMint = _LPStrategyCanMint;
     }
 
-    function initialize() onlyOwner public {
-        require(config != address(0), "ZERO ADDRESS");
-        IAAAAMint(IConfig(config).mint()).initialize();
-        IAAAAToken(IConfig(config).token()).initialize();
-    }
-
-    function createPoolForCake(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
-        if(cakeLPStrategyCanMint) {
+    function createPool(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
+        if(LPStrategyCanMint) {
             require(IConfig(config).isMintToken(_lendToken), 'REQUEST ADD MINT TOKEN FIRST');
         }
         address pool = IAAAAFactory(IConfig(config).factory()).createPool(_lendToken, _collateralToken);
-        address strategy = ICakeLPStrategyFactory(cakeLPStrategyFactory).createStrategy(_collateralToken, pool, _lpPoolpid);
+        address strategy = ILPStrategyFactory(LPStrategyFactory).createStrategy(_collateralToken, pool, _lpPoolpid);
         IAAAAPlatform(IConfig(config).platform()).switchStrategy(_lendToken, _collateralToken, strategy);
     }
 
@@ -115,6 +104,11 @@ contract AAAADeploy {
 
     function addMintToken(address _token) onlyOwner external {
         IConfig(config).addMintToken(_token);
+    }
+
+    function changeMintPerBlock(uint _value) onlyOwner external {
+        IConfig(config).setValue(ConfigNames.MINT_AMOUNT_PER_BLOCK, _value);
+        IAAAAMint(IConfig(config).mint()).sync();
     }
 
   }

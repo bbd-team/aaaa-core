@@ -136,7 +136,7 @@ contract BaseRewardField {
     function _mint(address user) internal virtual lock returns (uint) {
         _update();
         _audit(user);
-        require(users[user].rewardEarn > 0, "NOTHING TO MINT");
+        require(users[user].rewardEarn > 0, "NOTHING TO MINT REWARD");
         uint amount = users[user].rewardEarn;
         TransferHelper.safeTransfer(shareToken, msg.sender, amount);
         users[user].rewardEarn = 0;
