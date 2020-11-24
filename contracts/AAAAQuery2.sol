@@ -114,7 +114,6 @@ contract AAAAQuery2 {
         uint INTEREST_BUYBACK_SHARE;
         uint CHANGE_PRICE_DURATION;
         uint CHANGE_PRICE_PERCENT;
-        uint MINT_BORROW_PERCENT;
     }
 
     struct ConfigValueStruct {
@@ -135,6 +134,8 @@ contract AAAAQuery2 {
         uint POOL_MARKET_FRENZY;
         uint POOL_PLEDGE_RATE;
         uint POOL_LIQUIDATION_RATE;
+        uint POOL_MINT_BORROW_PERCENT;
+        uint POOL_MINT_POWER;
         address lpToken0;
         address lpToken1;
         string lpToken0Symbol;
@@ -162,7 +163,6 @@ contract AAAAQuery2 {
         info.INTEREST_BUYBACK_SHARE = IConfig(config).getValue(ConfigNames.INTEREST_BUYBACK_SHARE);
         info.CHANGE_PRICE_DURATION = IConfig(config).getValue(ConfigNames.CHANGE_PRICE_DURATION);
         info.CHANGE_PRICE_PERCENT = IConfig(config).getValue(ConfigNames.CHANGE_PRICE_PERCENT);
-        //info.MINT_BORROW_PERCENT = IConfig(config).getValue(ConfigNames.MINT_BORROW_PERCENT);
         return info;
     }
 
@@ -176,6 +176,8 @@ contract AAAAQuery2 {
         info.POOL_MARKET_FRENZY = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MARKET_FRENZY);
         info.POOL_PLEDGE_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
         info.POOL_LIQUIDATION_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
+        info.POOL_MINT_BORROW_PERCENT = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MINT_BORROW_PERCENT);
+        info.POOL_MINT_POWER = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MINT_POWER);
         info.lpToken0 = ISwapPair(info.collateralToken).token0();
         info.lpToken1 = ISwapPair(info.collateralToken).token1();
         info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
@@ -225,7 +227,7 @@ contract AAAAQuery2 {
     }
 
     function getConfigCommonValues() public view returns (ConfigValueStruct[] memory list){
-        list = new ConfigValueStruct[](10);
+        list = new ConfigValueStruct[](9);
         list[0] = getConfigCommonValue(ConfigNames.PROPOSAL_VOTE_DURATION, 'PROPOSAL_VOTE_DURATION');
         list[1] = getConfigCommonValue(ConfigNames.PROPOSAL_EXECUTE_DURATION, 'PROPOSAL_EXECUTE_DURATION');
         list[2] = getConfigCommonValue(ConfigNames.PROPOSAL_CREATE_COST, 'PROPOSAL_CREATE_COST');
@@ -235,16 +237,17 @@ contract AAAAQuery2 {
         list[6] = getConfigCommonValue(ConfigNames.INTEREST_BUYBACK_SHARE, 'INTEREST_BUYBACK_SHARE');
         list[7] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_DURATION, 'CHANGE_PRICE_DURATION');
         list[8] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_PERCENT, 'CHANGE_PRICE_PERCENT');
-        //list[9] = getConfigCommonValue(ConfigNames.MINT_BORROW_PERCENT, 'MINT_BORROW_PERCENT');
         return list;
     }
 
     function getConfigPoolValues(address _pair) public view returns (ConfigValueStruct[] memory list){
-        list = new ConfigValueStruct[](4);
+        list = new ConfigValueStruct[](6);
         list[0] = getConfigValue(_pair, ConfigNames.POOL_BASE_INTERESTS, 'POOL_BASE_INTERESTS');
         list[1] = getConfigValue(_pair, ConfigNames.POOL_MARKET_FRENZY, 'POOL_MARKET_FRENZY');
         list[2] = getConfigValue(_pair, ConfigNames.POOL_PLEDGE_RATE, 'POOL_PLEDGE_RATE');
         list[3] = getConfigValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE, 'POOL_LIQUIDATION_RATE');
+        list[4] = getConfigValue(_pair, ConfigNames.POOL_MINT_BORROW_PERCENT, 'POOL_MINT_BORROW_PERCENT');
+        list[5] = getConfigValue(_pair, ConfigNames.POOL_MINT_POWER, 'POOL_MINT_POWER');
         return list;
     }
 }
