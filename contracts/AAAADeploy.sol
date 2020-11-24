@@ -84,17 +84,12 @@ contract AAAADeploy {
         IConfig(config).changeDeveloper(_developer);
     }
     
-    function setCakeMasterchef(address _LPStrategyFactory, bool _LPStrategyCanMint) onlyOwner external {
+    function setMasterchef(address _LPStrategyFactory, bool _LPStrategyCanMint) onlyOwner external {
         LPStrategyFactory = _LPStrategyFactory;
         LPStrategyCanMint = _LPStrategyCanMint;
     }
 
-    function initialize() onlyOwner public {
-        require(config != address(0), "ZERO ADDRESS");
-        IAAAAToken(IConfig(config).token()).initialize();
-    }
-
-    function createPoolForLp(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
+    function createPool(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
         if(LPStrategyCanMint) {
             require(IConfig(config).isMintToken(_lendToken), 'REQUEST ADD MINT TOKEN FIRST');
         }

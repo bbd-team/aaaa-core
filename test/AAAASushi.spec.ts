@@ -13,10 +13,10 @@ import AAAABallot from '../build/AAAABallot.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
 import StakingReward from '../build/StakingRewards.json';
-import MasterChef from '../build/MasterChef.json';
+import SushiMasterChef from '../build/SushiMasterChef.json';
 import StakingRewardFactory from '../build/StakingRewardsFactory.json';
 import UniLPStrategy from '../build/UniLPStrategy.json';
-import CakeLPStrategy from '../build/CakeLPStrategy.json';
+import SLPStrategy from '../build/SLPStrategy.json';
 import { BigNumber as BN } from 'bignumber.js'
 
 use(solidity);
@@ -60,6 +60,7 @@ describe('deploy', () => {
 	}
 
 	before(async () => {
+		console.log('before deploy...')
 		shareContract = await deployContract(walletDeveloper, AAAAShare);
 		configContract  = await deployContract(walletDeveloper, AAAAConfig);
 		factoryContract  = await deployContract(walletDeveloper, AAAAFactory, [], {gasLimit: 7000000});
@@ -72,12 +73,12 @@ describe('deploy', () => {
 		rewardToken = await deployContract(walletDeveloper, ERC20, ['CAKE', 'CAKE', 18, ethers.utils.parseEther('1000000')]);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
 		governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
-		masterChef  = await deployContract(walletDeveloper, MasterChef, 
+		masterChef  = await deployContract(walletDeveloper, SushiMasterChef, 
 			[rewardToken.address, rewardToken.address, walletDeveloper.address, ethers.utils.parseEther('1'), 0]);
 
 		await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
 
-		console.log((await masterChef.poolInfo(1)).lpToken);
+		console.log('masterChef 0 lp:', (await masterChef.poolInfo(0)).lpToken);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);
@@ -142,6 +143,7 @@ describe('deploy', () => {
 		]);
 		//await shareContract.connect(walletDeveloper).initialize();
 		//await tokenContract.connect(walletDeveloper).initialize();
+
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
 		let developer = await configContract.connect(walletDeveloper).developer();
@@ -149,14 +151,15 @@ describe('deploy', () => {
 		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
 		
 		await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
+		await configContract.connect(walletPrice).setTokenPrice([tokenUSDT.address, tokenLP.address],  [ethers.utils.parseEther('1'), ethers.utils.parseEther('0.02')]);
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
 
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
 
 		// strategy = await deployContract(walletMe, UniLPStrategy, [rewardToken.address, tokenLP.address, poolContract.address, stakingReward.address]);
-		strategy = await deployContract(walletDeveloper, CakeLPStrategy, []);
-		await strategy.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 1);
+		strategy = await deployContract(walletDeveloper, SLPStrategy, []);
+		await strategy.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 0);
 
 		console.log(strategy.address);
 		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy.address)).wait();
@@ -169,10 +172,16 @@ describe('deploy', () => {
 		await (await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'))).wait();
 		await (await tokenLP.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'))).wait();
 		await (await tokenUSDT.connect(walletOther).transfer(walletMe.address, ethers.utils.parseEther('100000'))).wait();
+
+		await (await tokenContract.connect(walletDeveloper).approve(mintContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await mintContract.connect(walletDeveloper).addMintAmount(ethers.utils.parseEther('100000'))).wait();
 	})
 
 	it("simple test", async () => {
-		//await (await mintContract.connect(walletDeveloper).changeInterestRatePerBlock(ethers.utils.parseEther('2000'))).wait();
+		console.log('simple test...')
+		await (await configContract.connect(walletDeveloper).setValue(ethers.utils.formatBytes32String("MINT_AMOUNT_PER_BLOCK"), ethers.utils.parseEther('2000')))
+		await (await mintContract.connect(walletDeveloper).sync()).wait();
+
 		let pool = await factoryContract.connect(walletDeveloper).getPool(tokenUSDT.address, tokenLP.address);
 		await (await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
 		const poolContract  = new Contract(pool, AAAA.abi, provider).connect(walletMe);
@@ -182,30 +191,31 @@ describe('deploy', () => {
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('1000');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('1000');
 
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
+		console.log("1111", convertBigNumber(await poolContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
+
+
 		await (await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'))).wait();
 		expect(convertBigNumber(await tokenUSDT.balanceOf(walletMe.address), 1e18)).to.equals('99500');
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('500');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('500');
 
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+		console.log("aaaa", convertBigNumber(await tokenContract.balanceOf(poolContract.address), 1));
+		console.log("bbbb", convertBigNumber(await mintContract.connect(walletMe).takeWithAddress(poolContract.address), 1));
+		console.log("2222", convertBigNumber(await poolContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
+		
 		await (await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'))).wait();
-		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+
 		expect(convertBigNumber(await tokenUSDT.balanceOf(walletMe.address), 1e18)).to.equals('100000');
 
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('0');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('0');
 
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-		await (await mintContract.connect(walletMe).mintLender()).wait();
+		console.log("3333", convertBigNumber(await poolContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
+		await (await poolContract.connect(walletMe).mint()).wait();
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletMe.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletTeam.address), 1));
 		console.log(convertBigNumber(await tokenContract.balanceOf(walletSpare.address), 1));
-		console.log(convertBigNumber(await mintContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
-
-		await governanceContract.connect(walletMe).createProposal(
-			address0, ethers.utils.formatBytes32String("PROPOSAL_CREATE_COST"), ethers.utils.parseEther('100'), "", "", '0x'+AAAABallot.bytecode, {gasLimit: 8000000});
+		console.log(convertBigNumber(await poolContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 	})
 
 	async function sevenInfo() {

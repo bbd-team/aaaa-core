@@ -77,7 +77,7 @@ describe('deploy', () => {
 
 		await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
 
-		console.log((await masterChef.poolInfo(1)).lpToken);
+		console.log('masterChef 0 lp:', (await masterChef.poolInfo(1)).lpToken);
 
 		await getBlockNumber();
 		// stakingRewardFactory = await deployContract(walletMe, StakingRewardFactory, [rewardToken.address, 50]);

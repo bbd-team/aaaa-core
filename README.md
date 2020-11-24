@@ -1,5 +1,18 @@
 # AAAA-core
 
+# Main
+```
+
+-USDC-ETH
+-ETH-USDT
+-WBTC-ETH
+-DAI-ETH
+-SUSHI-ETH
+-YFI-ETH
+-LINK-ETH
+-sUSD-ETH
+
+```
 
 # BSC Main
 ```
