@@ -42,7 +42,8 @@ contract BaseMintField is Configable {
     event BorrowerProductivityDecreased (address indexed user, uint value);
     event LenderProductivityIncreased (address indexed user, uint value);
     event LenderProductivityDecreased (address indexed user, uint value);
-    event Mint(address indexed user, uint userAmount);
+    event MintLender(address indexed user, uint userAmount);
+    event MintBorrower(address indexed user, uint userAmount);
 
     // Update reward variables of the given pool to be up-to-date.
     function _update() internal virtual {
@@ -206,6 +207,7 @@ contract BaseMintField is Configable {
             uint amount = borrowers[msg.sender].rewardEarn;
             _mintDistribution(msg.sender, amount);
             borrowers[msg.sender].rewardEarn = 0;
+            emit MintBorrower(msg.sender, amount);
             return amount;
         }
     }
@@ -217,6 +219,7 @@ contract BaseMintField is Configable {
             uint amount = lenders[msg.sender].rewardEarn;
             _mintDistribution(msg.sender, amount);
             lenders[msg.sender].rewardEarn = 0;
+            emit MintLender(msg.sender, amount);
             return amount;
         }
     }
@@ -240,6 +243,5 @@ contract BaseMintField is Configable {
            mintedShare += amount;
            TransferHelper.safeTransfer(IConfig(config).token(), user, amount);
         }
-        emit Mint(user, amount);
     }
 }
