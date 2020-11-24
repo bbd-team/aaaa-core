@@ -108,20 +108,10 @@ contract AAAAPool is Configable, BaseMintField
         factory = msg.sender;
     }
 
-    // function init(address _supplyToken, uint _supplyDecimal, address _collateralToken, uint _collateralDecimal) external onlyFactory
     function init(address _supplyToken, address _collateralToken) external onlyFactory
     {
         supplyToken = _supplyToken;
         collateralToken = _collateralToken;
-
-        // supplyDecimal = _supplyDecimal;
-        // collateralDecimal = _collateralDecimal;
-
-        // IConfig(config).setPoolParameter(address(this), bytes32("baseInterests"), 2 * 1e17);
-        // IConfig(config).setPoolParameter(address(this), bytes32("marketFrenzy"), 1 * 1e18);
-        // IConfig(config).setPoolParameter(address(this), bytes32("pledgeRate"), 6 * 1e17);
-        // IConfig(config).setPoolParameter(address(this), bytes32("pledgePrice"), 2 * 1e16);
-        // IConfig(config).setPoolParameter(address(this), bytes32("liquidationRate"), 90 * 1e16);
 
         lastInterestUpdate = block.number;
     }
@@ -154,7 +144,8 @@ contract AAAAPool is Configable, BaseMintField
     function deposit(uint amountDeposit, address from) public onlyPlatform
     {
         require(amountDeposit > 0, "AAAA: INVALID AMOUNT");
-        TransferHelper.safeTransferFrom(supplyToken, from, address(this), amountDeposit);
+        uint amountIn = IERC20(supplyToken).balanceOf(address(this)).sub(remainSupply);
+        require(amountIn == amountDeposit, "AAAA: INVALID AMOUNT");
 
         updateInterests();
 
@@ -205,24 +196,6 @@ contract AAAAPool is Configable, BaseMintField
         emit Reinvest(from, reinvestAmount);
     }
 
-    function getWithdrawAmount(address from) external view returns (uint withdrawAmount, uint interestAmount, uint liquidationAmount)
-    {
-        uint totalSupply = totalBorrow + remainSupply;
-        uint _interestPerSupply = interestPerSupply.add(totalSupply == 0 ? 0 : getInterests().mul(block.number - lastInterestUpdate).mul(totalBorrow).div(totalSupply));
-        uint _totalInterest = supplys[from].interests.add(_interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
-        liquidationAmount = supplys[from].liquidation.add(liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].liquidationSettled));
-
-        uint platformShare = _totalInterest.mul(IConfig(config).getValue(ConfigNames.INTEREST_PLATFORM_SHARE)).div(1e18);
-        interestAmount = _totalInterest.sub(platformShare);
-
-        uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : liquidationAmount.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
-
-        if(withdrawLiquidationSupplyAmount > supplys[from].amountSupply.add(interestAmount))
-            withdrawAmount = 0;
-        else 
-            withdrawAmount = supplys[from].amountSupply.add(interestAmount).sub(withdrawLiquidationSupplyAmount);
-    }
-
     function distributePlatformShare(uint platformShare) internal 
     {
         require(platformShare <= remainSupply, "AAAA: NOT ENOUGH PLATFORM SHARE");
@@ -236,7 +209,7 @@ contract AAAAPool is Configable, BaseMintField
         }
     }
 
-    function withdraw(uint amountWithdraw, address from) public onlyPlatform
+    function withdraw(uint amountWithdraw, address from) public onlyPlatform returns(uint withdrawSupplyAmount, uint withdrawLiquidation)
     {
         require(amountWithdraw > 0, "AAAA: INVALID AMOUNT");
         require(amountWithdraw <= supplys[from].amountSupply, "AAAA: NOT ENOUGH BALANCE");
@@ -248,7 +221,7 @@ contract AAAAPool is Configable, BaseMintField
         supplys[from].interests = supplys[from].interests.add(interestPerSupply.mul(supplys[from].amountSupply).div(1e18).sub(supplys[from].interestSettled));
         supplys[from].liquidation = supplys[from].liquidation.add(addLiquidation);
 
-        uint withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
+        withdrawLiquidation = supplys[from].liquidation.mul(amountWithdraw).div(supplys[from].amountSupply);
         uint withdrawInterest = supplys[from].interests.mul(amountWithdraw).div(supplys[from].amountSupply);
 
         uint platformShare = withdrawInterest.mul(IConfig(config).getValue(ConfigNames.INTEREST_PLATFORM_SHARE)).div(1e18);
@@ -257,7 +230,7 @@ contract AAAAPool is Configable, BaseMintField
         distributePlatformShare(platformShare);
 
         uint withdrawLiquidationSupplyAmount = totalLiquidation == 0 ? 0 : withdrawLiquidation.mul(totalLiquidationSupplyAmount).div(totalLiquidation);
-        uint withdrawSupplyAmount = 0;
+        
         if(withdrawLiquidationSupplyAmount < amountWithdraw.add(userShare))
             withdrawSupplyAmount = amountWithdraw.add(userShare).sub(withdrawLiquidationSupplyAmount);
         
@@ -279,47 +252,39 @@ contract AAAAPool is Configable, BaseMintField
 
         _mintToPool();
         if(withdrawSupplyAmount > 0) {
-            TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount);
-            _decreaseLenderProductivity(from, withdrawSupplyAmount);
-        }  
+            TransferHelper.safeTransfer(supplyToken, msg.sender, withdrawSupplyAmount);
+        } 
+
+        _decreaseLenderProductivity(from, amountWithdraw); 
+
         if(withdrawLiquidation > 0) {
             if(collateralStrategy != address(0))
             {
                 ICollateralStrategy(collateralStrategy).claim(from, withdrawLiquidation, totalLiquidation.add(withdrawLiquidation));   
             }
-            TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
+            TransferHelper.safeTransfer(collateralToken, msg.sender, withdrawLiquidation);
         }
         
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
 
-    function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow)
+    function borrow(uint amountCollateral, uint repayAmount, uint expectBorrow, address from) public onlyPlatform
     {
-        // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
-        // uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-        // amountBorrow = pledgePrice.mul(amountCollateral).mul(pledgeRate).div(1e36);
-        
-        uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
-        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-        amountBorrow = pledgeAmount.mul(pledgeRate).div(1e18);
-    }
+        uint amountIn = IERC20(collateralToken).balanceOf(address(this));
+        if(collateralStrategy == address(0))
+            amountIn = amountIn.sub(totalPledge);
+            
+        require(amountIn == amountCollateral, "AAAA: INVALID AMOUNT");
 
-    function borrow(uint amountCollateral, uint expectBorrow, address from) public onlyPlatform
-    {
-        if(amountCollateral > 0) TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
+        // if(amountCollateral > 0) TransferHelper.safeTransferFrom(collateralToken, from, address(this), amountCollateral);
 
         updateInterests();
-
-        // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
-        // uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-
-        // uint maximumBorrow = pledgePrice.mul(borrows[from].amountCollateral + amountCollateral).mul(pledgeRate).div(1e36);
         
         uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-        uint maxAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[from].amountCollateral + amountCollateral);
+        uint maxAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[from].amountCollateral.add(amountCollateral));
 
         uint maximumBorrow = maxAmount.mul(pledgeRate).div(1e18);
-        uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
+        // uint repayAmount = getRepayAmount(borrows[from].amountCollateral, from);
 
         require(repayAmount + expectBorrow <= maximumBorrow, "AAAA: EXCEED MAX ALLOWED");
         require(expectBorrow <= remainSupply, "AAAA: INVALID BORROW");
@@ -348,26 +313,19 @@ contract AAAAPool is Configable, BaseMintField
 
         _mintToPool();
         if(expectBorrow > 0) {
-            TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
+            TransferHelper.safeTransfer(supplyToken, msg.sender, expectBorrow);
             _increaseBorrowerProductivity(from, expectBorrow);
         } 
         
         emit Borrow(from, expectBorrow, amountCollateral);
     }
 
-    function getRepayAmount(uint amountCollateral, address from) public view returns(uint repayAmount)
-    {
-        uint _interestPerBorrow = interestPerBorrow.add(getInterests().mul(block.number - lastInterestUpdate));
-        uint _totalInterest = borrows[from].interests.add(_interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18).sub(borrows[from].interestSettled));
-
-        uint repayInterest = borrows[from].amountCollateral == 0 ? 0 : _totalInterest.mul(amountCollateral).div(borrows[from].amountCollateral);
-        repayAmount = borrows[from].amountCollateral == 0 ? 0 : borrows[from].amountBorrow.mul(amountCollateral).div(borrows[from].amountCollateral).add(repayInterest);
-    }
-
     function repay(uint amountCollateral, address from) public onlyPlatform returns(uint repayAmount, uint repayInterest)
     {
         require(amountCollateral <= borrows[from].amountCollateral, "AAAA: NOT ENOUGH COLLATERAL");
         require(amountCollateral > 0, "AAAA: INVALID AMOUNT");
+
+        uint amountIn = IERC20(supplyToken).balanceOf(address(this)).sub(remainSupply);
 
         updateInterests();
 
@@ -386,12 +344,13 @@ contract AAAAPool is Configable, BaseMintField
 
         remainSupply = remainSupply.add(repayAmount.add(repayInterest));
 
-        if(collateralStrategy != address(0) && amountCollateral > 0)
+        if(collateralStrategy != address(0))
         {
             ICollateralStrategy(collateralStrategy).withdraw(from, amountCollateral);
         }
-        TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
-        TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
+        TransferHelper.safeTransfer(collateralToken, msg.sender, amountCollateral);
+        require(amountIn == repayAmount.add(repayInterest), "AAAA: INVALID AMOUNT");
+        // TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount.add(repayInterest));
         
         _mintToPool();
         _decreaseBorrowerProductivity(from, repayAmount);
