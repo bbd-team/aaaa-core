@@ -105,7 +105,6 @@ contract AAAAConfig {
         _setParams(ConfigNames.CHANGE_PRICE_DURATION, 0, 500, 100, 0);
         _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 100, 1, 20);
 
-        _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 0);
         _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 3000);
         _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 7142);
         _setParams(ConfigNames.AAAA_REWAED_MINT, 0, 0, 0, 5000);

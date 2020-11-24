@@ -60,8 +60,8 @@ contract AAAAGovernance is Configable {
         _checkValid(pool, key, value);
         
         if(key == ConfigNames.MINT_AMOUNT_PER_BLOCK) {
-            IAAAAMint(IConfig(config).mint()).sync();
             IConfig(config).setValue(key, value);
+            IAAAAMint(IConfig(config).mint()).sync();
         } else if(pool == address(0)) {
             IConfig(config).setValue(key, value);
         } else {

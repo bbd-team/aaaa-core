@@ -21,7 +21,6 @@ library ConfigNames {
     bytes32 public constant POOL_MINT_POWER = bytes32('POOL_MINT_POWER');
     
     //NOT GOVERNANCE
-    bytes32 public constant AAAA_MAX_SUPPLY = bytes32('AAAA_MAX_SUPPLY');
     bytes32 public constant AAAA_USER_MINT = bytes32('AAAA_USER_MINT');
     bytes32 public constant AAAA_TEAM_MINT = bytes32('AAAA_TEAM_MINT');
     bytes32 public constant AAAA_REWAED_MINT = bytes32('AAAA_REWAED_MINT');

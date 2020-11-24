@@ -172,8 +172,8 @@ describe('deploy', () => {
 		await (await tokenLP.connect(walletMe).transfer(walletOther.address, ethers.utils.parseEther('100000'))).wait();
 		await (await tokenUSDT.connect(walletOther).transfer(walletMe.address, ethers.utils.parseEther('100000'))).wait();
 
-		await (await tokenContract.connect(walletDeveloper).transfer(mintContract.address, ethers.utils.parseEther('100000'))).wait();
-		await (await configContract.connect(walletDeveloper).setValue(ethers.utils.formatBytes32String("AAAA_MAX_SUPPLY"), ethers.utils.parseEther('100000'))).wait();
+		await (await tokenContract.connect(walletDeveloper).approve(mintContract.address, ethers.utils.parseEther('1000000'))).wait();
+		await (await mintContract.connect(walletDeveloper).addMintAmount(ethers.utils.parseEther('100000'))).wait();
 	})
 
 	it("simple test", async () => {
