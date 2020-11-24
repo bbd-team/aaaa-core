@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.16;
 
-import './CakeLPStrategy.sol';
+import './SLPStrategy.sol';
 import './modules/Configable.sol';
 
-interface ICakeLPStrategy {
-    function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _cakeMasterChef, uint _lpPoolpid) external;
+interface ISLPStrategy {
+    function initialize(address _interestToken, address _collateralToken, address _poolAddress, address _sushiMasterChef, uint _lpPoolpid) external;
 }
 
-interface ICakeMasterChef {
-    function cake() external view returns(address);
+interface ISushiMasterChef {
+    function sushi() external view returns(address);
 }
 
 interface IAAAAPool {
     function collateralToken() external view returns(address);
 }
 
-contract CakeLPStrategyFactory is Configable {
+contract SLPStrategyFactory is Configable {
     address public masterchef;
     address[] public strategies;
 
@@ -35,13 +35,13 @@ contract CakeLPStrategyFactory is Configable {
         (address cToken, , ,) = IMasterChef(masterchef).poolInfo(_lpPoolpid);
         require(cToken == _collateralToken, 'Not found collateralToken in Masterchef');
         
-        bytes memory bytecode = type(CakeLPStrategy).creationCode;
+        bytes memory bytecode = type(SLPStrategy).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_collateralToken, _poolAddress, _lpPoolpid, block.number));
         assembly {
             _strategy := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        address _interestToken = ICakeMasterChef(masterchef).cake();
-        ICakeLPStrategy(_strategy).initialize(_interestToken, _collateralToken, _poolAddress, masterchef, _lpPoolpid);
+        address _interestToken = ISushiMasterChef(masterchef).sushi();
+        ISLPStrategy(_strategy).initialize(_interestToken, _collateralToken, _poolAddress, masterchef, _lpPoolpid);
         emit StrategyCreated(_strategy, _collateralToken, _poolAddress, _lpPoolpid);
         strategies.push(_strategy);
         return _strategy;
