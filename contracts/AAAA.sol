@@ -277,7 +277,11 @@ contract AAAAPool is Configable, BaseMintField
         supplys[from].interestSettled = supplys[from].amountSupply == 0 ? 0 : interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
-        if(withdrawSupplyAmount > 0) TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount); 
+        _mintToPool();
+        if(withdrawSupplyAmount > 0) {
+            TransferHelper.safeTransfer(supplyToken, from, withdrawSupplyAmount);
+            _decreaseLenderProductivity(from, withdrawSupplyAmount);
+        }  
         if(withdrawLiquidation > 0) {
             if(collateralStrategy != address(0))
             {
@@ -285,9 +289,7 @@ contract AAAAPool is Configable, BaseMintField
             }
             TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
         }
-
-        _mintToPool();
-        _decreaseLenderProductivity(from, amountWithdraw);
+        
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
 
