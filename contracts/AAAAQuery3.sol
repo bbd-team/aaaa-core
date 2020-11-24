@@ -31,7 +31,7 @@ contract AAAAQuery3 {
         address lpToken;       // Address of LP token contract.
         uint allocPoint;       // How many allocation points assigned to this pool. CAKEs to distribute per block.
         uint lastRewardBlock;  // Last block number that CAKEs distribution occurs.
-        uint accCakePerShare;  // Accumulated CAKEs per share, times 1e12. See below.
+        uint accPerShare;  // Accumulated CAKEs per share, times 1e12. See below.
         address lpToken0;
         address lpToken1;
         uint lpToken0Decimals;
@@ -51,7 +51,7 @@ contract AAAAQuery3 {
 
     function getPoolInfo(uint i) public view returns (PoolInfo memory info){
         info.id = i;
-        (info.lpToken, info.allocPoint, info.lastRewardBlock, info.accCakePerShare) = IMasterchef(masterchef).poolInfo(i);
+        (info.lpToken, info.allocPoint, info.lastRewardBlock, info.accPerShare) = IMasterchef(masterchef).poolInfo(i);
         info.lpToken0 = ISwapPair(info.lpToken).token0();
         info.lpToken1 = ISwapPair(info.lpToken).token1();
         info.lpToken0Decimals = IERC20(info.lpToken0).decimals();

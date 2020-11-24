@@ -53,8 +53,6 @@ let config = {
     "url": "",
     "pk": "",
     "gasPrice": "10",
-    "mintInterestRate": "1000000000000000000",
-    "mintBorrowPower": "5000",
     "walletDev": "", 
     "walletTeam": "", 
     "walletSpare": "", 
@@ -290,12 +288,12 @@ async function initialize() {
 
     await fakeMasterChef()
 
-    // // for pool
-    // console.log('AAAADeploy createPool')
-    // tx = await ins.createPool(tokens['USDT'], LP1_ADDRESS, 1, ETHER_SEND_CONFIG)
-    // await waitForMint(tx.hash)
-    // tx = await ins.createPool(tokens['USDC'], LP1_ADDRESS, 1, ETHER_SEND_CONFIG)
-    // await waitForMint(tx.hash)
+    // for pool
+    console.log('AAAADeploy createPool')
+    tx = await ins.createPool(tokens['USDT'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
+    tx = await ins.createPool(tokens['USDC'], LP1_ADDRESS, 0, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
      
     console.log('transfer...')
     await transfer()
