@@ -15,6 +15,8 @@ contract AAAAMint is Configable {
     uint public totalProductivity;
     uint public totalSupply;
     uint public accAmountPerShare;
+    uint public maxSupply;
+
     struct UserInfo {
         uint amount;     // How many LP tokens the user has provided.
         uint rewardDebt; // Reward debt. 
@@ -28,6 +30,11 @@ contract AAAAMint is Configable {
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint userAmount, uint teamAmount, uint rewardAmount, uint spareAmount);
 
+    function addMintAmount(uint _amount) external virtual {
+        TransferHelper.safeTransferFrom(IConfig(config).token(), msg.sender, address(this), _amount);
+        maxSupply = maxSupply.add(_amount);
+    }
+ 
     // External function call
     // This function adjust how many token will be produced by each block, eg:
     // changeAmountPerBlock(100)
@@ -36,8 +43,6 @@ contract AAAAMint is Configable {
         uint value = IConfig(config).getValue(ConfigNames.MINT_AMOUNT_PER_BLOCK);
         uint old = amountPerBlock;
         require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
-
-        uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
         require(maxSupply > totalSupply, 'NO_BALANCE_TO_MINT');
         
         _update();
@@ -72,7 +77,6 @@ contract AAAAMint is Configable {
     function _currentReward() internal virtual view returns (uint){
         uint256 multiplier = block.number.sub(lastRewardBlock);
         uint reward = multiplier.mul(amountPerBlock);
-        uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
         if(totalSupply.add(reward) > maxSupply) {
             reward = maxSupply.sub(totalSupply);
         }
