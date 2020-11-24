@@ -47,14 +47,14 @@ contract BaseMintField is Configable {
     // Update reward variables of the given pool to be up-to-date.
     function _update() internal virtual {
         uint256 reward = _currentReward();
+        totalShare += reward;
         if (totalLendProductivity.add(totalBorrowProducitivity) == 0 || reward == 0) {
-            totalShare += reward;
             return;
         }
         
-        uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000);
+        uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.POOL_MINT_BORROW_PERCENT)).div(10000);
         uint lendReward = reward.sub(borrowReward);
-
+     
         if(totalLendProductivity != 0 && lendReward > 0) {
             totalLendSupply = totalLendSupply.add(lendReward);
             accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
@@ -162,13 +162,12 @@ contract BaseMintField is Configable {
         uint _accAmountPerBorrow = accAmountPerBorrow;
         if (totalBorrowProducitivity != 0) {
             uint reward = _currentReward();
-            uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000);
+            uint borrowReward = reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.POOL_MINT_BORROW_PERCENT)).div(10000);
             
             _accAmountPerBorrow = accAmountPerBorrow.add(borrowReward.mul(1e12).div(totalBorrowProducitivity));
         }
 
-        uint amount = userInfo.amount.mul(_accAmountPerBorrow).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
-        return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
+        return userInfo.amount.mul(_accAmountPerBorrow).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
     }
     
     function takeLendWithAddress(address user) public view returns (uint) {
@@ -176,11 +175,10 @@ contract BaseMintField is Configable {
         uint _accAmountPerLend = accAmountPerLend;
         if (totalLendProductivity != 0) {
             uint reward = _currentReward();
-            uint lendReward = reward.sub(reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.MINT_BORROW_PERCENT)).div(10000)); 
+            uint lendReward = reward.sub(reward.mul(IConfig(config).getPoolValue(address(this), ConfigNames.POOL_MINT_BORROW_PERCENT)).div(10000)); 
             _accAmountPerLend = accAmountPerLend.add(lendReward.mul(1e12).div(totalLendProductivity));
         }
-        uint amount = userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
-        return amount.mul(IConfig(config).getValue(ConfigNames.AAAA_USER_MINT)).div(10000);
+        return userInfo.amount.mul(_accAmountPerLend).div(1e12).sub(userInfo.rewardDebt).add(userInfo.rewardEarn);
     }
 
     function takeBorrowWithBlock() external view returns (uint, uint) {
@@ -201,40 +199,26 @@ contract BaseMintField is Configable {
         return (takeAll(), block.number);
     }
 
-    function mintBorrower() external returns (uint) {
+    function _mintBorrower() internal returns (uint) {
         _update();
-        _auditBorrower(msg.sender);
-        require(borrowers[msg.sender].rewardEarn > 0, "NOTHING TO MINT");
-        uint amount = borrowers[msg.sender].rewardEarn;
-        _mintDistribution(msg.sender, amount);
-        borrowers[msg.sender].rewardEarn = 0;
-        return amount;
+        _auditBorrower(msg.sender); 
+        if(borrowers[msg.sender].rewardEarn > 0) {
+            uint amount = borrowers[msg.sender].rewardEarn;
+            _mintDistribution(msg.sender, amount);
+            borrowers[msg.sender].rewardEarn = 0;
+            return amount;
+        }
     }
     
-    function mintLender() external returns (uint) {
+    function _mintLender() internal returns (uint) {
         _update();
         _auditLender(msg.sender);
-        require(lenders[msg.sender].rewardEarn > 0, "NOTHING TO MINT");
-        uint amount = lenders[msg.sender].rewardEarn;
-        _mintDistribution(msg.sender, amount);
-        lenders[msg.sender].rewardEarn = 0;
-        return amount;
-    }
-
-    function mintAll() external returns (uint) {
-        _update();
-
-        _auditBorrower(msg.sender);
-        _auditLender(msg.sender);
-        uint borrowAmount = borrowers[msg.sender].rewardEarn;
-        uint lendAmount = lenders[msg.sender].rewardEarn;
-        uint amount = lendAmount.add(borrowAmount);
-        require(amount > 0, "NOTHING TO MINT");
-        _mintDistribution(msg.sender, amount);
-        borrowers[msg.sender].rewardEarn = 0;
-        lenders[msg.sender].rewardEarn = 0;
-
-        return amount;
+        if(lenders[msg.sender].rewardEarn > 0) {
+            uint amount = lenders[msg.sender].rewardEarn;
+            _mintDistribution(msg.sender, amount);
+            lenders[msg.sender].rewardEarn = 0;
+            return amount;
+        }
     }
 
     // Returns how many productivity a user has and global has.

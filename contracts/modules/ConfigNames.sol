@@ -17,7 +17,8 @@ library ConfigNames {
     bytes32 public constant POOL_MARKET_FRENZY = bytes32('POOL_MARKET_FRENZY');
     bytes32 public constant POOL_PLEDGE_RATE = bytes32('POOL_PLEDGE_RATE');
     bytes32 public constant POOL_LIQUIDATION_RATE = bytes32('POOL_LIQUIDATION_RATE');
-    bytes32 public constant MINT_BORROW_PERCENT = bytes32('MINT_BORROW_PERCENT');
+    bytes32 public constant POOL_MINT_BORROW_PERCENT = bytes32('POOL_MINT_BORROW_PERCENT');
+    bytes32 public constant POOL_MINT_POWER = bytes32('POOL_MINT_POWER');
     
     //NOT GOVERNANCE
     bytes32 public constant AAAA_MAX_SUPPLY = bytes32('AAAA_MAX_SUPPLY');

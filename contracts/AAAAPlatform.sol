@@ -88,7 +88,8 @@ contract AAAAPlatform is Configable {
     }
 
     function _updateProdutivity(address _pool) internal {
-        uint amount = IAAAAPool(_pool).getTotalAmount();
+        uint power = IConfig(config).getPoolValue(_pool, ConfigNames.POOL_MINT_POWER);
+        uint amount = IAAAAPool(_pool).getTotalAmount().mul(power).div(10000);
         (uint old, ) = IAAAAMint(IConfig(config).mint()).getProductivity(_pool);
         if(old > 0) {
             IAAAAMint(IConfig(config).mint()).decreaseProductivity(_pool, old);

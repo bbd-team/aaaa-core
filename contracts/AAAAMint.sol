@@ -28,19 +28,18 @@ contract AAAAMint is Configable {
     event ProductivityDecreased (address indexed user, uint value);
     event Mint(address indexed user, uint userAmount, uint teamAmount, uint rewardAmount, uint spareAmount);
 
-    function initialize() external onlyDeveloper {
-        _update();
-        amountPerBlock = IConfig(config).getValue(ConfigNames.MINT_AMOUNT_PER_BLOCK);
-    }
-
     // External function call
     // This function adjust how many token will be produced by each block, eg:
     // changeAmountPerBlock(100)
     // will set the produce rate to 100/block.
-    function changeInterestRatePerBlock(uint value) public virtual onlyGovernor returns (bool) {
+    function sync() public virtual returns (bool) {
+        uint value = IConfig(config).getValue(ConfigNames.MINT_AMOUNT_PER_BLOCK);
         uint old = amountPerBlock;
         require(value != old, 'AMOUNT_PER_BLOCK_NO_CHANGE');
 
+        uint maxSupply = IConfig(config).getValue(ConfigNames.AAAA_MAX_SUPPLY);
+        require(maxSupply > totalSupply, 'NO_BALANCE_TO_MINT');
+        
         _update();
         amountPerBlock = value;
 
@@ -61,7 +60,7 @@ contract AAAAMint is Configable {
         
         uint256 reward = _currentReward();
         if(reward == 0) {
-            changeInterestRatePerBlock(0);
+            amountPerBlock = 0;
         } else {
             totalSupply = totalSupply.add(reward);
 
@@ -132,7 +131,7 @@ contract AAAAMint is Configable {
         UserInfo storage userInfo = users[user];
         uint _accAmountPerShare = accAmountPerShare;
         // uint256 lpSupply = totalProductivity;
-        if (block.number > lastRewardBlock && totalProductivity != 0) {
+        if (totalProductivity != 0) {
             uint reward = _currentReward();
             _accAmountPerShare = _accAmountPerShare.add(reward.mul(1e12).div(totalProductivity));
         }

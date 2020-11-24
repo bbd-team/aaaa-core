@@ -24,7 +24,7 @@ interface IAAAABallot {
 
 interface IAAAAMint {
     function changeInterestRatePerBlock(uint value) external returns (bool);
-    function changeBorrowPower(uint _value) external;
+    function sync() external;
 }
 
 interface IAAAAShare {
@@ -60,9 +60,8 @@ contract AAAAGovernance is Configable {
         _checkValid(pool, key, value);
         
         if(key == ConfigNames.MINT_AMOUNT_PER_BLOCK) {
-            IAAAAMint(IConfig(config).mint()).changeInterestRatePerBlock(value);
-        } else if(key == ConfigNames.MINT_BORROW_PERCENT) {
-            IAAAAMint(IConfig(config).mint()).changeBorrowPower(value);
+            IAAAAMint(IConfig(config).mint()).sync();
+            IConfig(config).setValue(key, value);
         } else if(pool == address(0)) {
             IConfig(config).setValue(key, value);
         } else {

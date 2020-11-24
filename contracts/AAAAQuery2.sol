@@ -162,7 +162,7 @@ contract AAAAQuery2 {
         info.INTEREST_BUYBACK_SHARE = IConfig(config).getValue(ConfigNames.INTEREST_BUYBACK_SHARE);
         info.CHANGE_PRICE_DURATION = IConfig(config).getValue(ConfigNames.CHANGE_PRICE_DURATION);
         info.CHANGE_PRICE_PERCENT = IConfig(config).getValue(ConfigNames.CHANGE_PRICE_PERCENT);
-        info.MINT_BORROW_PERCENT = IConfig(config).getValue(ConfigNames.MINT_BORROW_PERCENT);
+        //info.MINT_BORROW_PERCENT = IConfig(config).getValue(ConfigNames.MINT_BORROW_PERCENT);
         return info;
     }
 
@@ -235,7 +235,7 @@ contract AAAAQuery2 {
         list[6] = getConfigCommonValue(ConfigNames.INTEREST_BUYBACK_SHARE, 'INTEREST_BUYBACK_SHARE');
         list[7] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_DURATION, 'CHANGE_PRICE_DURATION');
         list[8] = getConfigCommonValue(ConfigNames.CHANGE_PRICE_PERCENT, 'CHANGE_PRICE_PERCENT');
-        list[9] = getConfigCommonValue(ConfigNames.MINT_BORROW_PERCENT, 'MINT_BORROW_PERCENT');
+        //list[9] = getConfigCommonValue(ConfigNames.MINT_BORROW_PERCENT, 'MINT_BORROW_PERCENT');
         return list;
     }
 

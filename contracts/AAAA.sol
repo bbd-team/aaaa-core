@@ -15,6 +15,11 @@ interface ICollateralStrategy {
     function collateralToken() external returns (address);
 }
 
+interface IAAAAMint {
+    function take() external view returns (uint);
+    function mint() external returns (uint);
+}
+
 contract AAAAPool is Configable, BaseMintField
 {
     using SafeMath for uint;
@@ -161,6 +166,7 @@ contract AAAAPool is Configable, BaseMintField
         remainSupply = remainSupply.add(amountDeposit);
         
         totalStake = totalStake.add(amountDeposit);
+        _mintToPool();
         _increaseLenderProductivity(from, amountDeposit);
 
         supplys[from].interestSettled = interestPerSupply.mul(supplys[from].amountSupply).div(1e18);
@@ -190,6 +196,7 @@ contract AAAAPool is Configable, BaseMintField
         supplys[from].liquidationSettled = supplys[from].amountSupply == 0 ? 0 : liquidationPerSupply.mul(supplys[from].amountSupply).div(1e18);
 
         distributePlatformShare(platformShare);
+        _mintToPool();
         _increaseLenderProductivity(from, reinvestAmount);
 
         emit Reinvest(from, reinvestAmount);
@@ -276,6 +283,7 @@ contract AAAAPool is Configable, BaseMintField
             TransferHelper.safeTransfer(collateralToken, from, withdrawLiquidation);
         }
 
+        _mintToPool();
         _decreaseLenderProductivity(from, amountWithdraw);
         emit Withdraw(from, withdrawSupplyAmount, withdrawLiquidation, withdrawInterest);
     }
@@ -334,6 +342,7 @@ contract AAAAPool is Configable, BaseMintField
         borrows[from].interestSettled = interestPerBorrow.mul(borrows[from].amountBorrow).div(1e18);
 
         if(expectBorrow > 0) TransferHelper.safeTransfer(supplyToken, from, expectBorrow);
+        _mintToPool();
         _increaseBorrowerProductivity(from, expectBorrow);
         
         emit Borrow(from, expectBorrow, amountCollateral);
@@ -377,6 +386,7 @@ contract AAAAPool is Configable, BaseMintField
         TransferHelper.safeTransfer(collateralToken, from, amountCollateral);
         TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount + repayInterest);
         
+        _mintToPool();
         _decreaseBorrowerProductivity(from, repayAmount);
 
         emit Repay(from, repayAmount, amountCollateral, repayInterest);
@@ -426,10 +436,28 @@ contract AAAAPool is Configable, BaseMintField
         borrows[_user].interests = 0;
         borrows[_user].interestSettled = 0;
         
+        _mintToPool();
         _decreaseBorrowerProductivity(_user, borrowAmount);
     }
 
     function getTotalAmount() external view returns (uint) {
         return totalStake.add(totalBorrow);
+    }
+
+    function _mintToPool() internal {
+        if(IAAAAMint(IConfig(config).mint()).take() > 0) {
+            IAAAAMint(IConfig(config).mint()).mint();
+        }
+    }
+
+    function mint() external {
+        _mintToPool();
+        _mintLender();
+        _mintBorrower();
+    }
+
+    function _currentReward() internal override view returns (uint) {
+        uint remain = IAAAAMint(IConfig(config).mint()).take();
+        return remain.add(mintedShare).add(IERC20(IConfig(config).token()).balanceOf(address(this))).sub(totalShare);
     }
 }

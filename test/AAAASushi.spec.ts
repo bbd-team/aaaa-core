@@ -117,7 +117,8 @@ describe('deploy', () => {
 			mintContract.address, 
 			tokenContract.address,
 			shareContract.address,
-			governanceContract.address
+			governanceContract.address,
+			tokenUSDT.address
 		);
 		
 		await shareContract.connect(walletDeveloper).setupConfig(configContract.address);
@@ -140,7 +141,7 @@ describe('deploy', () => {
 			walletPrice.address
 		]);
 		//await shareContract.connect(walletDeveloper).initialize();
-		await tokenContract.connect(walletDeveloper).initialize();
+		//await tokenContract.connect(walletDeveloper).initialize();
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
 		let developer = await configContract.connect(walletDeveloper).developer();

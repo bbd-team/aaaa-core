@@ -102,11 +102,10 @@ contract AAAAConfig {
         _setParams(ConfigNames.MINT_AMOUNT_PER_BLOCK, 0, 10000 * 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 10000, 10000, 0, 10000);
-        _setParams(ConfigNames.CHANGE_PRICE_DURATION, 100, 500, 100, 500);
+        _setParams(ConfigNames.CHANGE_PRICE_DURATION, 0, 500, 100, 0);
         _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 100, 1, 20);
-        _setParams(ConfigNames.MINT_BORROW_PERCENT, 0, 10000, 1000, 5000);
 
-        _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 10000 * 1e18);
+        _setParams(ConfigNames.AAAA_MAX_SUPPLY, 0, 0, 0, 0);
         _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 3000);
         _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 7142);
         _setParams(ConfigNames.AAAA_REWAED_MINT, 0, 0, 0, 5000);
@@ -123,8 +122,9 @@ contract AAAAConfig {
         _setPoolParams(_pool, ConfigNames.POOL_BASE_INTERESTS, 0, 1e18, 1e16, 2e17);
         _setPoolParams(_pool, ConfigNames.POOL_MARKET_FRENZY, 0, 1e18, 1e16, 2e17);
         _setPoolParams(_pool, ConfigNames.POOL_PLEDGE_RATE, 0, 1e18, 1e16, 6e17);
-        _setPoolParams(_pool, ConfigNames.POOL_PRICE, 0, 0, 0, 2e16);
         _setPoolParams(_pool, ConfigNames.POOL_LIQUIDATION_RATE, 0, 1e18, 1e16, 9e17);
+        _setPoolParams(_pool, ConfigNames.POOL_MINT_POWER, 0, 0, 0, 10000);
+        _setPoolParams(_pool, ConfigNames.POOL_MINT_BORROW_PERCENT, 0, 10000, 1000, 5000);
     }
 
     function _setPoolValue(address _pool, bytes32 _key, uint _value) internal {
@@ -150,7 +150,7 @@ contract AAAAConfig {
     function setTokenPrice(address[] calldata _tokens, uint[] calldata _prices) external {
         uint duration = params[ConfigNames.CHANGE_PRICE_DURATION].value;
         uint maxPercent = params[ConfigNames.CHANGE_PRICE_PERCENT].value;
-        //require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
+        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
         require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
         require(_tokens.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
 
@@ -166,35 +166,6 @@ contract AAAAConfig {
                 } else {
                     uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
                     _setPrice(_tokens[i], _prices[i] < minPrice ? minPrice: _prices[i]);
-                }
-            } 
-        }
-
-        lastPriceBlock = block.number;
-    }
-
-    function setPoolPrice(address[] calldata _pools, uint[] calldata _prices) external {
-        uint duration = params[ConfigNames.CHANGE_PRICE_DURATION].value;
-        uint maxPercent = params[ConfigNames.CHANGE_PRICE_PERCENT].value;
-        require(block.number >= lastPriceBlock.add(duration), "AAAA: Price Duration");
-        require(msg.sender == wallets[bytes32("price")], "AAAA: Config FORBIDDEN");
-        require(_pools.length == _prices.length ,"AAAA: PRICES LENGTH MISMATCH");
-
-        for(uint i = 0; i < _pools.length; i++)
-        {
-            address cToken = IAAAAPool(_pools[i]).collateralToken();
-            uint balance = IERC20(cToken).balanceOf(_pools[i]);
-            if(balance == 0) {
-                _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i]);
-            } else {
-                uint currentPrice = poolParams[_pools[i]][ConfigNames.POOL_PRICE].value;
-                if(_prices[i] > currentPrice) {
-                    uint maxPrice = currentPrice.add(currentPrice.mul(maxPercent).div(10000));
-                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] > maxPrice ? maxPrice: _prices[i]);
-                    poolParams[_pools[i]][ConfigNames.POOL_PRICE].value = _prices[i] > maxPrice ? maxPrice: _prices[i];
-                } else {
-                    uint minPrice = currentPrice.sub(currentPrice.mul(maxPercent).div(10000));
-                    _setPoolValue(_pools[i], ConfigNames.POOL_PRICE, _prices[i] < minPrice ? minPrice: _prices[i]);
                 }
             } 
         }

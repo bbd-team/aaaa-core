@@ -10,6 +10,7 @@ interface ICollateralStrategy {
     function liquidation(address user) external;
     function claim(address user, uint amount, uint total) external;
     function exit(uint amount) external;
+    function stake(uint amount) external;
     function query() external view returns (uint);
     function mint() external;
 
@@ -51,6 +52,14 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
         masterChef = _sushiMasterChef;
         lpPoolpid = _lpPoolpid;
         _setShareToken(_interestToken);
+    }
+
+    function stake(uint amount) external override 
+    {
+        require(msg.sender == poolAddress, "INVALID CALLER");
+        TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
+        IERC20(collateralToken).approve(masterChef, amount);
+        IMasterChef(masterChef).deposit(lpPoolpid, amount);
     }
 
     function invest(address user, uint amount) external override
