@@ -59,6 +59,10 @@ contract AAAAPlatform is Configable {
         unlocked = 1;
     }
 
+    receive() external payable {
+        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+    }
+
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external lock {
         require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
