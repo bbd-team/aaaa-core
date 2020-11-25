@@ -22,7 +22,7 @@ contract WETH9 {
         emit Deposit(msg.sender, msg.value);
     }
     function withdraw(uint wad) public {
-        require(balanceOf[msg.sender] >= wad, "");
+        require(balanceOf[msg.sender] >= wad, "invalid withdraw");
         balanceOf[msg.sender] -= wad;
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
