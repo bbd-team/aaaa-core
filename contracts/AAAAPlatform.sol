@@ -134,14 +134,17 @@ contract AAAAPlatform is Configable {
         _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
         _updateProdutivity(pool);
     }
-    
-    function repayETH(address _lendToken, address _collateralToken, uint _amountCollateral) external payable lock {
+
+    function repayETH(address _lendToken, address _collateralToken, uint _amountCollateral) payable lock external {
+        require(IConfig(config).getValue(ConfigNames.REPAY_ENABLE) == 1, "NOT ENABLE NOW");
         require(_lendToken == IConfig(config).WETH(), "INVALID WETH POOL");
+
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, _amountCollateral, msg.sender);
-        
-        require(repayAmount == msg.value, "INVALID AMOUNT");
+
+        require(repayAmount == msg.value, "INVALID VALUE");
+
         IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
         TransferHelper.safeTransfer(_lendToken, pool, msg.value);
         

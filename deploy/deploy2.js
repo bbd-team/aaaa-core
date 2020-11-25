@@ -2,6 +2,7 @@ let fs = require("fs");
 let path = require("path");
 const ethers = require("ethers")
 const ERC20 = require("../build/ERC20TOKEN.json")
+const WETH9 = require("../build/WETH9.json")
 const UNIPAIR = require("../build/UniswapPairTest.json")
 const AAAABallot = require("../build/AAAABallot.json")
 const AAAAConfig = require("../build/AAAAConfig.json")
@@ -27,7 +28,6 @@ let MASTERCHEF_ADDRESS = ""
 let tokens = {
   USDT: '',
   USDC: '',
-  WETH: '',
   LPREWARD: '',
   WBTC: '',
   BURGER: '',
@@ -122,6 +122,15 @@ async function deployTokens() {
     await waitForMint(ins.deployTransaction.hash)
     tokens[k] = ins.address
   }
+
+  factory = new ethers.ContractFactory(
+    WETH9.abi,
+    WETH9.bytecode,
+    walletWithProvider
+  )
+  let ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  tokens['WETH'] = ins.address
 }
 
 async function deployLPs() {
@@ -279,6 +288,7 @@ async function initialize() {
       ContractAddress['AAAAShare'],
       ContractAddress['AAAAGovernance'],
       tokens['USDT'],
+      tokens['WETH'],
       ETHER_SEND_CONFIG
     )
     await waitForMint(tx.hash)
@@ -346,14 +356,6 @@ async function transfer() {
 
         ins = new ethers.Contract(
           tokens['USDC'],
-          ERC20.abi,
-          getWallet()
-        )
-        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
-        await waitForMint(tx.hash)
-
-        ins = new ethers.Contract(
-          tokens['WETH'],
           ERC20.abi,
           getWallet()
         )
