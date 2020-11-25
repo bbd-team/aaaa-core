@@ -31,6 +31,7 @@ interface IConfig {
     function getPoolValue(address _pool, bytes32 _key) external view returns (uint);
     function getParams(bytes32 _key) external view returns (uint, uint, uint, uint);
     function getPoolParams(address _pool, bytes32 _key) external view returns (uint, uint, uint, uint);
+    function convertTokenAmount(address _fromToken, address _toToken, uint _fromAmount) external view returns(uint toAmount);
 }
 
 interface IAAAAFactory {
@@ -40,6 +41,11 @@ interface IAAAAFactory {
     function allPools(uint index) external view returns(address);
     function isPool(address addr) external view returns(bool);
     function getPool(address lend, address collateral) external view returns(address);
+}
+
+interface IAAAAPlatform {
+    function getRepayAmount(address _lendToken, address _collateralToken, uint amountCollateral, address from) external view returns(uint);
+    function getMaximumBorrowAmount(address _lendToken, address _collateralToken, uint amountCollateral) external view returns(uint amountBorrow);
 }
 
 interface IAAAAPool {
@@ -55,7 +61,6 @@ interface IAAAAPool {
     function getRepayAmount(uint amountCollateral, address from) external view returns(uint);
     function liquidationHistory(address user, uint index) external view returns(uint,uint,uint);
     function liquidationHistoryLength(address user) external view returns(uint);
-    function getMaximumBorrowAmount(uint amountCollateral) external view returns(uint amountBorrow);
     function interestPerBorrow() external view returns(uint);
     function lastInterestUpdate() external view returns(uint);
     function interestPerSupply() external view returns(uint);
@@ -344,66 +349,26 @@ contract AAAAQuery {
         }
     }
 
-    function iterateLiquidationInfo(uint _startPoolIndex, uint _startIndex, uint _countLiquidation) public view returns (
-        LiquidationStruct[] memory liquidationList, 
-        uint liquidationCount,
-        uint poolIndex, 
-        uint userIndex)
-    {
-        require(_countLiquidation < 30, "EXCEEDING MAX ALLOWED");
-        liquidationList = new LiquidationStruct[](_countLiquidation);
-        uint poolCount = IAAAAFactory(IConfig(config).factory()).countPools();
-
-        require(_startPoolIndex < poolCount, "INVALID POOL INDEX");
-
-        for(uint i = _startPoolIndex; i < poolCount; i++) {
-            address pool = IAAAAFactory(IConfig(config).factory()).allPools(i);
-            uint liquidationRate = IConfig(config).getPoolValue(pool, ConfigNames.POOL_LIQUIDATION_RATE);
-            uint pledgePrice = IConfig(config).getPoolValue(pool, ConfigNames.POOL_PRICE);
-            uint borrowsCount = IAAAAPool(pool).numberBorrowers();
-            require(_startIndex < borrowsCount, "INVALID START INDEX");
-            poolIndex = i;
-
-            for(uint j = _startIndex; j < borrowsCount; j ++)
-            {
-                address user = IAAAAPool(pool).borrowerList(j);
-                (, uint amountCollateral, , , ) = IAAAAPool(pool).borrows(user);
-                uint repayAmount = IAAAAPool(pool).getRepayAmount(amountCollateral, user);
-                userIndex = j + 1;
-
-                if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
-                {
-                    liquidationList[liquidationCount].user             = user;
-                    liquidationList[liquidationCount].pool             = pool;
-                    liquidationList[liquidationCount].amountCollateral = amountCollateral;
-                    liquidationList[liquidationCount].expectedRepay    = repayAmount;
-                    liquidationList[liquidationCount].liquidationRate  = liquidationRate;
-
-                    liquidationCount ++;
-                    if(liquidationCount == _countLiquidation)
-                    {
-                        return (liquidationList, liquidationCount, poolIndex, userIndex);
-                    }
-                }
-            }
-        }
-    }
-
     function iteratePairLiquidationInfo(address _pair, uint _start, uint _end) public view returns (
         LiquidationStruct[] memory list)
     {
         require(_start <= _end && _start >= 0 && _end >= 0, "INVAID_PARAMTERS");
+        address supplyToken = IAAAAPool(_pair).supplyToken();
+        address collateralToken = IAAAAPool(_pair).collateralToken();
+
         uint count = IAAAAPool(_pair).numberBorrowers();
         if (_end > count) _end = count;
         count = _end - _start;
         uint index = 0;
         uint liquidationRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
-        uint pledgePrice = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PRICE);
+        uint pledgeRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
+        
         for(uint i = _start; i < _end; i++) {
             address user = IAAAAPool(_pair).borrowerList(i);
             (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
-            uint repayAmount = IAAAAPool(_pair).getRepayAmount(amountCollateral, user);
-            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
+            uint repayAmount = IAAAAPlatform(IConfig(config).platform()).getRepayAmount(supplyToken, collateralToken, amountCollateral, user);
+            if(repayAmount > pledgeAmount.mul(pledgeRate).div(1e18).mul(liquidationRate).div(1e18))
             {
                 index++;
             }
@@ -413,8 +378,9 @@ contract AAAAQuery {
         for(uint i = _start; i < _end; i++) {
             address user = IAAAAPool(_pair).borrowerList(i);
             (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
-            uint repayAmount = IAAAAPool(_pair).getRepayAmount(amountCollateral, user);
-            if(repayAmount > amountCollateral.mul(pledgePrice).div(1e18).mul(liquidationRate).div(1e18))
+            uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
+            uint repayAmount = IAAAAPlatform(IConfig(config).platform()).getRepayAmount(supplyToken, collateralToken, amountCollateral, user);
+            if(repayAmount > pledgeAmount.mul(pledgeRate).div(1e18).mul(liquidationRate).div(1e18))
             {
                 list[index].user             = user;
                 list[index].pool             = _pair;
@@ -455,7 +421,7 @@ contract AAAAQuery {
 
     function getCanMaxBorrowAmount(address _pair, address _user, uint _blocks) public view returns(uint) {
         (, uint amountCollateral, uint interestSettled, uint amountBorrow, uint interests) = IAAAAPool(_pair).borrows(_user);
-        uint maxBorrow = IAAAAPool(_pair).getMaximumBorrowAmount(amountCollateral);
+        uint maxBorrow = IAAAAPlatform(IConfig(config).platform()).getMaximumBorrowAmount(IAAAAPool(_pair).supplyToken(), IAAAAPool(_pair).collateralToken(), amountCollateral);
         uint poolBalance = IERC20(IAAAAPool(_pair).supplyToken()).balanceOf(_pair);
 
         uint _interestPerBorrow = IAAAAPool(_pair).interestPerBorrow().add(IAAAAPool(_pair).getInterests().mul(block.number+_blocks - IAAAAPool(_pair).lastInterestUpdate()));
