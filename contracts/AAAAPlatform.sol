@@ -59,7 +59,7 @@ contract AAAAPlatform is Configable {
         unlocked = 1;
     }
 
-    function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external {
+    function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external lock {
         require(IConfig(config).getValue(ConfigNames.DEPOSIT_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
@@ -80,7 +80,7 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
     
-    function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external {
+    function withdraw(address _lendToken, address _collateralToken, uint _amountWithdraw) external lock {
         require(IConfig(config).getValue(ConfigNames.WITHDRAW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
@@ -92,7 +92,7 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
     
-    function borrow(address _lendToken, address _collateralToken, uint _amountCollateral, uint _expectBorrow) external {
+    function borrow(address _lendToken, address _collateralToken, uint _amountCollateral, uint _expectBorrow) external lock {
         require(IConfig(config).getValue(ConfigNames.BORROW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
@@ -122,7 +122,7 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
     
-    function repay(address _lendToken, address _collateralToken, uint _amountCollateral) external {
+    function repay(address _lendToken, address _collateralToken, uint _amountCollateral) external lock {
         require(IConfig(config).getValue(ConfigNames.REPAY_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
@@ -135,7 +135,22 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
     
-    function liquidation(address _lendToken, address _collateralToken, address _user) external {
+    function repayETH(address _lendToken, address _collateralToken, uint _amountCollateral) external payable lock {
+        require(_lendToken == IConfig(config).WETH(), "INVALID WETH POOL");
+        address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
+        require(pool != address(0), "POOL NOT EXIST");
+        uint repayAmount = getRepayAmount(_lendToken, _collateralToken, _amountCollateral, msg.sender);
+        
+        require(repayAmount == msg.value, "INVALID AMOUNT");
+        IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
+        TransferHelper.safeTransfer(_lendToken, pool, msg.value);
+        
+        IAAAAPool(pool).repay(_amountCollateral, msg.sender);
+        _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
+        _updateProdutivity(pool);
+    }
+    
+    function liquidation(address _lendToken, address _collateralToken, address _user) external lock {
         require(IConfig(config).getValue(ConfigNames.LIQUIDATION_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
@@ -143,7 +158,7 @@ contract AAAAPlatform is Configable {
         _updateProdutivity(pool);
     }
 
-    function reinvest(address _lendToken, address _collateralToken) external {
+    function reinvest(address _lendToken, address _collateralToken) external lock {
         require(IConfig(config).getValue(ConfigNames.REINVEST_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
