@@ -26,7 +26,7 @@ contract CakeLPStrategyFactory is Configable {
         owner = msg.sender;
     }
 
-    function initialize(address _masterchef) public {
+    function initialize(address _masterchef) onlyOwner public {
         masterchef = _masterchef;
     }
 
