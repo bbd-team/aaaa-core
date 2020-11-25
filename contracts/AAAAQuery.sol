@@ -282,8 +282,9 @@ contract AAAAQuery {
                     outCount++;
                 }
             }
+            if(outCount == 0) return list;
             list = new PoolInfoStruct[](outCount);
-            uint index;
+            uint index = 0;
             for(uint i = 0;i < count;i++) {
                 PoolInfoStruct memory info = getPoolInfoByIndex(i);
                 if(info.supplyToken == token) {
@@ -292,6 +293,7 @@ contract AAAAQuery {
                 }
             }
         }
+        return list;
     }
 
     function queryToken(address user, address spender, address token) public view returns (TokenStruct memory info) {
