@@ -60,7 +60,7 @@ contract AAAAPlatform is Configable {
     }
 
     receive() external payable {
-        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+        
     }
 
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external lock {
