@@ -62,11 +62,10 @@ describe('deploy', () => {
 		configContract  = await deployContract(walletDeveloper, AAAAConfig);
 		factoryContract  = await deployContract(walletDeveloper, AAAAFactory, [], {gasLimit: 7000000});
 		mintContract  = await deployContract(walletDeveloper, AAAAMint);
-		platformContract  = await deployContract(walletDeveloper, AAAAPlatform);
+		platformContract  = await deployContract(walletDeveloper, AAAAPlatform, [], {gasLimit: 7000000});
 		tokenContract  = await deployContract(walletDeveloper, AAAAToken);
 		tokenWETH = await deployContract(walletDeveloper, WETH);
 		tokenUSDT 	= await deployContract(walletOther, ERC20, ['USDT', 'USDT', 18, ethers.utils.parseEther('1000000')]);
-		// tokenUSDT 	= await deployContract(walletMe, ERC20, ['File Coin', 'FIL', 18, ethers.utils.parseEther('1000000')]);
 		tokenLP 	= await deployContract(walletMe, ERC20, ['SLP ETH/USDT', 'SLP ETH/USDT', 18, ethers.utils.parseEther('1000000')]);
 		rewardToken = await deployContract(walletDeveloper, SushiToken);
 		queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
@@ -129,8 +128,6 @@ describe('deploy', () => {
 			walletSpare.address, 
 			walletPrice.address
 		]);
-		//await shareContract.connect(walletDeveloper).initialize();
-		//await tokenContract.connect(walletDeveloper).initialize();
 
 		let bytecodeHash = ethers.utils.keccak256('0x'+AAAABallot.bytecode);
 		console.log('hello world', bytecodeHash);
