@@ -202,7 +202,6 @@ describe('deploy', () => {
 		await (await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('500'))).wait();
 
 		expect(convertBigNumber(await tokenUSDT.balanceOf(walletMe.address), 1e18)).to.equals('100000');
-
 		expect(convertBigNumber((await poolContract.supplys(walletMe.address)).amountSupply, 1e18)).to.equals('0');
 		expect(convertBigNumber(await poolContract.remainSupply(), 1e18)).to.equals('0');
 
@@ -594,6 +593,37 @@ describe('deploy', () => {
 		{
 			console.log('not enough money to withdraw');
 		}
+	})
+
+	it("strategy test", async () => {
+		await(await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
+
+		let maxBorrow = await platformContract.getMaximumBorrowAmount(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'));
+		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1), 'USDT');
+		await(await platformContract.connect(walletOther).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'), maxBorrow)).wait();
+
+		//switch strategy
+		console.log("switch start");
+		let strategy2 = await deployContract(walletDeveloper, SLPStrategy, []);
+		await (await strategy2.connect(walletDeveloper).initialize(rewardToken.address, tokenLP.address, poolContract.address, masterChef.address, 0)).wait();
+		await (await platformContract.connect(walletDeveloper).switchStrategy(tokenUSDT.address, tokenLP.address, strategy2.address)).wait();
+		console.log("switch end");
+
+		await strategy.connect(walletOther).mint();
+		console.log("mint1", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+
+		await strategy2.connect(walletOther).mint();
+		console.log("mint2", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+
+		tx = await platformContract.connect(walletOther).repay(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'));
+		let receipt = await tx.wait()
+		console.log('repay gas:', receipt.gasUsed.toString());
+
+		await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
+		console.log('after withdraw: ', 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1));
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
 	})
 
 })
