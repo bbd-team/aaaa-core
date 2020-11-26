@@ -10,7 +10,7 @@ interface ICollateralStrategy {
     function liquidation(address user) external;
     function claim(address user, uint amount, uint total) external;
     function exit(uint amount) external;
-    function stake(uint amount) external;
+    function migrate(address old) external;
     function query() external view returns (uint);
     function mint() external;
 
@@ -35,6 +35,7 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
 
     address public poolAddress;
     address public masterChef;
+    address public old;
     uint public lpPoolpid;
 
     address public factory;
@@ -54,16 +55,25 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
         _setShareToken(_interestToken);
     }
 
-    function stake(uint amount) external override 
+    function migrate(address _old) external override 
     {
         require(msg.sender == poolAddress, "INVALID CALLER");
-        TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
-        IERC20(collateralToken).approve(masterChef, amount);
-        IMasterChef(masterChef).deposit(lpPoolpid, amount);
+        if(_old != address(0)) {
+            uint amount = IERC20(collateralToken).balanceOf(address(this));
+            if(amount > 0) {
+                IERC20(collateralToken).approve(masterChef, amount);
+                IMasterChef(masterChef).deposit(lpPoolpid, amount);
+            }
+
+            totalProductivity = BaseShareField(_old).totalProductivity();
+            old = _old;
+        }
     }
 
     function invest(address user, uint amount) external override
     {
+        _sync(user);
+
         require(msg.sender == poolAddress, "INVALID CALLER");
         TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
         IERC20(collateralToken).approve(masterChef, amount);
@@ -72,15 +82,19 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
     }
 
     function withdraw(address user, uint amount) external override
-    { 
+    {
+        _sync(user);
+
         require(msg.sender == poolAddress, "INVALID CALLER");
         IMasterChef(masterChef).withdraw(lpPoolpid, amount);
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
         _decreaseProductivity(user, amount);
     }
 
-
     function liquidation(address user) external override {
+        _sync(user);
+        _sync(msg.sender);
+
         require(msg.sender == poolAddress, "INVALID CALLER");
         uint amount = users[user].amount;
         _decreaseProductivity(user, amount);
@@ -92,6 +106,8 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
     }
 
     function claim(address user, uint amount, uint total) external override {
+        _sync(msg.sender);
+
         require(msg.sender == poolAddress, "INVALID CALLER");
         IMasterChef(masterChef).withdraw(lpPoolpid, amount);
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
@@ -108,6 +124,15 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
     }
 
+    function _sync(address user) internal 
+    {
+        if(old != address(0) && users[user].initialize == false) {
+            (uint amount, ) = BaseShareField(old).getProductivity(user);
+            users[user].amount = amount;
+            users[user].initialize = true;
+        } 
+    }
+
     function _currentReward() internal override view returns (uint) {
         return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(IMasterChef(masterChef).pendingSushi(lpPoolpid, address(this))).sub(totalShare);
     }
@@ -117,6 +142,8 @@ contract SLPStrategy is ICollateralStrategy, BaseShareField
     }
 
     function mint() external override {
+        _sync(msg.sender);
+        
         IMasterChef(masterChef).deposit(lpPoolpid, 0);
         uint amount = _mint(msg.sender);
         emit Mint(msg.sender, amount);

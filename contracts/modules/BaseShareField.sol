@@ -32,6 +32,7 @@ contract BaseShareField {
         uint amount;     // How many tokens the user has provided.
         uint rewardDebt; // Reward debt. 
         uint rewardEarn; // Reward earn and not minted
+        bool initialize; // already setup.
     }
 
     mapping(address => UserInfo) public users;

@@ -12,7 +12,7 @@ interface ICollateralStrategy {
     function liquidation(address user) external;
     function claim(address user, uint amount, uint total) external;
     function exit(uint amount) external;
-    function stake(uint amount) external;
+    function migrate(address old) external;
     function collateralToken() external returns (address);
 }
 
@@ -97,7 +97,11 @@ contract AAAAPool is Configable, BaseMintField
         if(_collateralStrategy != address(0))
         {
             require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
-            if(totalPledge > 0) ICollateralStrategy(_collateralStrategy).stake(totalPledge);
+
+            if(totalPledge > 0) {
+                TransferHelper.safeTransfer(collateralToken, _collateralStrategy, totalPledge);
+            }
+            ICollateralStrategy(_collateralStrategy).migrate(collateralStrategy);
         }
 
         collateralStrategy = _collateralStrategy;

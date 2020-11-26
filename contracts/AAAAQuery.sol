@@ -113,15 +113,15 @@ contract AAAAQuery {
         address pair;
         uint totalBorrow;
         uint totalPledge;
+        uint totalPledgeValue;
         uint remainSupply;
+        uint totalSupplyValue;
         uint borrowInterests;
         uint supplyInterests;
         address supplyToken;
         address collateralToken;
         uint8 supplyTokenDecimals;
         uint8 collateralTokenDecimals;
-        address lpToken0;
-        address lpToken1;
         string lpToken0Symbol;
         string lpToken1Symbol;
         string supplyTokenSymbol;
@@ -257,10 +257,13 @@ contract AAAAQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
-        info.lpToken0 = ISwapPair(info.collateralToken).token0();
-        info.lpToken1 = ISwapPair(info.collateralToken).token1();
-        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
-        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
+        address lpToken0 = ISwapPair(info.collateralToken).token0();
+        address lpToken1 = ISwapPair(info.collateralToken).token1();
+        info.lpToken0Symbol = IERC20(lpToken0).symbol();
+        info.lpToken1Symbol = IERC20(lpToken1).symbol();
+
+        info.totalSupplyValue = IConfig(config).convertTokenAmount(info.supplyToken, IConfig(config).base(), info.remainSupply.add(info.totalBorrow));
+        info.totalPledgeValue = IConfig(config).convertTokenAmount(info.collateralToken, IConfig(config).base(), info.totalPledge);
 
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);

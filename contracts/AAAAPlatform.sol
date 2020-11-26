@@ -60,7 +60,6 @@ contract AAAAPlatform is Configable {
     }
 
     receive() external payable {
-        
     }
 
     function deposit(address _lendToken, address _collateralToken, uint _amountDeposit) external lock {
@@ -147,13 +146,15 @@ contract AAAAPlatform is Configable {
         require(pool != address(0), "POOL NOT EXIST");
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, _amountCollateral, msg.sender);
 
-        require(repayAmount == msg.value, "INVALID VALUE");
+        require(repayAmount <= msg.value, "INVALID VALUE");
 
-        IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
-        TransferHelper.safeTransfer(_lendToken, pool, msg.value);
+        IWETH(IConfig(config).WETH()).deposit{value:repayAmount}();
+        TransferHelper.safeTransfer(_lendToken, pool, repayAmount);
         
         IAAAAPool(pool).repay(_amountCollateral, msg.sender);
         _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
+        if(msg.value > repayAmount) TransferHelper.safeTransferETH(msg.sender, msg.value.sub(repayAmount));
+
         _updateProdutivity(pool);
     }
     
