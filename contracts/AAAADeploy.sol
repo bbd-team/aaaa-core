@@ -111,4 +111,8 @@ contract AAAADeploy {
         IAAAAMint(IConfig(config).mint()).sync();
     }
 
+    function setShareToken(address _shareToken) onlyOwner external {
+        IAAAAShare(IConfig(config).share()).setShareToken(_shareToken);
+    }
+
   }

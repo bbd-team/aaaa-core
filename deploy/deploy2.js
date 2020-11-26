@@ -22,7 +22,6 @@ const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
 
 
-let LP1_ADDRESS = ""
 let MASTERCHEF_ADDRESS = ""
 
 let tokens = {
@@ -231,6 +230,10 @@ async function deployConfig() {
   console.log('AAAADeploy changeBallotByteHash')
   let codeHash = ethers.utils.keccak256('0x'+ AAAABallot.bytecode)
   tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+
+  console.log('AAAADeploy setShareToken')
+  tx = await ins.setShareToken(tokens['USDT'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   console.log('AAAADeploy addMintToken')
