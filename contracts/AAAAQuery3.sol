@@ -64,7 +64,7 @@ contract AAAAQuery3 {
     function getPoolInfoList(uint count) public view returns (PoolInfo[] memory list){
         list = new PoolInfo[](count);
         if(count > 0) {
-            for(uint i = 1; i < count; i++) {
+            for(uint i = 0; i < count; i++) {
                 list[i] = getPoolInfo(i);
             }
         }
