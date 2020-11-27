@@ -99,8 +99,9 @@ contract AAAAPlatform is Configable {
         require(IConfig(config).getValue(ConfigNames.BORROW_ENABLE) == 1, "NOT ENABLE NOW");
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
-        
-        TransferHelper.safeTransferFrom(_collateralToken, msg.sender, pool, _amountCollateral);
+        if(_amountCollateral > 0) {
+            TransferHelper.safeTransferFrom(_collateralToken, msg.sender, pool, _amountCollateral);
+        }
         
         (, uint borrowAmountCollateral, , , ) = IAAAAPool(pool).borrows(msg.sender);
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, borrowAmountCollateral, msg.sender);
@@ -115,8 +116,10 @@ contract AAAAPlatform is Configable {
         address pool = IAAAAFactory(IConfig(config).factory()).getPool(_lendToken, _collateralToken);
         require(pool != address(0), "POOL NOT EXIST");
         
-        IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
-        TransferHelper.safeTransfer(_collateralToken, pool, msg.value);
+        if(msg.value > 0) {
+            IWETH(IConfig(config).WETH()).deposit{value:msg.value}();
+            TransferHelper.safeTransfer(_collateralToken, pool, msg.value);
+        }
         
         (, uint borrowAmountCollateral, , , ) = IAAAAPool(pool).borrows(msg.sender);
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, borrowAmountCollateral, msg.sender);
@@ -131,7 +134,9 @@ contract AAAAPlatform is Configable {
         require(pool != address(0), "POOL NOT EXIST");
         uint repayAmount = getRepayAmount(_lendToken, _collateralToken, _amountCollateral, msg.sender);
         
-        TransferHelper.safeTransferFrom(_lendToken, msg.sender, pool, repayAmount);
+        if(repayAmount > 0) {
+            TransferHelper.safeTransferFrom(_lendToken, msg.sender, pool, repayAmount);
+        }
         
         IAAAAPool(pool).repay(_amountCollateral, msg.sender);
         _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
@@ -148,8 +153,10 @@ contract AAAAPlatform is Configable {
 
         require(repayAmount <= msg.value, "INVALID VALUE");
 
-        IWETH(IConfig(config).WETH()).deposit{value:repayAmount}();
-        TransferHelper.safeTransfer(_lendToken, pool, repayAmount);
+        if(repayAmount > 0) {
+            IWETH(IConfig(config).WETH()).deposit{value:repayAmount}();
+            TransferHelper.safeTransfer(_lendToken, pool, repayAmount);
+        }
         
         IAAAAPool(pool).repay(_amountCollateral, msg.sender);
         _innerTransfer(_collateralToken, msg.sender, _amountCollateral);
