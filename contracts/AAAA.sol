@@ -149,7 +149,7 @@ contract AAAAPool is Configable, BaseMintField
     {
         require(amountDeposit > 0, "AAAA: INVALID AMOUNT");
         uint amountIn = IERC20(supplyToken).balanceOf(address(this)).sub(remainSupply);
-        require(amountIn == amountDeposit, "AAAA: INVALID AMOUNT");
+        require(amountIn >= amountDeposit, "AAAA: INVALID AMOUNT");
 
         updateInterests();
 
@@ -357,7 +357,9 @@ contract AAAAPool is Configable, BaseMintField
         // TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount.add(repayInterest));
         
         _mintToPool();
-        _decreaseBorrowerProductivity(from, repayAmount);
+        if(repayAmount > 0) {
+            _decreaseBorrowerProductivity(from, repayAmount);
+        }
 
         emit Repay(from, repayAmount, amountCollateral, repayInterest);
     }
