@@ -610,10 +610,10 @@ describe('deploy', () => {
 		console.log("switch end");
 
 		await strategy.connect(walletOther).mint();
-		console.log("mint1", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+		console.log("mint1", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1e18));
 
 		await strategy2.connect(walletOther).mint();
-		console.log("mint2", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+		console.log("mint2", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1e18));
 
 		tx = await platformContract.connect(walletOther).repay(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'));
 		let receipt = await tx.wait()
