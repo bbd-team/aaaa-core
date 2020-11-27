@@ -22,7 +22,6 @@ const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
 
 
-let LP1_ADDRESS = ""
 let MASTERCHEF_ADDRESS = ""
 
 let tokens = {
@@ -188,7 +187,7 @@ async function deploy() {
     MasterChef.bytecode,
     walletWithProvider
   )
-  ins = await factory.deploy(tokens['LPREWARD'], tokens['LPREWARD'], config.walletDev, 20000000, 0, ETHER_SEND_CONFIG)
+  ins = await factory.deploy(tokens['LPREWARD'], config.walletDev, '100000000000000000000', '20000000', '20000000000', ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   MASTERCHEF_ADDRESS = ins.address
 }
@@ -231,6 +230,10 @@ async function deployConfig() {
   console.log('AAAADeploy changeBallotByteHash')
   let codeHash = ethers.utils.keccak256('0x'+ AAAABallot.bytecode)
   tx = await ins.changeBallotByteHash(codeHash, ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+
+  console.log('AAAADeploy setShareToken')
+  tx = await ins.setShareToken(tokens['USDT'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   console.log('AAAADeploy addMintToken')
