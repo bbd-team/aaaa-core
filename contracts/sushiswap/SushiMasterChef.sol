@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 /**
  *Submitted for verification at Etherscan.io on 2020-08-26
 */
@@ -1120,7 +1119,7 @@ contract ERC20 is Context, IERC20 {
 
 // File: contracts/SushiToken.sol
 
-pragma solidity >=0.6.6;
+pragma solidity 0.6.8;
 
 
 
@@ -1366,7 +1365,7 @@ contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
 
 // File: contracts/MasterChef.sol
 
-pragma solidity  >=0.6.6;
+pragma solidity 0.6.8;
 
 
 
