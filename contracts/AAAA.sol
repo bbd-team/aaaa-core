@@ -79,6 +79,8 @@ contract AAAAPool is Configable, BaseMintField
     uint public lastInterestUpdate;
 
     address public collateralStrategy;
+    address[] public strategyList;
+    uint strategyCount;
 
     event Deposit(address indexed _user, uint _amount, uint _collateralAmount);
     event Withdraw(address indexed _user, uint _supplyAmount, uint _collateralAmount, uint _interestAmount);
@@ -89,6 +91,7 @@ contract AAAAPool is Configable, BaseMintField
 
     function switchStrategy(address _collateralStrategy) external onlyPlatform
     {
+
         if(collateralStrategy != address(0) && totalPledge > 0)
         {
             ICollateralStrategy(collateralStrategy).exit(totalPledge);
@@ -96,7 +99,10 @@ contract AAAAPool is Configable, BaseMintField
 
         if(_collateralStrategy != address(0))
         {
-            require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken, "AAAA: INVALID STRATEGY");
+            require(ICollateralStrategy(_collateralStrategy).collateralToken() == collateralToken && collateralStrategy != _collateralStrategy, "AAAA: INVALID STRATEGY");
+
+            strategyCount++;
+            strategyList.push(_collateralStrategy);
 
             if(totalPledge > 0) {
                 TransferHelper.safeTransfer(collateralToken, _collateralStrategy, totalPledge);
