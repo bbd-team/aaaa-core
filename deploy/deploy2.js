@@ -17,6 +17,7 @@ const AAAAReward = require("../build/AAAAReward.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
 const AAAAQuery2 = require("../build/AAAAQuery2.json")
 const MasterChef = require("../build/SushiMasterChef.json");
+const SushiToken = require("../build/SushiToken.json");
 const SLPStrategy = require("../build/SLPStrategy.json");
 const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
@@ -26,16 +27,14 @@ let MASTERCHEF_ADDRESS = ""
 
 let tokens = {
   USDT: '',
-  USDC: '',
-  LPREWARD: '',
   WBTC: '',
   BURGER: '',
 }
 
 let pairs = []
-pairs.push(['USDC','WETH'])
 pairs.push(['USDT','WETH'])
-pairs.push(['WBTC','WETH'])
+// pairs.push(['USDC','WETH'])
+// pairs.push(['WBTC','WETH'])
 
 let pairAddresses = []
 
@@ -130,6 +129,16 @@ async function deployTokens() {
   let ins = await factory.deploy(ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   tokens['WETH'] = ins.address
+
+  factory = new ethers.ContractFactory(
+    SushiToken.abi,
+    SushiToken.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  tokens['LPREWARD'] = ins.address
+
 }
 
 async function deployLPs() {
@@ -190,16 +199,28 @@ async function deploy() {
   ins = await factory.deploy(tokens['LPREWARD'], config.walletDev, '100000000000000000000', '3077800', '20000000000', ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   MASTERCHEF_ADDRESS = ins.address
+
+
 }
 
 async function fakeMasterChef() {
   console.log('fakeMasterChef...')
   let ins = new ethers.Contract(
+    tokens['LPREWARD'],
+    SushiToken.abi,
+    getWallet()
+  )
+
+  let tx = await ins.transferOwnership(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
+  console.log('LPREWARD transferOwnership initialize')
+  await waitForMint(tx.hash)
+
+  ins = new ethers.Contract(
     ContractAddress['SLPStrategyFactory'],
     SLPStrategyFactory.abi,
     getWallet()
   )
-  let tx = await ins.initialize(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
+  tx = await ins.initialize(MASTERCHEF_ADDRESS, ETHER_SEND_CONFIG)
   console.log('SLPStrategyFactory initialize')
   await waitForMint(tx.hash)
 
@@ -240,9 +261,9 @@ async function deployConfig() {
   tx = await ins.addMintToken(tokens['USDT'], ETHER_SEND_CONFIG)
   console.log('AAAAConfig addMintToken')
   await waitForMint(tx.hash)
-  console.log('AAAAConfig addMintToken')
-  tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
-  await waitForMint(tx.hash)
+  // console.log('AAAAConfig addMintToken')
+  // tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
+  // await waitForMint(tx.hash)
   console.log('AAAAConfig addMintToken')
   tx = await ins.addMintToken(tokens['WETH'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
@@ -250,8 +271,8 @@ async function deployConfig() {
   for(let i=0; i<pairAddresses.length; i++) {
     tx = await ins.createPool(tokens['USDT'], pairAddresses[i], i, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
-    tx = await ins.createPool(tokens['USDC'], pairAddresses[i], i, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
+    // tx = await ins.createPool(tokens['USDC'], pairAddresses[i], i, ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
     tx = await ins.createPool(tokens['WETH'], pairAddresses[i], i, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
   }
@@ -318,8 +339,8 @@ async function initialize() {
     console.log('AAAAConfig setWallets')
     await waitForMint(tx.hash)
 
-    let _tokens=[tokens['USDT'],tokens['USDC'],tokens['WETH']]
-    let _values=['1000000000000000000','990000000000000000','50000000000000000000']
+    let _tokens=[tokens['USDT'],tokens['WETH']]
+    let _values=['1000000000000000000','50000000000000000000']
     for(let pair of pairAddresses) {
       _tokens.push(pair)
       _values.push('100000000000000000000')
@@ -335,18 +356,16 @@ async function initialize() {
     // run AAAADeploy
     await deployConfig()
 
-    console.log('transfer...')
-    await transfer()
 }
 
 async function transfer() {
-    ins = new ethers.Contract(
-        tokens['LPREWARD'],
-        ERC20.abi,
-        getWallet()
-      )
-    tx = await ins.transfer(MASTERCHEF_ADDRESS, '5000000000000000000000', ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
+    // ins = new ethers.Contract(
+    //     tokens['LPREWARD'],
+    //     ERC20.abi,
+    //     getWallet()
+    //   )
+    // tx = await ins.transfer(MASTERCHEF_ADDRESS, '5000000000000000000000', ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
 
     for(let user of config.users) {
         ins = new ethers.Contract(
@@ -355,14 +374,6 @@ async function transfer() {
             getWallet()
           )
         tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
-        await waitForMint(tx.hash)
-
-        ins = new ethers.Contract(
-          tokens['USDC'],
-          ERC20.abi,
-          getWallet()
-        )
-        tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
 
         // ins = new ethers.Contract(
@@ -402,6 +413,9 @@ async function run() {
       console.log(k, ContractAddress[k])
     }
 
+    console.log('==========')
+    console.log('transfer...')
+    await transfer()
 }
 
 run()
