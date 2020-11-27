@@ -187,7 +187,7 @@ async function deploy() {
     MasterChef.bytecode,
     walletWithProvider
   )
-  ins = await factory.deploy(tokens['LPREWARD'], config.walletDev, '100000000000000000000', '20000000', '20000000000', ETHER_SEND_CONFIG)
+  ins = await factory.deploy(tokens['LPREWARD'], config.walletDev, '100000000000000000000', '3077800', '20000000000', ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   MASTERCHEF_ADDRESS = ins.address
 }
