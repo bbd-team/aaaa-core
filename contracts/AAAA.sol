@@ -353,7 +353,7 @@ contract AAAAPool is Configable, BaseMintField
             ICollateralStrategy(collateralStrategy).withdraw(from, amountCollateral);
         }
         TransferHelper.safeTransfer(collateralToken, msg.sender, amountCollateral);
-        require(amountIn == repayAmount.add(repayInterest), "AAAA: INVALID AMOUNT");
+        require(amountIn >= repayAmount.add(repayInterest), "AAAA: INVALID AMOUNT");
         // TransferHelper.safeTransferFrom(supplyToken, from, address(this), repayAmount.add(repayInterest));
         
         _mintToPool();
@@ -409,7 +409,9 @@ contract AAAAPool is Configable, BaseMintField
         borrows[_user].interestSettled = 0;
         
         _mintToPool();
-        _decreaseBorrowerProductivity(_user, borrowAmount);
+        if(borrowAmount > 0) {
+            _decreaseBorrowerProductivity(_user, borrowAmount);
+        }
     }
 
     function getTotalAmount() external view returns (uint) {

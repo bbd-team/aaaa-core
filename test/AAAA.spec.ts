@@ -213,6 +213,54 @@ describe('deploy', () => {
 		console.log(convertBigNumber(await poolContract.connect(walletMe).takeLendWithAddress(walletMe.address), 1));
 	})
 
+	it('deposit(1000) -> borrow(0) -> repay(0) -> withdraw(1000)', async() => {
+		await(await platformContract.connect(walletMe).deposit(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'))).wait();
+		console.log('after deposit: ', 
+			'pool USDT', convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18), 
+			'pool LP', convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1e18));
+
+		let maxBorrow = await platformContract.getMaximumBorrowAmount(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'));
+		console.log('maxBorrow:', convertBigNumber(maxBorrow, 1), 'USDT');
+		await(await platformContract.connect(walletOther).borrow(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'), 0)).wait();
+		console.log('after borrow: ', 
+			'wallet USDT', convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1e18),
+			'wallet LP', convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1e18),
+			'pool USDT', convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18), 
+			'pool LP', convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1e18));
+
+		console.log('getInterests:', convertBigNumber(await poolContract.getInterests(), 1e18));
+
+		console.log('before repay:', 
+			convertBigNumber(await tokenUSDT.balanceOf(walletOther.address), 1e18),
+			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1e18));
+
+		tx = await platformContract.connect(walletOther).repay(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('100'));
+		let receipt = await tx.wait()
+		console.log('repay gas:', receipt.gasUsed.toString())
+		// console.log('events:', receipt.events)
+		// console.log(receipt.events[2].event, 'args:', receipt.events[2].args)
+		// console.log('_supplyAmount:', convertBigNumber(receipt.events[2].args._supplyAmount, 1))
+		// console.log('_collateralAmount:', convertBigNumber(receipt.events[2].args._collateralAmount, 1))
+		// console.log('_interestAmount:', convertBigNumber(receipt.events[2].args._interestAmount, 1))
+
+		 
+		await strategy.connect(walletOther).mint();
+		console.log('after repay with SUSHI: ', 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18), 
+			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1e18),
+			convertBigNumber(await tokenLP.balanceOf(walletOther.address), 1e18),
+			convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1e18), 
+			convertBigNumber(await rewardToken.balanceOf(strategy.address), 1e18));
+
+		// await SupplyStruct(walletMe.address);
+		// await sevenInfo();
+		await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
+		console.log('after withdraw: ', 
+			convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1), 
+			convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1));
+		console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
+	});
+
 	async function sevenInfo() {
 		let result = {
 			interestPerSupply: await poolContract.interestPerSupply(),
