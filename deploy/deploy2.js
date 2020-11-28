@@ -381,7 +381,7 @@ async function transfer() {
           ERC20.abi,
           getWallet()
         )
-      tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
+      tx = await ins.transfer(user, '5000000000000000000000', ETHER_SEND_CONFIG)
       await waitForMint(tx.hash)
         // ins = new ethers.Contract(
         //   tokens['BURGER'],
