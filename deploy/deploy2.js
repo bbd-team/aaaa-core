@@ -27,13 +27,13 @@ let MASTERCHEF_ADDRESS = ""
 
 let tokens = {
   USDT: '',
-  WBTC: '',
+  USDC: '',
   BURGER: '',
 }
 
 let pairs = []
 pairs.push(['USDT','WETH'])
-// pairs.push(['USDC','WETH'])
+pairs.push(['USDC','WETH'])
 // pairs.push(['WBTC','WETH'])
 
 let pairAddresses = []
@@ -261,9 +261,9 @@ async function deployConfig() {
   tx = await ins.addMintToken(tokens['USDT'], ETHER_SEND_CONFIG)
   console.log('AAAAConfig addMintToken')
   await waitForMint(tx.hash)
-  // console.log('AAAAConfig addMintToken')
-  // tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
-  // await waitForMint(tx.hash)
+  console.log('AAAAConfig addMintToken')
+  tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
   console.log('AAAAConfig addMintToken')
   tx = await ins.addMintToken(tokens['WETH'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
@@ -271,8 +271,8 @@ async function deployConfig() {
   for(let i=0; i<pairAddresses.length; i++) {
     tx = await ins.createPool(tokens['USDT'], pairAddresses[i], i, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
-    // tx = await ins.createPool(tokens['USDC'], pairAddresses[i], i, ETHER_SEND_CONFIG)
-    // await waitForMint(tx.hash)
+    tx = await ins.createPool(tokens['USDC'], pairAddresses[i], i, ETHER_SEND_CONFIG)
+    await waitForMint(tx.hash)
     tx = await ins.createPool(tokens['WETH'], pairAddresses[i], i, ETHER_SEND_CONFIG)
     await waitForMint(tx.hash)
   }
@@ -339,8 +339,8 @@ async function initialize() {
     console.log('AAAAConfig setWallets')
     await waitForMint(tx.hash)
 
-    let _tokens=[tokens['USDT'],tokens['WETH']]
-    let _values=['1000000000000000000','50000000000000000000']
+    let _tokens=[tokens['USDT'],tokens['USDC'],tokens['WETH']]
+    let _values=['1000000000000000000','990000000000000000','50000000000000000000']
     for(let pair of pairAddresses) {
       _tokens.push(pair)
       _values.push('100000000000000000000')
@@ -375,7 +375,14 @@ async function transfer() {
           )
         tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
-
+      
+      ins = new ethers.Contract(
+          tokens['USDC'],
+          ERC20.abi,
+          getWallet()
+        )
+      tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
+      await waitForMint(tx.hash)
         // ins = new ethers.Contract(
         //   tokens['BURGER'],
         //     ERC20.abi,
