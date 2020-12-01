@@ -382,9 +382,7 @@ contract AAAAPool is Configable, BaseMintField
         
         // uint pledgePrice = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PRICE);
         // uint collateralValue = borrows[_user].amountCollateral.mul(pledgePrice).div(1e18);
-        uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[_user].amountCollateral);
-        uint pledgeRate = IConfig(config).getPoolValue(address(this), ConfigNames.POOL_PLEDGE_RATE);
-        uint collateralValue = pledgeAmount.mul(pledgeRate).div(1e18);
+        uint collateralValue = IConfig(config).convertTokenAmount(collateralToken, supplyToken, borrows[_user].amountCollateral);
         
         uint expectedRepay = borrows[_user].amountBorrow.add(borrows[_user].interests);
 
