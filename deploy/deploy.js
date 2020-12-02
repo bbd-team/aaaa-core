@@ -333,12 +333,12 @@ async function initialize() {
     console.log('AAAAConfig initParameter')
     await waitForMint(tx.hash)
 
-    tx = await ins.addMintToken(USDT_ADDRESS, ETHER_SEND_CONFIG)
-    console.log('AAAAConfig addMintToken')
-    await waitForMint(tx.hash)
-    console.log('AAAAConfig addMintToken')
-    tx = await ins.addMintToken(BUSD_ADDRESS, ETHER_SEND_CONFIG)
-    await waitForMint(tx.hash)
+    // tx = await ins.addMintToken(USDT_ADDRESS, ETHER_SEND_CONFIG)
+    // console.log('AAAAConfig addMintToken')
+    // await waitForMint(tx.hash)
+    // console.log('AAAAConfig addMintToken')
+    // tx = await ins.addMintToken(BUSD_ADDRESS, ETHER_SEND_CONFIG)
+    // await waitForMint(tx.hash)
 
     tx = await ins.setWallets(
         [

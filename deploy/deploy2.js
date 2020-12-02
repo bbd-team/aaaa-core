@@ -245,7 +245,7 @@ async function deployConfig() {
   )
 
   console.log('AAAADeploy setMasterchef')
-  tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], true, ETHER_SEND_CONFIG)
+  tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   console.log('AAAADeploy changeBallotByteHash')
@@ -255,17 +255,6 @@ async function deployConfig() {
 
   console.log('AAAADeploy setShareToken')
   tx = await ins.setShareToken(tokens['USDT'], ETHER_SEND_CONFIG)
-  await waitForMint(tx.hash)
-
-  console.log('AAAADeploy addMintToken')
-  tx = await ins.addMintToken(tokens['USDT'], ETHER_SEND_CONFIG)
-  console.log('AAAAConfig addMintToken')
-  await waitForMint(tx.hash)
-  console.log('AAAAConfig addMintToken')
-  tx = await ins.addMintToken(tokens['USDC'], ETHER_SEND_CONFIG)
-  await waitForMint(tx.hash)
-  console.log('AAAAConfig addMintToken')
-  tx = await ins.addMintToken(tokens['WETH'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   for(let i=0; i<pairAddresses.length; i++) {

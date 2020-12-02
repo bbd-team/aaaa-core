@@ -25,7 +25,6 @@ contract AAAAPool is Configable, BaseMintField
 {
     using SafeMath for uint;
 
-    address public dev;
     address public factory;
     address public supplyToken;
     uint public supplyDecimal;

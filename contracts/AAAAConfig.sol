@@ -26,8 +26,6 @@ contract AAAAConfig {
     address public governor;
     address public WETH;
 
-    address[] public mintTokenList;
-
     uint public lastPriceBlock;
 
     uint public DAY = 6400;
@@ -73,21 +71,6 @@ contract AAAAConfig {
         base        = _base;
         WETH        = _WETH;
     }
-
-    function addMintToken(address _token) external {
-        require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");
-        mintTokenList.push(_token);
-    }
-
-    function isMintToken(address _token) public view returns (bool)  {
-        for(uint i = 0;i < mintTokenList.length;i++) {
-            if(_token == mintTokenList[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     function changeDeveloper(address _developer) external {
         require(msg.sender == owner || msg.sender == developer, "AAAA: Config FORBIDDEN");

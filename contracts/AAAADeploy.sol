@@ -18,9 +18,7 @@ interface IConfig {
     function governor() external view returns (address);
     function initialize (address _platform, address _factory, address _mint, address _token, address _share, address _governor) external;
     function initParameter() external;
-    function addMintToken(address _token) external;
     function setWallets(bytes32[] calldata _names, address[] calldata _wallets) external;
-    function isMintToken(address _token) external view returns (bool);
     function changeDeveloper(address _developer) external;
     function setValue(bytes32 _key, uint _value) external;
 }
@@ -58,13 +56,13 @@ interface ILPStrategyFactory {
 
 interface IAAAAPlatform {
     function switchStrategy(address _lendToken, address _collateralToken, address _collateralStrategy) external;
+    function updatePoolParameter(address _lendToken, address _collateralToken, bytes32 _key, uint _value) external;
 }
 
 contract AAAADeploy {
     address public owner;
     address public config;
     address public LPStrategyFactory;
-    bool public LPStrategyCanMint;
 
     modifier onlyOwner() {
         require(msg.sender == owner, 'OWNER FORBIDDEN');
@@ -84,15 +82,11 @@ contract AAAADeploy {
         IConfig(config).changeDeveloper(_developer);
     }
     
-    function setMasterchef(address _LPStrategyFactory, bool _LPStrategyCanMint) onlyOwner external {
+    function setMasterchef(address _LPStrategyFactory) onlyOwner external {
         LPStrategyFactory = _LPStrategyFactory;
-        LPStrategyCanMint = _LPStrategyCanMint;
     }
 
     function createPool(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
-        if(LPStrategyCanMint) {
-            require(IConfig(config).isMintToken(_lendToken), 'REQUEST ADD MINT TOKEN FIRST');
-        }
         address pool = IAAAAFactory(IConfig(config).factory()).createPool(_lendToken, _collateralToken);
         address strategy = ILPStrategyFactory(LPStrategyFactory).createStrategy(_collateralToken, pool, _lpPoolpid);
         IAAAAPlatform(IConfig(config).platform()).switchStrategy(_lendToken, _collateralToken, strategy);
@@ -102,10 +96,6 @@ contract AAAADeploy {
         IAAAAFactory(IConfig(config).factory()).changeBallotByteHash(_hash);
     }
 
-    function addMintToken(address _token) onlyOwner external {
-        IConfig(config).addMintToken(_token);
-    }
-
     function changeMintPerBlock(uint _value) onlyOwner external {
         IConfig(config).setValue(ConfigNames.MINT_AMOUNT_PER_BLOCK, _value);
         IAAAAMint(IConfig(config).mint()).sync();
@@ -113,6 +103,10 @@ contract AAAADeploy {
 
     function setShareToken(address _shareToken) onlyOwner external {
         IAAAAShare(IConfig(config).share()).setShareToken(_shareToken);
+    }
+
+    function updatePoolParameter(address _lendToken, address _collateralToken, bytes32 _key, uint _value) onlyOwner external {
+        IAAAAPlatform(IConfig(config).platform()).updatePoolParameter(_lendToken, _collateralToken, _key, _value);
     }
 
   }

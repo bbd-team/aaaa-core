@@ -136,7 +136,7 @@ describe('deploy', () => {
 		console.log('developer:', developer, walletDeveloper.address)
 		await factoryContract.connect(walletDeveloper).changeBallotByteHash(bytecodeHash);
 		
-		await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
+		// await configContract.connect(walletDeveloper).addMintToken(tokenUSDT.address);
 		await configContract.connect(walletPrice).setTokenPrice([
 			tokenUSDT.address, tokenLP.address, tokenWETH.address],  [ethers.utils.parseEther('1'), ethers.utils.parseEther('0.02'), ethers.utils.parseEther('0.02')]);
 		await factoryContract.connect(walletDeveloper).createPool(tokenUSDT.address, tokenLP.address);
