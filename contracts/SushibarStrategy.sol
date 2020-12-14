@@ -22,6 +22,7 @@ interface ISushiBar {
     function enter(uint256 _amount) external;
     function leave(uint256 _share) external;
     function balanceOf(address account) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
 contract SushibarStrategy is ICollateralStrategy, BaseShareField
@@ -132,11 +133,16 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         } 
     }
 
-    function _currentReward() internal override view returns (uint) {
-        // uint pendingSushi = ISushiBar(sushiBar)
-        // return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(ISushiBar(sushiBar).pendingSushi(lpPoolpid, address(this))).sub(totalShare);
-        return 0;
+    function _what() internal view returns(uint) {
+        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
+        return amountShare.mul(ISushiBar(sushiBar).totalSupply()).div(IERC20(collateralToken).balanceOf(sushiBar));
     }
+
+    // function _currentReward() internal override view returns (uint) {
+    //     // uint pendingSushi = ISushiBar(sushiBar)
+    //     // return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(ISushiBar(sushiBar).pendingSushi(lpPoolpid, address(this))).sub(totalShare);
+    //     return 0;
+    // }
 
     function query() external override view returns (uint){
         return _takeWithAddress(msg.sender);
