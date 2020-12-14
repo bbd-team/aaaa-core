@@ -66,6 +66,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
             }
 
             totalProductivity = BaseShareField(_old).totalProductivity();
+            totalInvest = totalProductivity;
             old = _old;
         }
     }

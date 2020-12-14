@@ -729,9 +729,6 @@ contract ERC20 is Context, IERC20 {
 pragma solidity 0.6.8;
 
 
-
-
-
 contract SushiBar is ERC20("SushiBar", "xSUSHI")
 {
     using SafeMath for uint256;

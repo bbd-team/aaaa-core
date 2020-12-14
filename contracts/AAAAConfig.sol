@@ -96,7 +96,7 @@ contract AAAAConfig {
         _setParams(ConfigNames.INTEREST_PLATFORM_SHARE, 0, 1e18, 1e17, 1e17);
         _setParams(ConfigNames.INTEREST_BUYBACK_SHARE, 10000, 10000, 0, 10000);
         _setParams(ConfigNames.CHANGE_PRICE_DURATION, 0, 500, 100, 0);
-        _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 100, 1, 20);
+        _setParams(ConfigNames.CHANGE_PRICE_PERCENT, 1, 10000, 1, 2000);
 
         _setParams(ConfigNames.AAAA_USER_MINT, 0, 0, 0, 3000);
         _setParams(ConfigNames.AAAA_TEAM_MINT, 0, 0, 0, 7142);
