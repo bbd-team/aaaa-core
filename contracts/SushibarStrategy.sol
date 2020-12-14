@@ -86,7 +86,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         _sync(user);
 
         require(msg.sender == poolAddress, "INVALID CALLER");
-        uint amountShare = ISushiBar(sushiBar).totalSupply();
+        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
         _decreaseProductivity(user, amount);
@@ -110,7 +110,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         _sync(msg.sender);
 
         require(msg.sender == poolAddress, "INVALID CALLER");
-        uint amountShare = ISushiBar(sushiBar).totalSupply();
+        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
         _decreaseProductivity(msg.sender, amount);
@@ -122,7 +122,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
 
     function exit(uint amount) external override {
         require(msg.sender == poolAddress, "INVALID CALLER");
-        uint amountShare = ISushiBar(sushiBar).totalSupply();
+        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
     }
