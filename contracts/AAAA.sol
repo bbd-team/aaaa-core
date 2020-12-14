@@ -402,7 +402,10 @@ contract AAAAPool is Configable, BaseMintField
         
         liquidationHistory[_user].push(liq);
         liquidationHistoryLength[_user] ++;
-        ICollateralStrategy(collateralStrategy).liquidation(_user);
+        if(collateralStrategy != address(0))
+        {
+            ICollateralStrategy(collateralStrategy).liquidation(_user);
+        }
         
         emit Liquidation(from, _user, borrows[_user].amountBorrow, borrows[_user].amountCollateral);
 
