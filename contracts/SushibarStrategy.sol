@@ -39,7 +39,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
 
     address public factory;
 
-    uint totalInvest;
+    uint public totalInvest;
 
     constructor() public {
         factory = msg.sender;
@@ -78,6 +78,8 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         TransferHelper.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
         IERC20(collateralToken).approve(sushiBar, amount);
         ISushiBar(sushiBar).enter(amount);
+
+        totalInvest = totalInvest.add(amount);
         _increaseProductivity(user, amount);
     }
 
@@ -89,6 +91,8 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+
+        totalInvest = totalInvest.sub(amount);
         _decreaseProductivity(user, amount);
     }
 
@@ -113,6 +117,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+        totalInvest = totalInvest.sub(amount);
         _decreaseProductivity(msg.sender, amount);
     
         uint claimAmount = users[msg.sender].rewardEarn.mul(amount).div(total);
@@ -136,15 +141,15 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         } 
     }
 
-    function _what() internal view returns(uint) {
+    function _what() public view returns(uint) {
         uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
-        return amountShare.mul(IERC20(collateralToken).balanceOf(sushiBar)).div(ISushiBar(sushiBar).totalSupply()).sub(totalProductivity);
+        return amountShare.mul(IERC20(collateralToken).balanceOf(sushiBar)).div(ISushiBar(sushiBar).totalSupply()).sub(totalInvest);
     }
 
     function _currentReward() internal override view returns (uint) {
          return mintedShare.add(IERC20(shareToken).balanceOf(address(this))).add(_what()).sub(totalShare);
     }
-    
+
     function query() external override view returns (uint){
         return _takeWithAddress(msg.sender);
     }
