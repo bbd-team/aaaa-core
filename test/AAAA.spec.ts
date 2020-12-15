@@ -88,7 +88,7 @@ describe('deploy', () => {
         await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
         await rewardToken.connect(walletDeveloper).mint(walletMe.address, 100000);
         await rewardToken.connect(walletMe).approve(sushiBar.address, 10000);
-        await sushiBar.connect(walletMe).enter(9999);
+        //await sushiBar.connect(walletMe).enter(9999);
         await rewardToken.transferOwnership(masterChef.address);
 
         console.log('masterChef 0 lp:', (await masterChef.poolInfo(0)).lpToken);
@@ -284,16 +284,19 @@ describe('deploy', () => {
 
         console.log(1, await sushiStrategy._what(), await tokenLP.balanceOf(sushiStrategy.address));
         console.log(2, await sushiStrategy.totalShare(), await sushiStrategy.mintedShare());
+        console.log("before mint query1", convertBigNumber(await sushiStrategy.connect(walletOther).query(), 1));
 
-
+        console.log('before transfer2', convertBigNumber(await rewardToken.balanceOf(sushiBar.address), 1e18));
         await(await platformContract.connect(walletOther).repay(tokenUSDT.address, rewardToken.address, maxBorrowSushi)).wait();
         console.log('before transfer', convertBigNumber(await rewardToken.balanceOf(sushiBar.address), 1e18));
         await(await rewardToken.connect(walletOther).transfer(sushiBar.address, ethers.utils.parseEther('5'))).wait();
         console.log('before mint');
+
         console.log('mintedShare =', convertBigNumber(await sushiStrategy.mintedShare(), 1));
         console.log('IERC20(shareToken).balanceOf(address(this)) =', convertBigNumber(await rewardToken.balanceOf(sushiStrategy.address), 1));
         console.log('_what() =', convertBigNumber(await sushiStrategy._what(), 1));
         console.log('totalShare =', convertBigNumber(await sushiStrategy.totalShare(), 1));
+        console.log("before mint query2", convertBigNumber(await sushiStrategy.connect(walletOther).query(), 1));
 
         await sushiStrategy.connect(walletOther).mint();
         console.log('after repay with SUSHI BAR: ',
