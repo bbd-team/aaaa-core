@@ -144,7 +144,9 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
 
     function _what() public view returns(uint) {
         uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
-        return amountShare.mul(IERC20(collateralToken).balanceOf(sushiBar)).div(ISushiBar(sushiBar).totalSupply()).sub(totalInvest);
+        uint sushiBarBalance = IERC20(collateralToken).balanceOf(sushiBar);
+        uint sushiBarTotalShare = ISushiBar(sushiBar).totalSupply();
+        return amountShare.mul(sushiBarBalance).div(sushiBarTotalShare).add(1).sub(totalInvest);
     }
 
     function _currentReward() internal override view returns (uint) {
