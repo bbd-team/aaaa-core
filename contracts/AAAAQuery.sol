@@ -104,9 +104,14 @@ interface IAAAABallot {
     function voters(address user) external view returns (Voter memory);
 }
 
+interface IOtherConfig {
+    function isToken(address _token) external view returns (bool);
+}
+
 contract AAAAQuery {
     address public owner;
     address public config;
+    address public otherConfig;
     using SafeMath for uint;
 
     struct PoolInfoStruct {
@@ -216,7 +221,12 @@ contract AAAAQuery {
         require(msg.sender == owner, "FORBIDDEN");
         config = _config;
     }
-        
+
+    function setupOtherConfig (address _config) external {
+        require(msg.sender == owner, "FORBIDDEN");
+        otherConfig = _config;
+    }
+            
     function getPoolInterests(address pair) public view returns (uint, uint) {
         uint borrowInterests = IAAAAPool(pair).getInterests();
         uint supplyInterests = 0;
@@ -257,10 +267,13 @@ contract AAAAQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
-        address lpToken0 = ISwapPair(info.collateralToken).token0();
-        address lpToken1 = ISwapPair(info.collateralToken).token1();
-        info.lpToken0Symbol = IERC20(lpToken0).symbol();
-        info.lpToken1Symbol = IERC20(lpToken1).symbol();
+
+        if (IOtherConfig(otherConfig).isToken(info.collateralToken) == false) {
+            address lpToken0 = ISwapPair(info.collateralToken).token0();
+            address lpToken1 = ISwapPair(info.collateralToken).token1();
+            info.lpToken0Symbol = IERC20(lpToken0).symbol();
+            info.lpToken1Symbol = IERC20(lpToken1).symbol();
+        }
 
         info.totalSupplyValue = IConfig(config).convertTokenAmount(info.supplyToken, IConfig(config).base(), info.remainSupply.add(info.totalBorrow));
         info.totalPledgeValue = IConfig(config).convertTokenAmount(info.collateralToken, IConfig(config).base(), info.totalPledge);

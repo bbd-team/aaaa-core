@@ -99,9 +99,14 @@ interface IAAAABallot {
     function voters(address user) external view returns (Voter memory);
 }
 
+interface IOtherConfig {
+    function isToken(address _token) external view returns (bool);
+}
+
 contract AAAAQuery2 {
     address public owner;
     address public config;
+    address public otherConfig;
     using SafeMath for uint;
 
     struct ConfigCommonStruct {
@@ -153,6 +158,11 @@ contract AAAAQuery2 {
         config = _config;
     }
 
+    function setupOtherConfig (address _config) external {
+        require(msg.sender == owner, "FORBIDDEN");
+        otherConfig = _config;
+    }
+
     function getConfigCommon() public view returns (ConfigCommonStruct memory info){
         info.PROPOSAL_VOTE_DURATION = IConfig(config).getValue(ConfigNames.PROPOSAL_VOTE_DURATION);
         info.PROPOSAL_EXECUTE_DURATION = IConfig(config).getValue(ConfigNames.PROPOSAL_EXECUTE_DURATION);
@@ -178,10 +188,13 @@ contract AAAAQuery2 {
         info.POOL_LIQUIDATION_RATE = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
         info.POOL_MINT_BORROW_PERCENT = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MINT_BORROW_PERCENT);
         info.POOL_MINT_POWER = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_MINT_POWER);
-        info.lpToken0 = ISwapPair(info.collateralToken).token0();
-        info.lpToken1 = ISwapPair(info.collateralToken).token1();
-        info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
-        info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
+
+        if (IOtherConfig(otherConfig).isToken(info.collateralToken) == false) {
+            info.lpToken0 = ISwapPair(info.collateralToken).token0();
+            info.lpToken1 = ISwapPair(info.collateralToken).token1();
+            info.lpToken0Symbol = IERC20(info.lpToken0).symbol();
+            info.lpToken1Symbol = IERC20(info.lpToken1).symbol();
+        }
         return info;
     }
 
