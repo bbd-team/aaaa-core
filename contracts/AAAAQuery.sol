@@ -51,6 +51,7 @@ interface IAAAAPlatform {
 interface IAAAAPool {
     function supplyToken() external view returns(address);
     function collateralToken() external view returns(address);
+    function collateralStrategy() external view returns(address);
     function totalBorrow() external view returns(uint);
     function totalPledge() external view returns(uint);
     function remainSupply() external view returns(uint);
@@ -104,9 +105,15 @@ interface IAAAABallot {
     function voters(address user) external view returns (Voter memory);
 }
 
+interface IOtherConfig {
+    function isToken(address _token) external view returns (bool);
+    function disabledToken(address _token) external view returns (bool);
+}
+
 contract AAAAQuery {
     address public owner;
     address public config;
+    address public otherConfig;
     using SafeMath for uint;
 
     struct PoolInfoStruct {
@@ -122,6 +129,7 @@ contract AAAAQuery {
         address collateralToken;
         uint8 supplyTokenDecimals;
         uint8 collateralTokenDecimals;
+        address collateralStrategy;
         string lpToken0Symbol;
         string lpToken1Symbol;
         string supplyTokenSymbol;
@@ -216,7 +224,12 @@ contract AAAAQuery {
         require(msg.sender == owner, "FORBIDDEN");
         config = _config;
     }
-        
+
+    function setupOtherConfig (address _config) external {
+        require(msg.sender == owner, "FORBIDDEN");
+        otherConfig = _config;
+    }
+
     function getPoolInterests(address pair) public view returns (uint, uint) {
         uint borrowInterests = IAAAAPool(pair).getInterests();
         uint supplyInterests = 0;
@@ -246,6 +259,9 @@ contract AAAAQuery {
         if(!IAAAAFactory(IConfig(config).factory()).isPool(pair)) {
             return info;
         }
+        if (IOtherConfig(otherConfig).disabledToken(IAAAAPool(pair).collateralToken())) {
+            return info;
+        }
         info.pair = pair;
         info.totalBorrow = IAAAAPool(pair).totalBorrow();
         info.totalPledge = IAAAAPool(pair).totalPledge();
@@ -257,10 +273,14 @@ contract AAAAQuery {
         info.collateralTokenDecimals = IERC20(info.collateralToken).decimals();
         info.supplyTokenSymbol = IERC20(info.supplyToken).symbol();
         info.collateralTokenSymbol = IERC20(info.collateralToken).symbol();
-        address lpToken0 = ISwapPair(info.collateralToken).token0();
-        address lpToken1 = ISwapPair(info.collateralToken).token1();
-        info.lpToken0Symbol = IERC20(lpToken0).symbol();
-        info.lpToken1Symbol = IERC20(lpToken1).symbol();
+        info.collateralStrategy = IAAAAPool(pair).collateralStrategy();
+
+        if (IOtherConfig(otherConfig).isToken(info.collateralToken) == false) {
+            address lpToken0 = ISwapPair(info.collateralToken).token0();
+            address lpToken1 = ISwapPair(info.collateralToken).token1();
+            info.lpToken0Symbol = IERC20(lpToken0).symbol();
+            info.lpToken1Symbol = IERC20(lpToken1).symbol();
+        }
 
         info.totalSupplyValue = IConfig(config).convertTokenAmount(info.supplyToken, IConfig(config).base(), info.remainSupply.add(info.totalBorrow));
         info.totalPledgeValue = IConfig(config).convertTokenAmount(info.collateralToken, IConfig(config).base(), info.totalPledge);

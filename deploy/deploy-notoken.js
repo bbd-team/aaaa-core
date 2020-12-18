@@ -7,7 +7,6 @@ const UNIPAIR = require("../build/UniswapPairTest.json")
 const AAAABallot = require("../build/AAAABallot.json")
 const AAAAConfig = require("../build/AAAAConfig.json")
 const AAAAPlateForm = require("../build/AAAAPlatform.json")
-const AAAAToken = require("../build/AAAAToken")
 const AAAAPool = require("../build/AAAAPool")
 const AAAAFactory = require("../build/AAAAFactory.json")
 const AAAAGovernance = require("../build/AAAAGovernance.json")
@@ -21,9 +20,12 @@ const SushiToken = require("../build/SushiToken.json");
 const SLPStrategy = require("../build/SLPStrategy.json");
 const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
+const AAAAOtherConfig = require("../build/AAAAOtherConfig.json");
+const { exit } = require("process");
 
 
 let MASTERCHEF_ADDRESS = ""
+let AAAAOtherConfig_ADDRESS = ""
 
 let tokens = {
   USDT: '',
@@ -39,7 +41,6 @@ pairs.push(['USDC','WETH'])
 let pairAddresses = []
 
 let Contracts = {
-  AAAAToken: AAAAToken,
   AAAAConfig: AAAAConfig,
   AAAAPlateForm: AAAAPlateForm,
   AAAAFactory: AAAAFactory,
@@ -63,6 +64,7 @@ let config = {
     "walletTeam": "", 
     "walletSpare": "", 
     "walletPrice": "",
+    "tokens": {},
     "users":[]
 }
 
@@ -71,6 +73,14 @@ if(fs.existsSync(path.join(__dirname, ".config.json"))) {
     for(let k in config) {
         config[k] = _config[k];
     }
+    if(config.tokens === undefined || !config.tokens["AAAAToken"]) {
+      console.error('please define AAAAToken first');
+      return;
+    }
+    for(let k in config.tokens) {
+      tokens[k] = config.tokens[k];
+    }
+
 }
 
 let ETHER_SEND_CONFIG = {
@@ -113,22 +123,10 @@ async function deployTokens() {
     ERC20.bytecode,
     walletWithProvider
   )
-  for (let k in tokens) {
-    let decimals = '18'
-    if(k=='USDT') decimals = '6'
-    let ins = await factory.deploy(k,k,decimals,'100000000000000000000000000',ETHER_SEND_CONFIG)
-    await waitForMint(ins.deployTransaction.hash)
-    tokens[k] = ins.address
-  }
 
-  factory = new ethers.ContractFactory(
-    WETH9.abi,
-    WETH9.bytecode,
-    walletWithProvider
-  )
-  let ins = await factory.deploy(ETHER_SEND_CONFIG)
+  let ins = await factory.deploy('USDC','USDC',18,'100000000000000000000000000',ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
-  tokens['WETH'] = ins.address
+  tokens["USDC"] = ins.address
 
   factory = new ethers.ContractFactory(
     SushiToken.abi,
@@ -188,6 +186,17 @@ async function deploy() {
   // business contract
   console.log('deloy contract...')
   await deployContracts()
+
+  // AAAAOtherConfig
+  console.log('deloy AAAAOtherConfig...')
+  factory = new ethers.ContractFactory(
+    AAAAOtherConfig.abi,
+    AAAAOtherConfig.bytecode,
+    walletWithProvider
+  )
+  ins = await factory.deploy(ETHER_SEND_CONFIG)
+  await waitForMint(ins.deployTransaction.hash)
+  AAAAOtherConfig_ADDRESS = ins.address
   
   // MASTERCHEF
   console.log('deloy MASTERCHEF...')
@@ -199,7 +208,6 @@ async function deploy() {
   ins = await factory.deploy(tokens['LPREWARD'], config.walletDev, '100000000000000000000', '3077800', '20000000000', ETHER_SEND_CONFIG)
   await waitForMint(ins.deployTransaction.hash)
   MASTERCHEF_ADDRESS = ins.address
-
 
 }
 
@@ -280,6 +288,26 @@ async function setupConfig() {
     console.log('AAAAConfig setupConfig:', k)
     await waitForMint(tx.hash)
   }
+
+  ins = new ethers.Contract(
+    ContractAddress['AAAAQuery'],
+    AAAAQuery.abi,
+    getWallet()
+  )
+
+  console.log('AAAAQuery setupOtherConfig')
+  tx = await ins.setupOtherConfig(AAAAOtherConfig_ADDRESS, ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
+
+  ins = new ethers.Contract(
+    ContractAddress['AAAAQuery2'],
+    AAAAQuery2.abi,
+    getWallet()
+  )
+
+  console.log('AAAAQuery2 setupOtherConfig')
+  tx = await ins.setupOtherConfig(AAAAOtherConfig_ADDRESS, ETHER_SEND_CONFIG)
+  await waitForMint(tx.hash)
 }
 
 async function initialize() {
@@ -297,7 +325,7 @@ async function initialize() {
       ContractAddress['AAAAPlateForm'],
       ContractAddress['AAAAFactory'],
       ContractAddress['AAAAMint'],
-      ContractAddress['AAAAToken'],
+      tokens['AAAAToken'],
       ContractAddress['AAAAShare'],
       ContractAddress['AAAAGovernance'],
       tokens['USDT'],
@@ -362,7 +390,7 @@ async function transfer() {
             ERC20.abi,
             getWallet()
           )
-        tx = await ins.transfer(user, '50000000000', ETHER_SEND_CONFIG)
+        tx = await ins.transfer(user, '10000000000', ETHER_SEND_CONFIG)
         await waitForMint(tx.hash)
       
       ins = new ethers.Contract(
@@ -408,7 +436,7 @@ async function run() {
     for(let k in ContractAddress) {
       console.log(k, ContractAddress[k])
     }
-
+    console.log('AAAAOtherConfig', AAAAOtherConfig_ADDRESS)
     console.log('==========')
     console.log('transfer...')
     await transfer()
