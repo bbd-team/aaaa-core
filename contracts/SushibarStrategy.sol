@@ -25,6 +25,10 @@ interface ISushiBar {
     function totalSupply() external view returns (uint256);
 }
 
+interface ISushiSpare {
+    function take(address token, uint amount) external;
+}
+
 contract SushibarStrategy is ICollateralStrategy, BaseShareField
 {
     event Mint(address indexed user, uint amount);
@@ -38,10 +42,12 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
     address public old;
 
     address public factory;
+    address public spare;
 
     uint public totalInvest;
 
-    constructor() public {
+    constructor(address _spare) public {
+        spare = _spare;
         factory = msg.sender;
     }
 
@@ -89,9 +95,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         _sync(user);
 
         require(msg.sender == poolAddress, "INVALID CALLER");
-        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
-        ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
-        TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+        _leave(amount);
 
         totalInvest = totalInvest.sub(amount);
         _decreaseProductivity(user, amount);
@@ -115,9 +119,7 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
         _sync(msg.sender);
 
         require(msg.sender == poolAddress, "INVALID CALLER");
-        uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
-        ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
-        TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
+        _leave(amount);
         totalInvest = totalInvest.sub(amount);
         _decreaseProductivity(msg.sender, amount);
     
@@ -128,8 +130,16 @@ contract SushibarStrategy is ICollateralStrategy, BaseShareField
 
     function exit(uint amount) external override {
         require(msg.sender == poolAddress, "INVALID CALLER");
+        _leave(amount);
+    }
+
+    function _leave(uint amount) internal {
         uint amountShare = ISushiBar(sushiBar).balanceOf(address(this));
         ISushiBar(sushiBar).leave(amount.mul(amountShare).div(totalProductivity));
+
+        if(IERC20(collateralToken).balanceOf(address(this)) < amount) {
+            ISushiSpare(spare).take(collateralToken, amount.sub(IERC20(collateralToken).balanceOf(address(this))));
+        }
         TransferHelper.safeTransfer(collateralToken, msg.sender, amount);
     }
 

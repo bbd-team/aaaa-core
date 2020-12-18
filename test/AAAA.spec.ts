@@ -10,6 +10,7 @@ import AAAAToken from '../build/AAAAToken.json';
 import AAAAShare from '../build/AAAAShare.json';
 import AAAAQuery from '../build/AAAAQuery.json';
 import AAAABallot from '../build/AAAABallot.json';
+import AAAASpare from '../build/AAAASpare.json';
 import WETH from '../build/WETH9.json';
 import AAAAGovernance from '../build/AAAAGovernance.json';
 import ERC20 from '../build/ERC20Token.json';
@@ -39,6 +40,7 @@ describe('deploy', () => {
     let platformContract: Contract;
     let tokenContract: Contract;
     let shareContract: Contract;
+    let spareContract: Contract;
     let masterChef 	: Contract;
     let tokenUSDT 	: Contract;
     let tokenWETH 	: Contract;
@@ -78,7 +80,9 @@ describe('deploy', () => {
         tokenLP 	= await deployContract(walletMe, ERC20, ['SLP ETH/USDT', 'SLP ETH/USDT', 18, ethers.utils.parseEther('1000000')]);
         rewardToken = await deployContract(walletDeveloper, SushiToken);
         sushiBar = await deployContract(walletDeveloper, SushiBar, [rewardToken.address]);
-        sushiStrategy = await deployContract(walletDeveloper, SushiStrategy);
+        spareContract = await deployContract(walletDeveloper, AAAASpare);
+        sushiStrategy = await deployContract(walletDeveloper, SushiStrategy, [spareContract.address]);
+        
 
         // queryContract = await deployContract(walletDeveloper, AAAAQuery, [], {gasLimit: 7000000});
         governanceContract = await deployContract(walletDeveloper, AAAAGovernance);
@@ -86,9 +90,20 @@ describe('deploy', () => {
             [rewardToken.address, walletDeveloper.address, ethers.utils.parseEther('1'), 0, 100]);
 
         await (await masterChef.connect(walletDeveloper).add(100, tokenLP.address, false)).wait();
-        await rewardToken.connect(walletDeveloper).mint(walletMe.address, 100000);
-        await rewardToken.connect(walletMe).approve(sushiBar.address, 10000);
-        //await sushiBar.connect(walletMe).enter(9999);
+        await rewardToken.connect(walletDeveloper).mint(walletMe.address, ethers.utils.parseEther('9999'));
+        await rewardToken.connect(walletMe).approve(sushiBar.address, ethers.utils.parseEther('999999'));
+        await rewardToken.connect(walletOther).approve(sushiBar.address, ethers.utils.parseEther('999999'));
+        await sushiBar.connect(walletMe).enter(ethers.utils.parseEther('3333'));
+        await(await rewardToken.connect(walletMe).transfer(sushiBar.address, ethers.utils.parseEther('20'))).wait();
+
+        await rewardToken.connect(walletDeveloper).mint(walletOther.address, ethers.utils.parseEther('1000'));
+        await sushiBar.connect(walletOther).enter(ethers.utils.parseEther('100'));
+        console.log("after enter:", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+        let sushiXBalance = await sushiBar.balanceOf(walletOther.address);
+        console.log("sushiX Balance:", convertBigNumber(sushiXBalance, 1));
+        await sushiBar.connect(walletOther).leave(sushiXBalance);
+        console.log("after leave:", convertBigNumber(await rewardToken.balanceOf(walletOther.address), 1));
+
         await rewardToken.transferOwnership(masterChef.address);
 
         console.log('masterChef 0 lp:', (await masterChef.poolInfo(0)).lpToken);
@@ -181,6 +196,9 @@ describe('deploy', () => {
 
         // await tokenUSDT.connect(walletMe).approve(poolContract.address, ethers.utils.parseEther('1000000'));
         // await tokenUSDT.connect(walletOther).approve(poolContract.address, ethers.utils.parseEther('1000000'));
+
+       	await spareContract.connect(walletDeveloper).setValidPool(pool4Contract.address, true);
+       	await rewardToken.connect(walletMe).transfer(spareContract.address, ethers.utils.parseEther('1'));
 
 
         await (await tokenUSDT.connect(walletOther).approve(platformContract.address, ethers.utils.parseEther('1000000'))).wait();
@@ -298,6 +316,8 @@ describe('deploy', () => {
         console.log('totalShare =', convertBigNumber(await sushiStrategy.totalShare(), 1));
         console.log("before mint query2", convertBigNumber(await sushiStrategy.connect(walletOther).query(), 1));
 
+
+
         await sushiStrategy.connect(walletOther).mint();
         console.log('after repay with SUSHI BAR: ',
             convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1e18),
@@ -311,7 +331,8 @@ describe('deploy', () => {
         await platformContract.connect(walletMe).withdraw(tokenUSDT.address, tokenLP.address, ethers.utils.parseEther('1000'));
         console.log('after withdraw: ',
             convertBigNumber(await tokenUSDT.balanceOf(poolContract.address), 1),
-            convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1));
+            convertBigNumber(await tokenLP.balanceOf(poolContract.address), 1), 
+            convertBigNumber(await rewardToken.balanceOf(spareContract.address), 1));
         console.log('wallet team:', convertBigNumber(await tokenUSDT.balanceOf(walletTeam.address),1e18))
     });
 });
