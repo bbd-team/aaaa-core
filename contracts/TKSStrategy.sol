@@ -21,6 +21,7 @@ interface ICollateralStrategy {
 interface IDemaxPool {
     function queryReward(address _pair, address _user) external view returns(uint);
     function claimReward(address _pair, address _rewardToken) external;
+    function DGAS() external view returns(address);
 }
 
 interface IDemaxPair {

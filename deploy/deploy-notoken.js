@@ -19,6 +19,7 @@ const MasterChef = require("../build/SushiMasterChef.json");
 const SushiToken = require("../build/SushiToken.json");
 const SLPStrategy = require("../build/SLPStrategy.json");
 const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
+const TKSStrategyFactory = require("../build/TKSStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
 const AAAAOtherConfig = require("../build/AAAAOtherConfig.json");
 const { exit } = require("process");
@@ -52,6 +53,7 @@ let Contracts = {
   AAAAQuery2: AAAAQuery2,
   AAAADeploy: AAAADeploy,
   SLPStrategyFactory: SLPStrategyFactory,
+  TKSStrategyFactory: TKSStrategyFactory,
 }
 
 let ContractAddress = {}
@@ -79,6 +81,10 @@ if(fs.existsSync(path.join(__dirname, ".config.json"))) {
     }
     for(let k in config.tokens) {
       tokens[k] = config.tokens[k];
+    }
+
+    if(!config.StrategyFactory) {
+      config.StrategyFactory = 'SLPStrategyFactory'
     }
 
 }
@@ -180,9 +186,11 @@ async function deploy() {
   console.log('deloy tokens...')
   await deployTokens()
 
-  console.log('deployLPs...')
-  await deployLPs()
-  
+  if(config.StrategyFactory == 'SLPStrategyFactory') {
+    console.log('deployLPs...')
+    await deployLPs()
+  }
+
   // business contract
   console.log('deloy contract...')
   await deployContracts()
@@ -245,6 +253,18 @@ async function fakeMasterChef() {
   }
 }
 
+async function setupTKSStrategyFactory() {
+  let ins = new ethers.Contract(
+    ContractAddress['TKSStrategyFactory'],
+    TKSStrategyFactory.abi,
+    getWallet()
+  )
+
+  let tx = await ins.initialize(config.StrategyFactoryParamValue, ETHER_SEND_CONFIG)
+  console.log('TKSStrategyFactory initialize')
+  await waitForMint(tx.hash)
+}
+
 async function deployConfig() {
   ins = new ethers.Contract(
     ContractAddress['AAAADeploy'],
@@ -252,8 +272,8 @@ async function deployConfig() {
     getWallet()
   )
 
-  console.log('AAAADeploy setMasterchef')
-  tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], ETHER_SEND_CONFIG)
+  console.log('AAAADeploy setStrategyFactory')
+  tx = await ins.setStrategyFactory(ContractAddress[config.StrategyFactory], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   console.log('AAAADeploy changeBallotByteHash')
@@ -312,8 +332,12 @@ async function setupConfig() {
 
 async function initialize() {
   await setupConfig()
-  await fakeMasterChef()
-
+  if(config.StrategyFactory == 'TKSStrategyFactory') {
+    await setupTKSStrategyFactory()
+  } else {
+    await fakeMasterChef()
+  }
+  
     let ins = new ethers.Contract(
         ContractAddress['AAAAConfig'],
         AAAAConfig.abi,

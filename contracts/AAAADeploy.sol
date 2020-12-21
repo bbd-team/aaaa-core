@@ -82,7 +82,7 @@ contract AAAADeploy {
         IConfig(config).changeDeveloper(_developer);
     }
     
-    function setMasterchef(address _LPStrategyFactory) onlyOwner external {
+    function setStrategyFactory(address _LPStrategyFactory) onlyOwner external {
         LPStrategyFactory = _LPStrategyFactory;
     }
 

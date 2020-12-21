@@ -256,8 +256,8 @@ async function deployConfig() {
     getWallet()
   )
 
-  console.log('AAAADeploy setMasterchef')
-  tx = await ins.setMasterchef(ContractAddress['SLPStrategyFactory'], ETHER_SEND_CONFIG)
+  console.log('AAAADeploy setStrategyFactory')
+  tx = await ins.setStrategyFactory(ContractAddress['SLPStrategyFactory'], ETHER_SEND_CONFIG)
   await waitForMint(tx.hash)
 
   console.log('AAAADeploy changeBallotByteHash')
