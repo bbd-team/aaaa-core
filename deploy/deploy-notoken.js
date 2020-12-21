@@ -66,6 +66,8 @@ let config = {
     "walletTeam": "", 
     "walletSpare": "", 
     "walletPrice": "",
+    "StrategyFactory": "",
+    "StrategyFactoryParamValue": "",
     "tokens": {},
     "users":[]
 }
@@ -83,10 +85,10 @@ if(fs.existsSync(path.join(__dirname, ".config.json"))) {
       tokens[k] = config.tokens[k];
     }
 
-    if(!config.StrategyFactory) {
+    if(config.StrategyFactory == '') {
       config.StrategyFactory = 'SLPStrategyFactory'
     }
-
+    console.log('config:', config)
 }
 
 let ETHER_SEND_CONFIG = {

@@ -384,14 +384,13 @@ contract AAAAQuery {
         count = _end - _start;
         uint index = 0;
         uint liquidationRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_LIQUIDATION_RATE);
-        uint pledgeRate = IConfig(config).getPoolValue(_pair, ConfigNames.POOL_PLEDGE_RATE);
-        
+
         for(uint i = _start; i < _end; i++) {
             address user = IAAAAPool(_pair).borrowerList(i);
             (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
-            uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
+            uint collateralValue = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
             uint repayAmount = IAAAAPlatform(IConfig(config).platform()).getRepayAmount(supplyToken, collateralToken, amountCollateral, user);
-            if(repayAmount > pledgeAmount.mul(pledgeRate).div(1e18).mul(liquidationRate).div(1e18))
+            if(repayAmount > collateralValue.mul(liquidationRate).div(1e18))
             {
                 index++;
             }
@@ -401,9 +400,9 @@ contract AAAAQuery {
         for(uint i = _start; i < _end; i++) {
             address user = IAAAAPool(_pair).borrowerList(i);
             (, uint amountCollateral, , , ) = IAAAAPool(_pair).borrows(user);
-            uint pledgeAmount = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
+            uint collateralValue = IConfig(config).convertTokenAmount(collateralToken, supplyToken, amountCollateral);
             uint repayAmount = IAAAAPlatform(IConfig(config).platform()).getRepayAmount(supplyToken, collateralToken, amountCollateral, user);
-            if(repayAmount > pledgeAmount.mul(pledgeRate).div(1e18).mul(liquidationRate).div(1e18))
+            if(repayAmount > collateralValue.mul(liquidationRate).div(1e18))
             {
                 list[index].user             = user;
                 list[index].pool             = _pair;
