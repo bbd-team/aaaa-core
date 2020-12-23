@@ -259,7 +259,7 @@ contract AAAAQuery {
         if(!IAAAAFactory(IConfig(config).factory()).isPool(pair)) {
             return info;
         }
-        if (IOtherConfig(otherConfig).disabledToken(IAAAAPool(pair).collateralToken())) {
+        if (IOtherConfig(otherConfig).disabledToken(IAAAAPool(pair).supplyToken()) || IOtherConfig(otherConfig).disabledToken(IAAAAPool(pair).collateralToken())) {
             return info;
         }
         info.pair = pair;

@@ -29,7 +29,7 @@ interface IDemaxPair {
     function queryReward() external view returns (uint256, uint256);
 }
 
-contract TKSStrategy is ICollateralStrategy, BaseShareField
+contract LPStrategy is ICollateralStrategy, BaseShareField
 {
     event Mint(address indexed user, uint amount);
     using SafeMath for uint;
