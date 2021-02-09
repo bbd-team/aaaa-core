@@ -15,11 +15,12 @@ const AAAAShare = require("../build/AAAAShare.json")
 const AAAAReward = require("../build/AAAAReward.json")
 const AAAAQuery = require("../build/AAAAQuery.json")
 const AAAAQuery2 = require("../build/AAAAQuery2.json")
+const AAAAQuery3 = require("../build/AAAAQuery3.json")
 const MasterChef = require("../build/SushiMasterChef.json");
 const SushiToken = require("../build/SushiToken.json");
 const SLPStrategy = require("../build/SLPStrategy.json");
 const SLPStrategyFactory = require("../build/SLPStrategyFactory.json");
-const TKSStrategyFactory = require("../build/TKSStrategyFactory.json");
+const LPStrategyFactory = require("../build/LPStrategyFactory.json");
 const AAAADeploy = require("../build/AAAADeploy.json");
 const AAAAOtherConfig = require("../build/AAAAOtherConfig.json");
 const { exit } = require("process");
@@ -51,9 +52,10 @@ let Contracts = {
   AAAAReward: AAAAReward,
   AAAAQuery: AAAAQuery,
   AAAAQuery2: AAAAQuery2,
+  AAAAQuery3: AAAAQuery3,
   AAAADeploy: AAAADeploy,
   SLPStrategyFactory: SLPStrategyFactory,
-  TKSStrategyFactory: TKSStrategyFactory,
+  LPStrategyFactory: LPStrategyFactory,
 }
 
 let ContractAddress = {}
@@ -255,15 +257,15 @@ async function fakeMasterChef() {
   }
 }
 
-async function setupTKSStrategyFactory() {
+async function setupLPStrategyFactory() {
   let ins = new ethers.Contract(
-    ContractAddress['TKSStrategyFactory'],
-    TKSStrategyFactory.abi,
+    ContractAddress['LPStrategyFactory'],
+    LPStrategyFactory.abi,
     getWallet()
   )
 
+  console.log('LPStrategyFactory initialize')
   let tx = await ins.initialize(config.StrategyFactoryParamValue, ETHER_SEND_CONFIG)
-  console.log('TKSStrategyFactory initialize')
   await waitForMint(tx.hash)
 }
 
@@ -298,7 +300,7 @@ async function deployConfig() {
 }
 
 async function setupConfig() {
-  let skips = ['AAAAReward', 'AAAAConfig']
+  let skips = ['AAAAReward', 'AAAAConfig', 'AAAAQuery3']
   for(let k in ContractAddress) {
     if(skips.indexOf(k) >= 0) continue
     let ins = new ethers.Contract(
@@ -334,8 +336,8 @@ async function setupConfig() {
 
 async function initialize() {
   await setupConfig()
-  if(config.StrategyFactory == 'TKSStrategyFactory') {
-    await setupTKSStrategyFactory()
+  if(config.StrategyFactory == 'LPStrategyFactory') {
+    await setupLPStrategyFactory()
   } else {
     await fakeMasterChef()
   }

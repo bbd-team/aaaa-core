@@ -86,10 +86,18 @@ contract AAAADeploy {
         LPStrategyFactory = _LPStrategyFactory;
     }
 
-    function createPool(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
+    function createPoolAndStrategy(address _lendToken, address _collateralToken, uint _lpPoolpid) onlyOwner public {
         address pool = IAAAAFactory(IConfig(config).factory()).createPool(_lendToken, _collateralToken);
         address strategy = ILPStrategyFactory(LPStrategyFactory).createStrategy(_collateralToken, pool, _lpPoolpid);
         IAAAAPlatform(IConfig(config).platform()).switchStrategy(_lendToken, _collateralToken, strategy);
+    }
+
+    function createPool(address _lendToken, address _collateralToken) onlyOwner public {
+        IAAAAFactory(IConfig(config).factory()).createPool(_lendToken, _collateralToken);
+    }
+
+    function switchStrategy(address _lendToken, address _collateralToken, address _strategy) onlyOwner public {
+        IAAAAPlatform(IConfig(config).platform()).switchStrategy(_lendToken, _collateralToken, _strategy);
     }
 
     function changeBallotByteHash(bytes32 _hash) onlyOwner external {
