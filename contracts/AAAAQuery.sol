@@ -25,6 +25,7 @@ interface IConfig {
     function base() external view returns (address);
     function share() external view returns (address);
     function params(bytes32 key) external view returns(uint);
+    function prices(address _token) external view returns(uint);
     function setParameter(uint[] calldata _keys, uint[] calldata _values) external;
     function setPoolParameter(address _pool, bytes32 _key, uint _value) external;
     function getValue(bytes32 _key) external view returns (uint);
@@ -281,10 +282,11 @@ contract AAAAQuery {
             info.lpToken0Symbol = IERC20(lpToken0).symbol();
             info.lpToken1Symbol = IERC20(lpToken1).symbol();
         }
-
-        info.totalSupplyValue = IConfig(config).convertTokenAmount(info.supplyToken, IConfig(config).base(), info.remainSupply.add(info.totalBorrow));
-        info.totalPledgeValue = IConfig(config).convertTokenAmount(info.collateralToken, IConfig(config).base(), info.totalPledge);
-
+        if(IConfig(config).prices(IConfig(config).base()) > 0) {
+            info.totalSupplyValue = IConfig(config).convertTokenAmount(info.supplyToken, IConfig(config).base(), info.remainSupply.add(info.totalBorrow));
+            info.totalPledgeValue = IConfig(config).convertTokenAmount(info.collateralToken, IConfig(config).base(), info.totalPledge);
+        }
+        
         if(info.totalBorrow + info.remainSupply > 0) {
             info.supplyInterests = info.borrowInterests * info.totalBorrow / (info.totalBorrow + info.remainSupply);
         }
