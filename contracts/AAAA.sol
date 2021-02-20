@@ -436,6 +436,7 @@ contract AAAAPool is Configable, BaseMintField
         _mintBorrower();
     }
 
+    // todo fix token is supplyToken or collateralToken
     function _currentReward() internal override view returns (uint) {
         uint remain = IAAAAMint(IConfig(config).mint()).take();
         return remain.add(mintedShare).add(IERC20(IConfig(config).token()).balanceOf(address(this))).sub(totalShare);
