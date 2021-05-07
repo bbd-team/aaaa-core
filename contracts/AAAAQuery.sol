@@ -536,7 +536,7 @@ contract AAAAQuery {
         if (count == 0) return ballots;
         uint index = 0;
         for(uint i = _end;i < _start; i++) {
-            uint j = _start - i -1;
+            uint j = _start - index -1;
             address ballot = IAAAAFactory(IConfig(config).factory()).allBallots(j);
             ballots[index] = getBallotInfo(ballot, msg.sender);
             index++;
